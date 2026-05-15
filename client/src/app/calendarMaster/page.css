@@ -8,18 +8,18 @@
 
 .master-calendar-hero {
   display: flex;
+  gap: 24px;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
   max-width: 1220px;
   margin: 0 auto 24px;
 }
 
 .master-calendar-kicker {
   margin-bottom: 8px;
-  color: #9b6758;
   font-size: 14px;
   font-weight: 700;
+  color: #9b6758;
   text-transform: uppercase;
 }
 
@@ -32,7 +32,7 @@
 .master-calendar-primary {
   min-width: 150px;
   padding: 13px 20px;
-  color: #ffffff;
+  color: #fff;
   background: #b86f5d;
   border: 0;
   border-radius: 8px;
@@ -72,14 +72,14 @@
 
 .master-calendar-toolbar button {
   display: grid;
+  place-items: center;
   width: 40px;
   height: 40px;
-  place-items: center;
+  font-size: 28px;
   color: #8f594a;
   background: #f8e2dc;
   border: 0;
   border-radius: 8px;
-  font-size: 28px;
 }
 
 .master-calendar-weekdays,
@@ -94,64 +94,64 @@
 }
 
 .master-calendar-weekdays span {
-  color: #92736a;
   font-size: 13px;
   font-weight: 700;
+  color: #92736a;
   text-align: center;
 }
 
 .master-calendar-day {
   display: flex;
-  min-height: 116px;
   flex-direction: column;
-  align-items: flex-start;
   gap: 8px;
+  align-items: flex-start;
+  min-height: 116px;
   padding: 12px;
   color: #4e3c36;
+  text-align: left;
   background: #fff8f6;
   border: 1px solid #f0d3ca;
   border-radius: 8px;
-  text-align: left;
 }
 
-.master-calendar-day--empty {
+.master-calendar-day-empty {
+  cursor: default;
   background: transparent;
   border: 0;
-  cursor: default;
 }
 
-.master-calendar-day--selected {
+.master-calendar-day-selected {
+  color: #fff;
   background: #c77b67;
   border-color: #c77b67;
-  color: #ffffff;
 }
 
-.master-calendar-day__number {
+.master-calendar-day-number {
   font-size: 20px;
   font-weight: 700;
 }
 
-.master-calendar-day__meta,
-.master-calendar-day__slots {
+.master-calendar-day-meta,
+.master-calendar-day-slots {
   display: inline-flex;
   padding: 5px 8px;
-  border-radius: 8px;
   font-size: 12px;
+  border-radius: 8px;
 }
 
-.master-calendar-day__meta {
+.master-calendar-day-meta {
   background: rgb(200 123 103 / 12%);
 }
 
-.master-calendar-day__slots {
+.master-calendar-day-slots {
   margin-top: auto;
   color: #7e5b31;
   background: #f5d8ad;
 }
 
-.master-calendar-day--selected .master-calendar-day__meta,
-.master-calendar-day--selected .master-calendar-day__slots {
-  color: #ffffff;
+.master-calendar-day-selected .master-calendar-day-meta,
+.master-calendar-day-selected .master-calendar-day-slots {
+  color: #fff;
   background: rgb(255 255 255 / 20%);
 }
 
@@ -159,32 +159,32 @@
   padding: 22px;
 }
 
-.master-day-panel__header {
+.master-day-panel-header {
   display: flex;
+  gap: 16px;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
   padding-bottom: 18px;
   border-bottom: 1px solid #efd4cc;
 }
 
-.master-day-panel__header p {
-  color: #92736a;
+.master-day-panel-header p {
   font-size: 13px;
+  color: #92736a;
 }
 
-.master-day-panel__header h2 {
+.master-day-panel-header h2 {
   margin-top: 4px;
   font-size: 26px;
   text-transform: capitalize;
 }
 
-.master-day-panel__header span {
+.master-day-panel-header span {
   padding: 7px 10px;
+  font-size: 13px;
   color: #8b5a4c;
   background: #f6dfd8;
   border-radius: 8px;
-  font-size: 13px;
 }
 
 .master-day-section {
@@ -194,8 +194,8 @@
 .master-add-form {
   display: grid;
   gap: 14px;
-  margin-top: 18px;
   padding: 16px;
+  margin-top: 18px;
   background: #fff8f6;
   border: 1px solid #f0d3ca;
   border-radius: 8px;
@@ -211,9 +211,9 @@
 }
 
 .master-add-form label span {
-  color: #80645c;
   font-size: 13px;
   font-weight: 700;
+  color: #80645c;
 }
 
 .master-add-form input,
@@ -222,10 +222,10 @@
   min-height: 42px;
   padding: 10px 12px;
   color: #3d3430;
-  background: #ffffff;
+  outline: none;
+  background: #fff;
   border: 1px solid #e7c7bd;
   border-radius: 8px;
-  outline: none;
 }
 
 .master-add-form input:focus,
@@ -233,34 +233,34 @@
   border-color: #b86f5d;
 }
 
-.master-add-form__row {
+.master-add-form-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.master-add-form__actions {
+.master-add-form-actions {
   display: flex;
   gap: 10px;
 }
 
-.master-add-form__actions button {
+.master-add-form-actions button {
   padding: 10px 14px;
   border-radius: 8px;
 }
 
-.master-add-form__actions button:first-child {
-  color: #ffffff;
+.master-add-form-save {
+  color: #fff;
   background: #b86f5d;
   border: 0;
 }
 
-.master-add-form__actions button:first-child:disabled {
+.master-add-form-save:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
-.master-add-form__actions button:last-child {
+.master-add-form-cancel {
   color: #8f594a;
   background: #f8e2dc;
   border: 0;
@@ -283,10 +283,10 @@
   border-radius: 8px;
 }
 
-.master-appointment-card__top {
+.master-appointment-card-top {
   display: flex;
-  justify-content: space-between;
   gap: 12px;
+  justify-content: space-between;
   margin-bottom: 14px;
 }
 
@@ -296,29 +296,29 @@
 
 .master-appointment-card p {
   margin-top: 4px;
-  color: #80645c;
   font-size: 14px;
+  color: #80645c;
 }
 
 .master-status {
   height: max-content;
   padding: 5px 8px;
-  border-radius: 8px;
   font-size: 12px;
   white-space: nowrap;
+  border-radius: 8px;
 }
 
-.master-status--confirmed {
+.master-status-confirmed {
   color: #386a45;
   background: #dff0df;
 }
 
-.master-status--pending {
+.master-status-pending {
   color: #7a5a15;
   background: #f7e7bd;
 }
 
-.master-status--done {
+.master-status-done {
   color: #596170;
   background: #e7e9ee;
 }
@@ -331,8 +331,8 @@
 }
 
 .master-appointment-card dt {
-  color: #92736a;
   font-size: 12px;
+  color: #92736a;
 }
 
 .master-appointment-card dd {
@@ -347,26 +347,28 @@
   gap: 10px;
 }
 
-.master-appointment-actions button,
-.master-appointment-actions a,
+.master-appointment-chat,
+.master-appointment-status-action,
+.master-appointment-call,
 .master-slots button {
   padding: 9px 12px;
-  border-radius: 8px;
   font-size: 14px;
+  border-radius: 8px;
 }
 
-.master-appointment-actions button {
-  color: #ffffff;
+.master-appointment-chat {
+  color: #fff;
   background: #b86f5d;
   border: 0;
 }
 
-.master-appointment-actions .master-appointment-actions__status {
+.master-appointment-status-action {
   color: #7a5a15;
   background: #f7e7bd;
+  border: 0;
 }
 
-.master-appointment-actions a {
+.master-appointment-call {
   color: #8f594a;
   background: #f8e2dc;
 }
@@ -391,20 +393,20 @@
   border-radius: 8px;
 }
 
-@media (max-width: 980px) {
+@media (width <= 980px) {
   .master-calendar-layout {
     grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 680px) {
+@media (width <= 680px) {
   .master-calendar-page {
     padding: 18px;
   }
 
   .master-calendar-hero {
-    align-items: stretch;
     flex-direction: column;
+    align-items: stretch;
   }
 
   .master-calendar-hero h1 {
@@ -421,8 +423,8 @@
     padding: 8px;
   }
 
-  .master-calendar-day__meta,
-  .master-calendar-day__slots {
+  .master-calendar-day-meta,
+  .master-calendar-day-slots {
     display: none;
   }
 
@@ -430,12 +432,12 @@
     grid-template-columns: 1fr;
   }
 
-  .master-add-form__row,
-  .master-add-form__actions {
+  .master-add-form-row,
+  .master-add-form-actions {
     grid-template-columns: 1fr;
   }
 
-  .master-add-form__actions {
+  .master-add-form-actions {
     flex-direction: column;
   }
 }

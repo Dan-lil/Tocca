@@ -280,7 +280,7 @@ export default function CalendarMasterPage() {
           <div className="master-calendar-grid">
             {monthDays.map((date, index) => {
               if (!date) {
-                return <div className="master-calendar-day master-calendar-day--empty" key={index} />;
+                return <div className="master-calendar-day master-calendar-day-empty" key={index} />;
               }
 
               const dateKey = toDateKey(date);
@@ -291,18 +291,18 @@ export default function CalendarMasterPage() {
               return (
                 <button
                   className={`master-calendar-day ${
-                    isSelected ? "master-calendar-day--selected" : ""
+                    isSelected ? "master-calendar-day-selected" : ""
                   }`}
                   key={dateKey}
                   type="button"
                   onClick={() => setSelectedDate(date)}
                 >
-                  <span className="master-calendar-day__number">{date.getDate()}</span>
-                  <span className="master-calendar-day__meta">
+                  <span className="master-calendar-day-number">{date.getDate()}</span>
+                  <span className="master-calendar-day-meta">
                     {dayAppointments > 0 ? `${dayAppointments} записи` : "нет записей"}
                   </span>
                   {dayFreeSlots > 0 && (
-                    <span className="master-calendar-day__slots">{dayFreeSlots} окон</span>
+                    <span className="master-calendar-day-slots">{dayFreeSlots} окон</span>
                   )}
                 </button>
               );
@@ -311,7 +311,7 @@ export default function CalendarMasterPage() {
         </div>
 
         <aside className="master-day-panel">
-          <div className="master-day-panel__header">
+          <div className="master-day-panel-header">
             <div>
               <p>Выбранный день</p>
               <h2>
@@ -347,7 +347,7 @@ export default function CalendarMasterPage() {
                 </select>
               </label>
 
-              <div className="master-add-form__row">
+              <div className="master-add-form-row">
                 <label>
                   <span>Фамилия клиента</span>
                   <input
@@ -391,7 +391,7 @@ export default function CalendarMasterPage() {
                 />
               </label>
 
-              <div className="master-add-form__row">
+              <div className="master-add-form-row">
                 <label>
                   <span>Временной слот</span>
                   <select
@@ -433,11 +433,19 @@ export default function CalendarMasterPage() {
                 </label>
               </div>
 
-              <div className="master-add-form__actions">
-                <button type="submit" disabled={selectedFreeSlots.length === 0}>
+              <div className="master-add-form-actions">
+                <button
+                  className="master-add-form-save"
+                  type="submit"
+                  disabled={selectedFreeSlots.length === 0}
+                >
                   Сохранить запись
                 </button>
-                <button type="button" onClick={() => setIsAddFormOpen(false)}>
+                <button
+                  className="master-add-form-cancel"
+                  type="button"
+                  onClick={() => setIsAddFormOpen(false)}
+                >
                   Отмена
                 </button>
               </div>
@@ -450,12 +458,12 @@ export default function CalendarMasterPage() {
               {selectedAppointments.length > 0 ? (
                 selectedAppointments.map((appointment) => (
                   <article className="master-appointment-card" key={appointment.id}>
-                    <div className="master-appointment-card__top">
+                    <div className="master-appointment-card-top">
                       <div>
                         <strong>{appointment.clientName}</strong>
                         <p>{appointment.service}</p>
                       </div>
-                      <span className={`master-status master-status--${appointment.status}`}>
+                      <span className={`master-status master-status-${appointment.status}`}>
                         {statusText[appointment.status]}
                       </span>
                     </div>
@@ -474,15 +482,19 @@ export default function CalendarMasterPage() {
                       </div>
                     </dl>
                     <div className="master-appointment-actions">
-                      <button type="button">Открыть чат</button>
+                      <button className="master-appointment-chat" type="button">
+                        Открыть чат
+                      </button>
                       <button
-                        className="master-appointment-actions__status"
+                        className="master-appointment-status-action"
                         type="button"
                         onClick={() => handleChangeAppointmentStatus(appointment.id)}
                       >
                         {nextStatusButtonText[appointment.status]}
                       </button>
-                      <a href={getPhoneHref(appointment.phone)}>Позвонить</a>
+                      <a className="master-appointment-call" href={getPhoneHref(appointment.phone)}>
+                        Позвонить
+                      </a>
                     </div>
                   </article>
                 ))
