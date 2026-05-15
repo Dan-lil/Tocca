@@ -29,7 +29,8 @@ const services = [
   {
     title: "Волосы",
     image: "/услуги на главной/прическа2.jpg",
-    description: "Уход за волосами, укладки и прически под событие или настроение",
+    description:
+      "Уход за волосами, укладки и прически под событие или настроение",
   },
 ];
 
@@ -134,29 +135,6 @@ export default function HomePage() {
   return (
     <main className="home-page">
       <div className="page-shell">
-        <section className="hero-section">
-          <nav className="top-nav glass-surface">
-            <Link className="glass-button glass-button--compact top-nav-link" href="/">Домашняя страница</Link>
-            <Link className="glass-button glass-button--compact top-nav-link" href="#">Услуги</Link>
-            <Link className="glass-button glass-button--compact top-nav-link" href="#">Профиль</Link>
-            <Link className="glass-button glass-button--compact top-nav-link" href="#">AI Помощник</Link>
-            <Link className="glass-button glass-button--compact top-nav-link" href="/auth">Регистрация/Вход</Link>
-          </nav>
-
-          <div className="hero-content">
-            <div className="hero-offer">
-              <p className="hero-eyebrow">Акции</p>
-              <h1>Акция!!!! Массаж с окончанием только у нас за 9990!!!!</h1>
-            </div>
-
-            <div className="hero-actions">
-              <button className="primary-button glass-button" type="button">
-                Записаться
-              </button>
-            </div>
-          </div>
-        </section>
-
         <section className="services-section">
           <div className="hero-assistant-card">
             <div className="assistant-badge">AI</div>
@@ -164,7 +142,11 @@ export default function HomePage() {
               <strong>AI - помощник</strong>
               <span>Опишите, что вы хотите - я найду подходящих мастеров</span>
             </div>
-            <button className="small-button" type="button" onClick={() => setIsChatOpen(true)}>
+            <button
+              className="small-button"
+              type="button"
+              onClick={() => setIsChatOpen(true)}
+            >
               Записаться
             </button>
           </div>
@@ -180,9 +162,17 @@ export default function HomePage() {
                   <Image src={service.image} alt={service.title} fill />
                 </div>
                 <div className="service-overlay">
-                  <Link className="glass-button glass-button--compact service-title-link" href="#">{service.title}</Link>
+                  <Link
+                    className="glass-button glass-button--compact service-title-link"
+                    href="#"
+                  >
+                    {service.title}
+                  </Link>
                   <p>{service.description}</p>
-                  <button className="card-button glass-button glass-button--compact" type="button">
+                  <button
+                    className="card-button glass-button glass-button--compact"
+                    type="button"
+                  >
                     Записаться
                   </button>
                 </div>
@@ -225,7 +215,12 @@ export default function HomePage() {
                 </div>
                 <div className="promo-copy">
                   <p>{promotion.subtitle}</p>
-                  <Link className="glass-button glass-button--compact promo-link" href="#">Воспользоваться акцией</Link>
+                  <Link
+                    className="glass-button glass-button--compact promo-link"
+                    href="#"
+                  >
+                    Воспользоваться акцией
+                  </Link>
                 </div>
               </article>
             ))}
@@ -233,7 +228,11 @@ export default function HomePage() {
         </section>
       </div>
 
-      <button className="chat-fab" type="button" onClick={() => setIsChatOpen(true)}>
+      <button
+        className="chat-fab"
+        type="button"
+        onClick={() => setIsChatOpen(true)}
+      >
         <span>AI</span>
       </button>
 
@@ -244,7 +243,7 @@ export default function HomePage() {
           onClick={() => setIsChatOpen(false)}
         >
           <section
-            className="chat-modal booking-modal"
+            className="booking-modal"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="booking-intro">
@@ -296,7 +295,9 @@ export default function HomePage() {
                 <div className="assistant-badge booking-ai-badge">AI</div>
                 <div className="booking-ai-copy">
                   <strong>AI - помощник</strong>
-                  <span>Опишите, что вы хотите - я найду подходящих мастеров</span>
+                  <span>
+                    Опишите, что вы хотите - я найду подходящих мастеров
+                  </span>
                 </div>
               </div>
 
