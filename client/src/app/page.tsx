@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import "./page.css";
 
-//услуги картинки тянутся с сервера
 const services = [
   {
     title: "Ногти",
@@ -29,12 +29,10 @@ const services = [
   {
     title: "Волосы",
     image: "/услуги на главной/прическа2.jpg",
-    description:
-      "Уход за волосами, укладки и прически под событие или настроение",
+    description: "Уход за волосами, укладки и прически под событие или настроение",
   },
 ];
 
-// акции картинки тянутся с клиента
 const promotions = [
   {
     title: "Массаж",
@@ -63,7 +61,6 @@ const promotions = [
   },
 ];
 
-// мастера - заглушки для модалки
 const masters = [
   {
     id: "ap",
@@ -85,7 +82,6 @@ const masters = [
   },
 ];
 
-// варианты для запросы у AI
 const quickPrompts = [
   "Хочу маникюр завтра после 18:00...",
   "Маникюр завтра вечером",
@@ -96,11 +92,9 @@ export default function HomePage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [draft, setDraft] = useState("Хочу маникюр завтра после 18:00...");
 
-  
- // const promotionsRef = useRef<HTMLDivElement | null>(null); // Ref на контейнер акций для прокрутки кнопками в перспективе
-  const inputRef = useRef<HTMLInputElement | null>(null); //ссылка для поля ввода в модалке
+  const promotionsRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Пока модальное окно открыто блокируется прокрутка страницы
   useEffect(() => {
     document.body.style.overflow = isChatOpen ? "hidden" : "";
 
@@ -109,7 +103,6 @@ export default function HomePage() {
     };
   }, [isChatOpen]);
 
-  //закрывается окно когда жмякается Esc
   useEffect(() => {
     if (!isChatOpen) return;
 
@@ -126,17 +119,28 @@ export default function HomePage() {
     };
   }, [isChatOpen]);
 
+  const scrollPromotions = (direction: "left" | "right") => {
+    const container = promotionsRef.current;
+    if (!container) return;
+
+    const scrollAmount = Math.max(container.clientWidth * 0.82, 280);
+
+    container.scrollBy({
+      left: direction === "right" ? scrollAmount : -scrollAmount,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <main className="home-page">
       <div className="page-shell">
         <section className="hero-section">
-          <nav className="top-nav">
-            <button>Домашняя страница</button>
-            <button>Услуги</button>
-            <button>Профиль</button>
-            <button>AI Помощник</button>
-            <button>Регистрация/Вход</button>
+          <nav className="top-nav glass-surface">
+            <Link className="glass-button glass-button--compact top-nav-link" href="/">Домашняя страница</Link>
+            <Link className="glass-button glass-button--compact top-nav-link" href="#">Услуги</Link>
+            <Link className="glass-button glass-button--compact top-nav-link" href="#">Профиль</Link>
+            <Link className="glass-button glass-button--compact top-nav-link" href="#">AI Помощник</Link>
+            <Link className="glass-button glass-button--compact top-nav-link" href="/auth">Регистрация/Вход</Link>
           </nav>
 
           <div className="hero-content">
@@ -146,14 +150,13 @@ export default function HomePage() {
             </div>
 
             <div className="hero-actions">
-              <button className="primary-button" type="button">
+              <button className="primary-button glass-button" type="button">
                 Записаться
               </button>
             </div>
           </div>
         </section>
 
-        {/* Секция с аишкой и карточками услуг */}
         <section className="services-section">
           <div className="hero-assistant-card">
             <div className="assistant-badge">AI</div>
@@ -161,11 +164,7 @@ export default function HomePage() {
               <strong>AI - помощник</strong>
               <span>Опишите, что вы хотите - я найду подходящих мастеров</span>
             </div>
-            <button
-              className="small-button"
-              type="button"
-              onClick={() => setIsChatOpen(true)}
-            >
+            <button className="small-button" type="button" onClick={() => setIsChatOpen(true)}>
               Записаться
             </button>
           </div>
@@ -181,9 +180,9 @@ export default function HomePage() {
                   <Image src={service.image} alt={service.title} fill />
                 </div>
                 <div className="service-overlay">
-                  <h2>{service.title}</h2>
+                  <Link className="glass-button glass-button--compact service-title-link" href="#">{service.title}</Link>
                   <p>{service.description}</p>
-                  <button className="card-button" type="button">
+                  <button className="card-button glass-button glass-button--compact" type="button">
                     Записаться
                   </button>
                 </div>
@@ -192,25 +191,41 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Блок акций в перспективе с прокруткой */}
         <section className="promotions-section">
-    
+          <div className="promo-header">
+            <div className="section-heading promotions-heading">
+              <span>Акции</span>
+            </div>
 
-          {/* Контейнер ленты акций, который прокручивается в перспективе через ref */}
-          <div className="promo-grid" >
+            <div className="promo-controls">
+              <button
+                className="promo-scroll-button"
+                type="button"
+                onClick={() => scrollPromotions("left")}
+                aria-label="Прокрутить акции влево"
+              >
+                &lsaquo;
+              </button>
+              <button
+                className="promo-scroll-button"
+                type="button"
+                onClick={() => scrollPromotions("right")}
+                aria-label="Прокрутить акции вправо"
+              >
+                &rsaquo;
+              </button>
+            </div>
+          </div>
+
+          <div className="promo-grid" ref={promotionsRef}>
             {promotions.map((promotion) => (
               <article className="promo-card" key={promotion.title}>
                 <div className="promo-image">
-                  <Image
-                    src={promotion.image}
-                    alt={promotion.title}
-                    fill
-                    sizes="(max-width: 767px) 78vw, (max-width: 1199px) 42vw, 26vw"
-                  />
+                  <Image src={promotion.image} alt={promotion.title} fill />
                 </div>
                 <div className="promo-copy">
-                  <h3>{promotion.title}</h3>
                   <p>{promotion.subtitle}</p>
+                  <Link className="glass-button glass-button--compact promo-link" href="#">Воспользоваться акцией</Link>
                 </div>
               </article>
             ))}
@@ -218,16 +233,10 @@ export default function HomePage() {
         </section>
       </div>
 
-      {/* кнопка для открытия модалки аишки */}
-      <button
-        className="chat-fab"
-        type="button"
-        onClick={() => setIsChatOpen(true)}
-      >
+      <button className="chat-fab" type="button" onClick={() => setIsChatOpen(true)}>
         <span>AI</span>
       </button>
 
-      {/* модалка аишка */}
       {isChatOpen ? (
         <div
           className="chat-modal-backdrop"
@@ -236,7 +245,7 @@ export default function HomePage() {
         >
           <section
             className="chat-modal booking-modal"
-            onClick={(event) => event.stopPropagation()} //не дает закрыться модалке раньше времени
+            onClick={(event) => event.stopPropagation()}
           >
             <div className="booking-intro">
               <p>
@@ -261,7 +270,7 @@ export default function HomePage() {
                 </button>
               ))}
             </div>
-            {/* ПОКА КАК ЗАГЛУШКА! - дальше будет отвечать чат */}
+
             <div className="booking-confirm">
               <p className="booking-confirm-title">Отлично! Вот ваша запись:</p>
 
@@ -282,15 +291,12 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Нижний AI с полем ввода и подсказками для ввода */}
             <div className="booking-ai-panel">
               <div className="booking-ai-head">
                 <div className="assistant-badge booking-ai-badge">AI</div>
                 <div className="booking-ai-copy">
                   <strong>AI - помощник</strong>
-                  <span>
-                    Опишите, что вы хотите - я найду подходящих мастеров
-                  </span>
+                  <span>Опишите, что вы хотите - я найду подходящих мастеров</span>
                 </div>
               </div>
 
@@ -299,7 +305,7 @@ export default function HomePage() {
                   ref={inputRef}
                   className="booking-ai-input"
                   value={draft}
-                  onChange={(event) => setDraft(event.target.value)} //обновление состояния
+                  onChange={(event) => setDraft(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
                       event.preventDefault();
@@ -311,7 +317,7 @@ export default function HomePage() {
                 <button
                   className="booking-ai-button"
                   onClick={() => {
-                    setDraft(""); //очищается поле ввода при нажатии на кнопку
+                    setDraft("");
                   }}
                 >
                   Записаться
@@ -326,7 +332,7 @@ export default function HomePage() {
                     onClick={() => {
                       setDraft(prompt);
                       inputRef.current?.focus();
-                    }} //обновление состояния перевод фокуса на инпут, чтобы при энтер очищалось поле
+                    }}
                   >
                     {prompt}
                   </button>

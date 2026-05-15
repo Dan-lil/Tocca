@@ -1,7 +1,12 @@
 :root {
   color-scheme: light;
-  --page-bg: linear-gradient(180deg, #b97b79 0%, #f7dddd 24%, #fff7f6 64%, #f0c3c9 100%);
-  --card-bg: rgba(255, 248, 246, 0.78);
+  --page-bg: linear-gradient(
+    180deg,
+    #b97b79 0%,
+    #f7dddd 24%,
+    #fff7f6 64%,
+    #f0c3c9 100%
+  );
   --card-border: rgba(255, 255, 255, 0.74);
   --text-main: #7a4d4b;
   --text-soft: #9d6f6c;
@@ -29,13 +34,18 @@ input {
 
 button {
   cursor: pointer;
+  text-align: center;
 }
 
 .home-page {
   min-height: 100vh;
   padding: 24px 20px 80px;
   background:
-    radial-gradient(circle at top center, rgba(255, 255, 255, 0.35), transparent 34%),
+    radial-gradient(
+      circle at top center,
+      rgba(255, 255, 255, 0.35),
+      transparent 34%
+    ),
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
 }
 
@@ -55,9 +65,13 @@ button {
   background-image:
     linear-gradient(180deg, rgba(93, 48, 38, 0.1), rgba(93, 48, 38, 0.34)),
     url("/фон шапки.jpg");
-  background-position: center center, center top;
+  background-position:
+    center center,
+    center top;
   background-repeat: no-repeat;
-  background-size: 100% 100%, cover;
+  background-size:
+    100% 100%,
+    cover;
   box-shadow: var(--shadow-main);
 }
 
@@ -66,7 +80,11 @@ button {
   position: absolute;
   inset: auto 0 0;
   height: 160px;
-  background: linear-gradient(180deg, rgba(255, 240, 241, 0), rgba(255, 240, 241, 0.86));
+  background: linear-gradient(
+    180deg,
+    rgba(255, 240, 241, 0),
+    rgba(255, 240, 241, 0.86)
+  );
   pointer-events: none;
 }
 
@@ -79,48 +97,16 @@ button {
   gap: 40px 70px;
   padding: 15px 15px;
   border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.06)),
-    rgba(173, 113, 106, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(16px) saturate(135%);
-  -webkit-backdrop-filter: blur(16px) saturate(135%);
   width: fit-content;
   margin: 0 auto;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-    0 14px 30px rgba(108, 61, 62, 0.12);
 }
 
-.top-nav button {
-  border: none;
-  background: transparent;
+.top-nav-link {
   padding: 6px 10px;
   color: rgba(255, 248, 246, 0.94);
-  text-shadow: 0 1px 8px rgba(118, 73, 71, 0.18);
   font-size: 13px;
   letter-spacing: 0.02em;
   line-height: 1;
-  border-radius: 999px;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.top-nav button:hover {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
-  color: #fffdfc;
-  transform: translateY(-1px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 8px 16px rgba(115, 69, 68, 0.1);
-}
-
-.top-nav button:focus-visible {
-  outline: 1px solid rgba(255, 248, 245, 0.78);
-  outline-offset: 2px;
 }
 
 .hero-content {
@@ -164,32 +150,6 @@ button {
   padding-top: 150px;
 }
 
-.primary-button,
-.small-button,
-.card-button,
-.booking-confirm-button,
-.booking-ai-button {
-  border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 999px;
-  color: #fff7f5;
-  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
-  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.26);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    opacity 0.2s ease;
-}
-
-.primary-button:hover,
-.small-button:hover,
-.card-button:hover,
-.chat-fab:hover,
-.booking-confirm-button:hover,
-.booking-ai-button:hover,
-.booking-chip:hover {
-  transform: translateY(-1px);
-}
-
 .primary-button {
   min-width: 188px;
   padding: 14px 28px;
@@ -200,6 +160,20 @@ button {
   padding: 10px 18px;
   font-size: 14px;
   color: #fffaf8;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.26);
+}
+
+.small-button:hover,
+.chat-fab:hover,
+.master-card:hover,
+.promo-scroll-button:hover,
+.booking-confirm-button:hover,
+.booking-ai-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px rgba(177, 107, 97, 0.32);
 }
 
 .card-button {
@@ -226,8 +200,16 @@ button {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 18% 32%, rgba(255, 255, 255, 0.1), transparent 24%),
-    radial-gradient(circle at 78% 10%, rgba(255, 204, 214, 0.08), transparent 22%);
+    radial-gradient(
+      circle at 18% 32%,
+      rgba(255, 255, 255, 0.1),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 78% 10%,
+      rgba(255, 204, 214, 0.08),
+      transparent 22%
+    );
   pointer-events: none;
 }
 
@@ -332,30 +314,75 @@ button {
   z-index: 1;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  align-items: center;
   gap: 10px;
   min-height: 300px;
   padding: 20px 18px;
-  background: linear-gradient(180deg, rgba(73, 44, 42, 0.04), rgba(73, 44, 42, 0.74));
+  background: linear-gradient(
+    180deg,
+    rgba(73, 44, 42, 0.04),
+    rgba(73, 44, 42, 0.74)
+  );
   color: #fff5f3;
 }
 
-.service-overlay h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
+.service-title-link {
+  align-self: center;
 }
 
 .service-overlay p {
-  margin: 0;
+  margin-top: auto;
+  text-align: center;
+  max-width: 90%;
+  margin-bottom: 0;
   font-size: 13px;
   line-height: 1.45;
   color: rgba(255, 246, 243, 0.84);
 }
 
+.service-overlay .card-button {
+  align-self: center;
+  white-space: nowrap;
+}
+
 .promotions-section {
   display: grid;
   gap: 28px;
+}
+
+.promo-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.promotions-heading {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0;
+}
+
+.promo-controls {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.promo-scroll-button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  color: #fff8f6;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.22);
 }
 
 .promo-grid {
@@ -373,37 +400,61 @@ button {
 }
 
 .promo-card {
+  position: relative;
   flex: 0 0 min(32%, 360px);
   overflow: hidden;
   border: 1px solid var(--card-border);
   border-radius: 28px;
-  background: var(--card-bg);
-  box-shadow: var(--shadow-main);
+  box-shadow: 0 18px 48px rgba(168, 122, 127, 0.22);
   scroll-snap-align: start;
 }
 
 .promo-image {
-  position: relative;
-  aspect-ratio: 1.2 / 1;
+  position: absolute;
+  inset: 0;
 }
 
 .promo-image img {
   object-fit: cover;
+  object-position: center top;
 }
 
 .promo-copy {
-  padding: 18px 18px 20px;
-}
-
-.promo-copy h3 {
-  margin: 0 0 6px;
-  font-size: 22px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto auto;
+  row-gap: 10px;
+  align-items: center;
+  min-height: 300px;
+  padding: 20px 18px;
+  background: linear-gradient(
+    180deg,
+    rgba(73, 44, 42, 0.04),
+    rgba(73, 44, 42, 0.74)
+  );
+  color: #fff5f3;
 }
 
 .promo-copy p {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: end;
+  justify-self: center;
+  text-align: center;
+  max-width: 90%;
   margin: 0;
-  color: var(--text-soft);
+  font-size: 13px;
+  color: rgba(255, 246, 243, 0.84);
   line-height: 1.45;
+}
+
+.promo-link {
+  grid-column: 1;
+  grid-row: 3;
+  align-self: end;
+  justify-self: center;
 }
 
 .chat-fab {
@@ -449,7 +500,11 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.85);
   border-radius: 34px;
   background:
-    linear-gradient(180deg, rgba(255, 234, 238, 0.58), rgba(255, 248, 249, 0.46)),
+    linear-gradient(
+      180deg,
+      rgba(255, 234, 238, 0.58),
+      rgba(255, 248, 249, 0.46)
+    ),
     url("/фон волны.jpg") center/cover no-repeat;
   box-shadow: 0 32px 90px rgba(126, 74, 85, 0.28);
 }
@@ -491,7 +546,11 @@ button {
   padding: 16px 16px 14px;
   border-radius: 22px;
   border-width: 0px;
-  background: linear-gradient(180deg, rgba(236, 151, 158, 0.9), rgba(223, 141, 148, 0.82));
+  background: linear-gradient(
+    180deg,
+    rgba(236, 151, 158, 0.9),
+    rgba(223, 141, 148, 0.82)
+  );
   color: #fff8f6;
   box-shadow: 0 16px 34px rgba(190, 115, 121, 0.22);
 }
@@ -568,7 +627,11 @@ button {
   padding: 16px 16px 14px;
   border-radius: 22px;
   border-width: 0px;
-  background: linear-gradient(180deg, rgba(236, 151, 158, 0.95), rgba(223, 141, 148, 0.88));
+  background: linear-gradient(
+    180deg,
+    rgba(236, 151, 158, 0.95),
+    rgba(223, 141, 148, 0.88)
+  );
   color: #fff9f7;
   box-shadow: 0 18px 40px rgba(190, 115, 121, 0.24);
 }
@@ -588,6 +651,11 @@ button {
 .booking-confirm-button {
   padding: 13px 22px;
   font-size: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  color: #fff7f5;
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.26);
 }
 
 .booking-ai-panel {
@@ -654,6 +722,11 @@ button {
   padding: 10px 16px;
   font-size: 14px;
   white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  color: #fff7f5;
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.26);
 }
 
 .booking-ai-chips {
@@ -665,11 +738,15 @@ button {
 .booking-chip {
   border: 1px solid rgba(234, 189, 190, 0.8);
   border-radius: 999px;
-  background: rgba(255, 250, 249, 0.7);
   color: #a97774;
+  background: rgba(255, 250, 249, 0.7);
   padding: 8px 12px;
   font-size: 12px;
   box-shadow: 0 10px 20px rgba(212, 158, 160, 0.12);
+}
+
+.booking-chip:hover {
+  background: rgba(255, 244, 242, 0.9);
 }
 
 @media (max-width: 1199px) {
@@ -686,8 +763,12 @@ button {
   }
 
   .hero-section {
-    background-position: center center, center top;
-    background-size: 100% 100%, cover;
+    background-position:
+      center center,
+      center top;
+    background-size:
+      100% 100%,
+      cover;
   }
 }
 
@@ -706,8 +787,12 @@ button {
   .hero-section {
     min-height: 520px;
     padding: 18px 16px 110px;
-    background-position: center center, 58% top;
-    background-size: 100% 100%, cover;
+    background-position:
+      center center,
+      58% top;
+    background-size:
+      100% 100%,
+      cover;
   }
 
   .top-nav {
@@ -717,7 +802,7 @@ button {
     padding: 8px 10px;
   }
 
-  .top-nav button {
+  .top-nav a {
     font-size: 12px;
     padding: 6px 8px;
   }
@@ -731,8 +816,6 @@ button {
     padding-top: 0;
   }
 
-  
-
   .services-section {
     min-height: 0;
     margin-top: 0;
@@ -741,6 +824,14 @@ button {
 
   .services-grid {
     grid-template-columns: 1fr;
+  }
+
+  .promo-header {
+    align-items: stretch;
+  }
+
+  .promo-controls {
+    justify-content: flex-end;
   }
 
   .promo-card {
