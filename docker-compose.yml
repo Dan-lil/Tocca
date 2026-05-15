@@ -24,6 +24,7 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      DB_PROD: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     depends_on:
       postgres:
         condition: service_healthy

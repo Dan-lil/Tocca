@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const corsOrigins = require("../config/corsOrigins");
-process.loadEnvFile(path.join(__dirname, '../../.env'));
+
 
 const CHANNELS = [
   { id: 'laugh', emoji: '🤣', label: 'Laugh' },
