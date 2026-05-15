@@ -2,7 +2,7 @@ const { Server } = require('socket.io');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-
+const corsOrigins = require("../config/corsOrigins");
 process.loadEnvFile(path.join(__dirname, '../../.env'));
 
 const CHANNELS = [
@@ -36,7 +36,7 @@ function pushMessage(channelId, message) {
 function initChatSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: ['http://localhost:5173'],
+      origin: corsOrigins,
       credentials: true,
     },
   });

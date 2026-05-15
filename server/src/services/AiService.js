@@ -1,4 +1,4 @@
-process.loadEnvFile();
+
 const { GigaChat } = require('gigachat');
 const { Agent } = require('node:https');
 

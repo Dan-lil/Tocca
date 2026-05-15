@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const formatResponse = require('../utils/formatResponse');
-process.loadEnvFile();
 
 function verifyAccessToken(req, res, next) {
   try {
