@@ -14,6 +14,9 @@ module.exports = (sequelize, DataTypes) => {
       this.hasMany(models.MasterPortfolio, {
         foreignKey: "userId",
       });
+      this.hasMany(models.MasterSocial, {
+        foreignKey: "userId",
+      });
       // define association here
     }
 
