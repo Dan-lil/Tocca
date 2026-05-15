@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("MasterPortfolios", {
+    await queryInterface.createTable("MasterSocials", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -13,12 +13,11 @@ module.exports = {
         type: Sequelize.INTEGER,
         references: { model: "Users", key: "id" },
         onDelete: "cascade",
-        allowNull: false,
       },
-      portfolioImages: {
+      telegram: {
         type: Sequelize.STRING,
       },
-      text: {
+      inst: {
         type: Sequelize.STRING,
       },
       createdAt: {
@@ -34,6 +33,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("MasterPortfolios");
+    await queryInterface.dropTable("MasterSocials");
   },
 };
