@@ -5,7 +5,7 @@ import SignInForm from "@/features/auth/ui/SignInForm/SignInForm";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/shared/hooks/useReduxHooks";
-import { setError } from "@/entities/user/slice/userSlice";
+import { setError } from "@/entities/user/slice/userSlice"; 
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
