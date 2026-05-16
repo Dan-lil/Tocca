@@ -440,7 +440,7 @@ button {
 .booking-ai-panel,
 .booking-ai-input-row,
 .booking-chip {
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(2px);
 }
 
 .booking-intro {
@@ -460,6 +460,17 @@ button {
 .booking-summary-time,
 .booking-summary-price {
   margin: 0;
+}
+
+.booking-chat-thread {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-intro--user {
+  margin-left: auto;
+  max-width: 82%;
+  background: rgba(255, 248, 244, 0.72);
 }
 
 .booking-masters {
@@ -560,6 +571,19 @@ button {
   );
   color: #fff9f7;
   box-shadow: 0 18px 40px rgba(190, 115, 121, 0.24);
+}
+
+/* Делаем карточки вариантов и подтверждения чуть прозрачнее, сохраняя исходный оттенок */
+.master-card.glass-surface,
+.booking-summary-card.glass-surface {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.24),
+      rgba(255, 255, 255, 0.1)
+    ),
+    rgba(223, 141, 148, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.34);
 }
 
 .booking-summary-time {
