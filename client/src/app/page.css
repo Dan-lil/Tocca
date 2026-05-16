@@ -14,6 +14,9 @@
   --shadow-main: 0 24px 60px rgba(181, 119, 129, 0.24);
 }
 
+/* Файл со стилями именно для главной страницы:
+   первый экран, акции, модальное окно записи и адаптив */
+/* Базовые стили страницы и общие сбросы */
 * {
   box-sizing: border-box;
 }
@@ -56,6 +59,7 @@ button {
   margin: 0 auto;
 }
 
+/* Общие кнопки и повторно используемые элементы интерфейса */
 .small-button {
   padding: 10px 18px;
   font-size: 14px;
@@ -81,6 +85,7 @@ button {
   font-size: 13px;
 }
 
+/* услуги и карточка AI-помощника */
 .services-section {
   position: relative;
   display: flex;
@@ -245,9 +250,11 @@ button {
   white-space: nowrap;
 }
 
+/* Секция акций на домашней странице */
 .promotions-section {
   display: grid;
   gap: 28px;
+  overflow: hidden;
 }
 
 .promo-header {
@@ -268,7 +275,15 @@ button {
 .promo-controls {
   display: flex;
   gap: 10px;
-  margin-left: auto;
+  justify-content: center;
+}
+
+/* Стили для GSAP-карусели блока акций: начало*/
+.promo-carousel-shell {
+  position: relative;
+  height: 380px;
+  overflow: hidden;
+  padding: 12px 0 18px;
 }
 
 .promo-scroll-button {
@@ -286,27 +301,28 @@ button {
 }
 
 .promo-grid {
-  display: flex;
-  gap: 22px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  padding-bottom: 6px;
-}
-
-.promo-grid::-webkit-scrollbar {
-  display: none;
-}
-
-.promo-card {
   position: relative;
-  flex: 0 0 min(32%, 360px);
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+/* Карточки располагаются друг над другом, GSAP двигает их через transform */
+.promo-card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(32vw, 360px);
+  min-width: 280px;
+  height: 100%;
   overflow: hidden;
   border: 1px solid var(--card-border);
   border-radius: 28px;
+  transform: translateX(-50%);
+  transform-origin: center center;
+  will-change: transform, opacity;
   box-shadow: 0 18px 48px rgba(168, 122, 127, 0.22);
-  scroll-snap-align: start;
 }
 
 .promo-image {
@@ -327,12 +343,12 @@ button {
   grid-template-rows: 1fr auto auto;
   row-gap: 10px;
   align-items: center;
-  min-height: 300px;
+  min-height: 100%;
   padding: 20px 18px;
   background: linear-gradient(
     180deg,
-    rgba(73, 44, 42, 0.04),
-    rgba(73, 44, 42, 0.74)
+    #492c2a0a,
+    #492c2a7a
   );
   color: #fff5f3;
 }
@@ -357,6 +373,16 @@ button {
   justify-self: center;
 }
 
+/* Скрытый слой GSAP Draggable для обработки drag-жестов */
+.promo-drag-proxy {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* Стили для GSAP-карусели блока акций: конец  */
+
+/* кнопка и модальное окно записи через AI-помощника */
 .chat-fab {
   position: fixed;
   right: 28px;
@@ -649,17 +675,19 @@ button {
   background: rgba(255, 244, 242, 0.9);
 }
 
+/* Адаптация домашней страницы для планшетов */
 @media (max-width: 1199px) {
   .services-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .promo-card {
-    flex-basis: min(44%, 340px);
+    width: min(44vw, 340px);
   }
 
 }
 
+/* Адаптация домашней страницы для мобильных экранов */
 @media (max-width: 767px) {
   .home-page {
     padding: 12px 12px 88px;
@@ -685,12 +713,16 @@ button {
     align-items: stretch;
   }
 
-  .promo-controls {
-    justify-content: flex-end;
+ 
+
+  .promo-carousel-shell {
+    height: 340px;
+    padding-bottom: 8px;
   }
 
   .promo-card {
-    flex-basis: 78vw;
+    width: 78vw;
+    min-width: 0;
   }
 
   .service-card,
