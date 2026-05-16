@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BeautyFlow",
-  description: "BeautyFlow booking experience",
+  title: "Tossa",
+  description: "Tossa",
 };
 
 export default function RootLayout({
