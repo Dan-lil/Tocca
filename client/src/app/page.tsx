@@ -1,18 +1,13 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 
 import "./page.css";
-import { masters, quickPrompts } from '@/features/booking/model/booking.data'; //данные для модалки (пока нет сервака? - заглушка)
-import { BookingModal } from "@/features/booking/ui/BookingModal"; //модалка AI
-import { promotions } from "@/features/promotions/model/promotions.data"; //данные для акций
-import { PromotionsSection } from "@/features/promotions/ui/PromotionsSection"; //код с блоком акций
+import { promotions } from "@/features/promotions/model/promotions.data";//заглушки для акций
+import { PromotionsSection } from "@/features/promotions/ui/PromotionsSection";//блок с акциями
 
-// Главная страница собирает домашний экран из локальной витрины услуг, блока акций и модального окна (вынесены отдельно в фичи)
-
-// карточки услуг
 const services = [
   {
     title: "Ногти",
@@ -43,49 +38,14 @@ const services = [
 ];
 
 export default function HomePage() {
-  // Состояние модального окна и текста в AI-помощнике
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [draft, setDraft] = useState("Хочу маникюр завтра после 18:00...");
-
-  // Ref для возврата фокуса в поле после выбора быстрой подсказки
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
-  // блокировка страницы, пока открыто модальное окно
-  useEffect(() => {
-    document.body.style.overflow = isChatOpen ? "hidden" : "";
-
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isChatOpen]);
-
-  // закрыть модальное окно записи по клавише Esc
-  useEffect(() => {
-    if (!isChatOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsChatOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isChatOpen]);
-
-  // подставить выбранную подсказку в поле ввода и сразу возвращает туда фокус
-  const handlePromptClick = (prompt: string) => {
-    setDraft(prompt);
-    inputRef.current?.focus();
-  };
+  // Все AI-кнопки на странице вызывают один сценарий открытия модалки
+  const handleAiClick = useCallback(() => {
+    window.dispatchEvent(new Event("open-booking-modal"));
+  }, []);
 
   return (
     <main className="home-page">
       <div className="page-shell">
-        {/* блок с услугами и плашкой AI */}
         <section className="services-section">
           <div className="hero-assistant-card">
             <div className="assistant-badge">AI</div>
@@ -93,11 +53,7 @@ export default function HomePage() {
               <strong>AI - помощник</strong>
               <span>Опишите, что вы хотите - я найду подходящих мастеров</span>
             </div>
-            <button
-              className="small-button"
-              type="button"
-              onClick={() => setIsChatOpen(true)}
-            >
+            <button className="small-button" type="button" onClick={handleAiClick}>
               Записаться
             </button>
           </div>
@@ -108,23 +64,16 @@ export default function HomePage() {
 
           <div className="services-grid">
             {services.map((service) => (
-              // Карточка отдельной услуги
               <article className="service-card" key={service.title}>
                 <div className="service-media">
                   <Image src={service.image} alt={service.title} fill />
                 </div>
                 <div className="service-overlay">
-                  <Link
-                    className="glass-button glass-button--compact service-title-link"
-                    href="#"
-                  >
+                  <Link className="glass-button glass-button--compact service-title-link" href="#">
                     {service.title}
                   </Link>
                   <p>{service.description}</p>
-                  <button
-                    className="card-button glass-button glass-button--compact"
-                    type="button"
-                  >
+                  <button className="card-button glass-button glass-button--compact" type="button">
                     Записаться
                   </button>
                 </div>
@@ -132,30 +81,13 @@ export default function HomePage() {
             ))}
           </div>
         </section>
-        {/* акции (код лежит в фичах) */}
+{/* подключаем блок с акциями */}
         <PromotionsSection promotions={promotions} />
       </div>
 
-      {/* кнопка открывает запись с помощью AI (обдщая для всей стр) */}
-      <button
-        className="chat-fab"
-        type="button"
-        onClick={() => setIsChatOpen(true)}
-      >
+      <button className="chat-fab" type="button" onClick={handleAiClick}>
         <span>AI</span>
       </button>
-      {/* блок модального окна AI (лежит отдельно в фичах) */}
-      {isChatOpen ? (
-        <BookingModal
-          draft={draft}
-          inputRef={inputRef}
-          masters={masters}
-          quickPrompts={quickPrompts}
-          onBackdropClick={() => setIsChatOpen(false)}
-          onDraftChange={setDraft}
-          onPromptClick={handlePromptClick}
-        />
-      ) : null}
     </main>
   );
 }
