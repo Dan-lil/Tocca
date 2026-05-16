@@ -5,8 +5,10 @@ const removeXPoweredHeader = require('../middleware/removeHeader');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
+const corsOrigins = require("./corsOrigins");
+
 const corsOptons = {
-  origin: ['http://localhost:5173'],
+  origin: corsOrigins,
   credentials: true,
 };
 
