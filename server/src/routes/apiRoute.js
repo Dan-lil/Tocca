@@ -3,6 +3,7 @@ const authRouter = require("./authRoute");
 const aiRouter = require("./aiRoute");
 const MasterPortfolioRouter = require("./masterPortfolioRoute");
 const profileMasterRouter = require("./profileMasterRoute");
+const ServiziRouter = require("./ServiziRoute");
 const MasterSocialRouter = require("./masterSocialRoute");
 const formatResponse = require("../utils/formatResponse");
 const CategoryRouter = require("./CategoryRoute");
@@ -13,6 +14,7 @@ apiRouter.use("/profile", profileMasterRouter);
 apiRouter.use("/portfolio", MasterPortfolioRouter);
 apiRouter.use("/social", MasterSocialRouter);
 apiRouter.use("/category", CategoryRouter);
+apiRouter.use("/servizi", ServiziRouter);
 
 apiRouter.use((req, res) => {
   res.status(404).json(formatResponse(404, "Ресурс не найден"));
