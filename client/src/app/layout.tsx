@@ -4,6 +4,7 @@ import "./globals.css";
 import StoreProvider from "./store/storeProvider";
 import AppHeader from "@/shared/ui/AppHeader/AppHeader";
 import AppFooter from "@/shared/ui/AppFooter/AppFooter";
+import GlobalBookingModal from "@/shared/ui/GlobalBookingModal/GlobalBookingModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +34,8 @@ export default function RootLayout({
             <AppHeader />
             <div className="site-content">{children}</div>
             <AppFooter />
+            {/* Глобальная AI-модалка доступна на всех страницах приложения */}
+            <GlobalBookingModal />
           </div>
         </StoreProvider>
       </body>
