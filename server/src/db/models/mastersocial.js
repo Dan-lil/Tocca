@@ -17,8 +17,8 @@ module.exports = (sequelize, DataTypes) => {
   MasterSocial.init(
     {
       userId: DataTypes.INTEGER,
-      telegram: DataTypes.STRING,
-      inst: DataTypes.STRING,
+      contact: DataTypes.STRING,
+      network: DataTypes.STRING,
     },
     {
       sequelize,
