@@ -6,8 +6,8 @@ module.exports = {
     await queryInterface.bulkInsert("MasterSocials", [
       {
         userId: 2,
-        telegram: "@Oliver_Brave",
-        inst: "instagram.com",
+        contact: "@Oliver_Brave",
+        network: "telegram",
       },
     ]);
   },
