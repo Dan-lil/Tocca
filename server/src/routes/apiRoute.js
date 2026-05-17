@@ -7,6 +7,7 @@ const ServiziRouter = require("./ServiziRoute");
 const MasterSocialRouter = require("./masterSocialRoute");
 const formatResponse = require("../utils/formatResponse");
 const CategoryRouter = require("./CategoryRoute");
+const SaleRouter = require("./SaleRoute");
 const BookingRouter = require("./BookingRoute");
 
 apiRouter.use("/auth", authRouter);
@@ -17,7 +18,7 @@ apiRouter.use("/social", MasterSocialRouter);
 apiRouter.use("/category", CategoryRouter);
 apiRouter.use("/servizi", ServiziRouter);
 apiRouter.use("/booking", BookingRouter);
-
+apiRouter.use("/sale", SaleRouter);
 apiRouter.use((req, res) => {
   res.status(404).json(formatResponse(404, "Ресурс не найден"));
 });
