@@ -1,0 +1,441 @@
+.master-calendar-page {
+  min-height: 100vh;
+  padding: 32px;
+  background:
+    linear-gradient(135deg, rgb(255 247 244 / 96%), rgb(246 229 222 / 96%)),
+    #fff5f2;
+}
+
+.master-calendar-hero {
+  display: flex;
+  gap: 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+  max-width: 1220px;
+  margin: 0 auto 24px;
+}
+
+.master-calendar-kicker {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #9b6758;
+  text-transform: uppercase;
+}
+
+.master-calendar-hero h1 {
+  max-width: 720px;
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+.master-calendar-primary {
+  min-width: 150px;
+  padding: 13px 20px;
+  color: #fff;
+  background: #b86f5d;
+  border: 0;
+  border-radius: 8px;
+}
+
+.master-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
+  gap: 24px;
+  max-width: 1220px;
+  margin: 0 auto;
+}
+
+.master-calendar-panel,
+.master-day-panel {
+  background: rgb(255 255 255 / 78%);
+  border: 1px solid rgb(181 124 108 / 18%);
+  border-radius: 8px;
+  box-shadow: 0 20px 50px rgb(107 73 64 / 10%);
+}
+
+.master-calendar-panel {
+  padding: 22px;
+}
+
+.master-calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.master-calendar-toolbar h2 {
+  font-size: 22px;
+  text-transform: capitalize;
+}
+
+.master-calendar-toolbar button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  font-size: 28px;
+  color: #8f594a;
+  background: #f8e2dc;
+  border: 0;
+  border-radius: 8px;
+}
+
+.master-calendar-weekdays,
+.master-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.master-calendar-weekdays {
+  margin-bottom: 10px;
+}
+
+.master-calendar-weekdays span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #92736a;
+  text-align: center;
+}
+
+.master-calendar-day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  min-height: 116px;
+  padding: 12px;
+  color: #4e3c36;
+  text-align: left;
+  background: #fff8f6;
+  border: 1px solid #f0d3ca;
+  border-radius: 8px;
+}
+
+.master-calendar-day--empty {
+  cursor: default;
+  background: transparent;
+  border: 0;
+}
+
+.master-calendar-day--selected {
+  color: #fff;
+  background: #c77b67;
+  border-color: #c77b67;
+}
+
+.master-calendar-day__number {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.master-calendar-day__meta,
+.master-calendar-day__slots {
+  display: inline-flex;
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+.master-calendar-day__meta {
+  background: rgb(200 123 103 / 12%);
+}
+
+.master-calendar-day__slots {
+  margin-top: auto;
+  color: #7e5b31;
+  background: #f5d8ad;
+}
+
+.master-calendar-day--selected .master-calendar-day__meta,
+.master-calendar-day--selected .master-calendar-day__slots {
+  color: #fff;
+  background: rgb(255 255 255 / 20%);
+}
+
+.master-day-panel {
+  padding: 22px;
+}
+
+.master-day-panel__header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #efd4cc;
+}
+
+.master-day-panel__header p {
+  font-size: 13px;
+  color: #92736a;
+}
+
+.master-day-panel__header h2 {
+  margin-top: 4px;
+  font-size: 26px;
+  text-transform: capitalize;
+}
+
+.master-day-panel__header span {
+  padding: 7px 10px;
+  font-size: 13px;
+  color: #8b5a4c;
+  background: #f6dfd8;
+  border-radius: 8px;
+}
+
+.master-day-section {
+  margin-top: 22px;
+}
+
+.master-add-form {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  margin-top: 18px;
+  background: #fff8f6;
+  border: 1px solid #f0d3ca;
+  border-radius: 8px;
+}
+
+.master-add-form h3 {
+  font-size: 18px;
+}
+
+.master-add-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.master-add-form label span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #80645c;
+}
+
+.master-add-form input,
+.master-add-form select {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: #3d3430;
+  outline: none;
+  background: #fff;
+  border: 1px solid #e7c7bd;
+  border-radius: 8px;
+}
+
+.master-add-form input:focus,
+.master-add-form select:focus {
+  border-color: #b86f5d;
+}
+
+.master-add-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.master-add-form__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.master-add-form__actions button {
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+
+.master-add-form__actions button:first-child {
+  color: #fff;
+  background: #b86f5d;
+  border: 0;
+}
+
+.master-add-form__actions button:first-child:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.master-add-form__actions button:last-child {
+  color: #8f594a;
+  background: #f8e2dc;
+  border: 0;
+}
+
+.master-day-section h3 {
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.master-appointments {
+  display: grid;
+  gap: 12px;
+}
+
+.master-appointment-card {
+  padding: 16px;
+  background: #fff8f6;
+  border: 1px solid #f0d3ca;
+  border-radius: 8px;
+}
+
+.master-appointment-card__top {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.master-appointment-card strong {
+  font-size: 17px;
+}
+
+.master-appointment-card p {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #80645c;
+}
+
+.master-status {
+  height: max-content;
+  padding: 5px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  border-radius: 8px;
+}
+
+.master-status--confirmed {
+  color: #386a45;
+  background: #dff0df;
+}
+
+.master-status--pending {
+  color: #7a5a15;
+  background: #f7e7bd;
+}
+
+.master-status--done {
+  color: #596170;
+  background: #e7e9ee;
+}
+
+.master-appointment-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.master-appointment-card dt {
+  font-size: 12px;
+  color: #92736a;
+}
+
+.master-appointment-card dd {
+  margin-top: 3px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.master-appointment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.master-appointment-actions button,
+.master-appointment-actions a,
+.master-slots button {
+  padding: 9px 12px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.master-appointment-actions button {
+  color: #fff;
+  background: #b86f5d;
+  border: 0;
+}
+
+.master-appointment-actions .master-appointment-actions__status {
+  color: #7a5a15;
+  background: #f7e7bd;
+}
+
+.master-appointment-actions a {
+  color: #8f594a;
+  background: #f8e2dc;
+}
+
+.master-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.master-slots button {
+  color: #6c4d2b;
+  background: #f5d8ad;
+  border: 1px solid #edc98f;
+}
+
+.master-empty-state {
+  padding: 16px;
+  color: #80645c;
+  background: #fff8f6;
+  border: 1px dashed #e7c7bd;
+  border-radius: 8px;
+}
+
+@media (width <= 980px) {
+  .master-calendar-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (width <= 680px) {
+  .master-calendar-page {
+    padding: 18px;
+  }
+
+  .master-calendar-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .master-calendar-hero h1 {
+    font-size: 30px;
+  }
+
+  .master-calendar-weekdays,
+  .master-calendar-grid {
+    gap: 6px;
+  }
+
+  .master-calendar-day {
+    min-height: 92px;
+    padding: 8px;
+  }
+
+  .master-calendar-day__meta,
+  .master-calendar-day__slots {
+    display: none;
+  }
+
+  .master-appointment-card dl {
+    grid-template-columns: 1fr;
+  }
+
+  .master-add-form__row,
+  .master-add-form__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .master-add-form__actions {
+    flex-direction: column;
+  }
+}
