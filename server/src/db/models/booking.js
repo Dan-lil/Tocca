@@ -17,6 +17,9 @@ module.exports = (sequelize, DataTypes) => {
       this.belongsTo(models.Servizi, {
         foreignKey: "serviziId",
       });
+      this.hasOne(models.Sale, {
+        foreignKey: "bookingId",
+      });
       // define association here
     }
   }

@@ -26,6 +26,9 @@ module.exports = (sequelize, DataTypes) => {
       this.hasMany(models.Booking, {
         foreignKey: "masterId",
       });
+      this.hasMany(models.Sale, {
+        foreignKey: "masterId",
+      });
       // define association here
     }
 
