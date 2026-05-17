@@ -13,3 +13,4 @@ export type SaleState = {
   loading: boolean;
   error: string | null;
 }
+

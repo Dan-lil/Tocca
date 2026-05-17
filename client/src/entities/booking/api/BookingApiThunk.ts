@@ -98,9 +98,3 @@ export const createBookingThunk = createAsyncThunk<Booking,NewBooking,{ rejectVa
   }
 );
 
-const initialState: BookingState = {
-  upcomingBookings: [],
-  pastBookings: [],
-  loading: false,
-  error: null,
-};

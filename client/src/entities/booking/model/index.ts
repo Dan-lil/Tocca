@@ -1,4 +1,5 @@
 export type Booking = {
+    id: number;
     clientId: number;
     masterId: number;
     serviziId: number;
@@ -14,6 +15,7 @@ export type Booking = {
 }
 
 export type NewBooking = {
+    id: number;
     masterId: number;
     serviziId: number;
     date: string;
