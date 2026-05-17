@@ -4,3 +4,4 @@ export type ServerResponseType<T> = {
     data: T | null;
     error: string | null;
 }
+
