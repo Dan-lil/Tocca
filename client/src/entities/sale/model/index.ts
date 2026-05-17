@@ -1,4 +1,5 @@
 export type Sale = {
+      id: number,
       masterId: number,
       bookingId: number,
       serviziId: number,

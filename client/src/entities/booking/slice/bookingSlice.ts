@@ -59,3 +59,5 @@ const bookingSlice = createSlice({
       });
   },
 });
+
+export const bookingReducer = bookingSlice.reducer;
