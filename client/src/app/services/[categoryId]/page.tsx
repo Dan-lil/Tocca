@@ -40,7 +40,6 @@ function buildServiceCards(
     const masterName = `Мастер #${masterId}`;
     const skillLabel = categoryTitle || "Услуги";
     const priceFrom = Math.min(...masterServices.map((service) => service.price));
-    const servicesCount = masterServices.length;
     const primaryService = masterServices[0];
 
     return {
@@ -51,7 +50,7 @@ function buildServiceCards(
       // Для карточки мастера берем первую услугу как основную
       serviceTitle: primaryService?.title ?? skillLabel,
       serviceDescription: primaryService?.description ?? "",
-      detailBadges: [`${servicesCount} услуг`, "Профиль мастера", "Отзывы"],
+      detailBadges: ["Профиль мастера", "Отзывы"],
       services: masterServices,
     };
   });
@@ -110,10 +109,21 @@ export default function CategoryPage() {
     return matchedService.length > 0 ? matchedService : services;
   }, [selectedServiceId, services]);
 
+  const selectedService = useMemo(() => {
+    if (!selectedServiceId) return null;
+
+    const serviceId = Number(selectedServiceId);
+    if (Number.isNaN(serviceId)) return null;
+
+    return services.find((service) => service.id === serviceId) ?? null;
+  }, [selectedServiceId, services]);
+
+  const pageTitle = selectedService?.title ?? category?.title ?? "Услуги";
+
   const serviceCards = useMemo(
-    // Собираем карточки из ответа по категории
-    () => buildServiceCards(visibleServices, category?.title ?? ""),
-    [category?.title, visibleServices],
+    // Если выбрана конкретная услуга, используем ее название вместо общего имени категории
+    () => buildServiceCards(visibleServices, pageTitle),
+    [pageTitle, visibleServices],
   );
 
   return (
@@ -122,7 +132,7 @@ export default function CategoryPage() {
         <section className="services-directory-hero">
           <div className="services-directory-hero-copy glass-surface">
             <span className="services-directory-eyebrow">Категория услуг</span>
-            <h1>{category?.title ?? "Услуги"}</h1>
+            <h1>{pageTitle}</h1>
           </div>
           <Link className="glass-button services-directory-back" href="/">
             На главную
@@ -165,11 +175,6 @@ export default function CategoryPage() {
                       {badge}
                     </button>
                   ))}
-                </div>
-
-                <div className="services-directory-card-copy">
-                  <strong>{card.serviceTitle}</strong>
-                  <p>{card.serviceDescription}</p>
                 </div>
 
                 <button

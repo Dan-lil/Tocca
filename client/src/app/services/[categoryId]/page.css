@@ -160,24 +160,6 @@
   outline-offset: 2px;
 }
 
-.services-directory-card-copy {
-  display: grid;
-  gap: 6px;
-}
-
-.services-directory-card-copy strong {
-  font-size: 14px;
-  font-weight: 700;
-  color: #fffaf8;
-}
-
-.services-directory-card-copy p {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: rgba(255, 244, 242, 0.92);
-}
-
 .services-directory-card-button {
   margin-top: 4px;
   padding: 10px 16px;

@@ -121,9 +121,12 @@ export default function HomePage() {
                     {service.title}
                   </Link>
                   <p>{service.description}</p>
-                  <button className="card-button glass-button glass-button--compact" type="button">
+                  <Link
+                    className="card-button glass-button glass-button--compact"
+                    href={`/services/${service.categoryId}?serviceId=${service.id}`}
+                  >
                     Записаться
-                  </button>
+                  </Link>
                 </div>
               </article>
             ))}
