@@ -12,7 +12,6 @@ import { ServiziType } from "@/shared/types";
 
 const navigationItems = [
   { href: "/", label: "Домашняя страница" },
-  { href: "/Profile", label: "Профиль" },
   { href: "#", label: "AI Помощник", action: "open-chat" as const },
 ];
 
@@ -117,6 +116,13 @@ export default function AppHeader() {
                 </Link>
               ),
             )}
+
+            {/* Переход в профиль показываем только авторизованному пользователю */}
+            {user ? (
+              <Link className="glass-button glass-button--compact top-nav-link" href="/Profile">
+                Профиль
+              </Link>
+            ) : null}
 
             <div className="top-nav-dropdown" ref={dropdownRef}>
               {/* Кнопка открывает список услуг, которые приходят из Servizi */}
