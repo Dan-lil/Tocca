@@ -6,7 +6,8 @@ const serverConfig = require("./config/serverConfig");
 const http = require("http");
 const initChatSocket = require("./ws/chatSocket");
 
-const PORT = process.env.PORT ?? 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || "localhost";
 const app = express();
 
 serverConfig(app);
@@ -16,6 +17,17 @@ app.use("/api", apiRouter);
 const server = http.createServer(app);
 initChatSocket(server);
 
-server.listen(PORT, () => {
-  console.log(`Сервер запущен на порту: ${PORT}`);
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(
+      `Порт ${PORT} уже занят. Остановите другой процесс или укажите другой PORT в .env.`,
+    );
+    process.exit(1);
+  }
+
+  throw error;
+});
+
+server.listen(PORT, HOST, () => {
+  console.log(`Сервер запущен: http://${HOST}:${PORT}`);
 });

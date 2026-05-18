@@ -93,12 +93,15 @@
     },
   ];
 
-  type PlacedSticker = {
+  type StickerPosition = {
+    left: number | string;
+    top: number | string;
+  };
+
+  type PlacedSticker = StickerPosition & {
     uniqueId: number;
     image: string;
     caption: string;
-    left: string | number;
-    top: string | number;
   };
 
   export default function NotFoundPage() {
