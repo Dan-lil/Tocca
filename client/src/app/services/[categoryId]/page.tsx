@@ -8,6 +8,7 @@ import "../../page.css";
 import "./page.css";
 import { getCategoryById } from "@/shared/api/categoryApi";
 import { getServicesByCategory } from "@/shared/api/serviziApi";
+import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
 import { CategoryType, ServiziType } from "@/shared/types";
 
 type ServiceDirectoryCard = {
@@ -17,6 +18,8 @@ type ServiceDirectoryCard = {
   serviceTitle: string;
   serviceDescription: string;
   detailBadges: string[];
+  masterId: number;
+  services: ServiziType[];
 };
 
 function buildServiceCards(
@@ -26,20 +29,26 @@ function buildServiceCards(
   // В карточки пускаем активные услуги, а если их нет, то весь список категории
   const activeServices = services.filter((service) => service.isActive);
   const visibleServices = activeServices.length > 0 ? activeServices : services;
+  const servicesByMaster = new Map<number, ServiziType[]>();
 
-  return visibleServices.map((service) => {
-    const masterName = `Мастер #${service.masterId}`;
+  visibleServices.forEach((service) => {
+    const masterServices = servicesByMaster.get(service.masterId) ?? [];
+    servicesByMaster.set(service.masterId, [...masterServices, service]);
+  });
+
+  return Array.from(servicesByMaster.entries()).map(([masterId, masterServices]) => {
+    const masterName = `Мастер #${masterId}`;
     const skillLabel = categoryTitle || "Услуги";
+    const priceFrom = Math.min(...masterServices.map((service) => service.price));
+    const servicesCount = masterServices.length;
 
     return {
-      id: service.id,
+      id: masterId,
       masterName,
-      // Пока в карточке оставляем только категорию как доступную мету
-      meta: skillLabel,
-      // Возвращаем в карточку название и описание услуги из базы
-      serviceTitle: service.title,
-      serviceDescription: service.description,
-      detailBadges: ["Профиль мастера", "Отзывы"],
+      meta: `${skillLabel} · от ${priceFrom.toLocaleString("ru-RU")} ₽`,
+      detailBadges: [`${servicesCount} услуг`, "Профиль мастера", "Отзывы"],
+      masterId,
+      services: masterServices,
     };
   });
 }
@@ -157,12 +166,19 @@ export default function CategoryPage() {
                   ))}
                 </div>
 
-                <div className="services-directory-card-copy">
-                  <strong>{card.serviceTitle}</strong>
-                  <p>{card.serviceDescription}</p>
-                </div>
-
-                <button className="services-directory-card-button" type="button">
+                <button
+                  className="services-directory-card-button"
+                  type="button"
+                  onClick={() =>
+                    dispatchBookingModalOpen({
+                      categoryId: Number(categoryId),
+                      categoryTitle: category?.title ?? "Услуги",
+                      masterId: card.masterId,
+                      masterName: card.masterName,
+                      services: card.services,
+                    })
+                  }
+                >
                   Записаться
                 </button>
               </article>

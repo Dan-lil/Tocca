@@ -5,13 +5,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
-import { createBooking } from "@/shared/api/bookingApi";
+import { createBooking, getBookingsByMaster } from "@/shared/api/bookingApi";
+import { getServicesByMaster } from "@/shared/api/serviziApi";
+import { getShadulesByMaster } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { BOOKING_MODAL_EVENT } from "@/shared/lib/bookingEvents";
-import { BookingModalPayload } from "@/shared/types";
+import { BookingModalPayload, BookingType, ServiziType, ShaduleType } from "@/shared/types";
 import { getMockOptionsByPrompt, quickPrompts, type MasterItem } from "./booking.data";
 
 type BookingFlowStep = "idle" | "searching" | "options" | "confirmed";
+type DirectBookingStep = "service" | "calendar";
 type ChatMessage = {
   id: number;
   text: string;
@@ -26,6 +29,121 @@ type DirectBookingFormState = {
 const DEFAULT_DRAFT = "Хочу маникюр завтра после 18:00";
 const DEFAULT_AI_MESSAGE = "Напишите запрос, например «хочу маникюр на завтра»";
 const initialDirectBookingForm: DirectBookingFormState = { comment: "" };
+const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+function toDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getMonthDays(year: number, month: number) {
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const emptyDays = Array.from({ length: startOffset }, () => null);
+  const days = Array.from({ length: daysInMonth }, (_, index) => {
+    return new Date(year, month, index + 1);
+  });
+
+  return [...emptyDays, ...days];
+}
+
+function getMinutesFromDate(value: string) {
+  const date = new Date(value);
+
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function formatTime(totalMinutes: number) {
+  const hours = `${Math.floor(totalMinutes / 60)}`.padStart(2, "0");
+  const minutes = `${totalMinutes % 60}`.padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+}
+
+function getDateTime(dateKey: string, time: string, duration: number) {
+  const [hours, minutes] = time.split(":").map(Number);
+  const startTime = new Date(`${dateKey}T00:00:00`);
+  startTime.setHours(hours, minutes, 0, 0);
+
+  const endTime = new Date(startTime);
+  endTime.setMinutes(endTime.getMinutes() + duration);
+
+  return {
+    startTime,
+    endTime,
+  };
+}
+
+function isBookingCanceled(booking: BookingType) {
+  return booking.status.toLowerCase().includes("отмен");
+}
+
+function buildSlotsByDate(
+  service: ServiziType | null,
+  shadules: ShaduleType[],
+  bookings: BookingType[],
+) {
+  if (!service || shadules.length === 0) {
+    return {};
+  }
+
+  const slotsByDate: Record<string, string[]> = {};
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let dayIndex = 0; dayIndex < 21; dayIndex += 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + dayIndex);
+
+    const shadule = shadules.find(
+      (item) => item.dayOdWeek === date.getDay() && item.isWorkingDay,
+    );
+
+    if (!shadule) {
+      continue;
+    }
+
+    const dateKey = toDateKey(date);
+    const startMinutes = getMinutesFromDate(shadule.startTime);
+    const endMinutes = getMinutesFromDate(shadule.endTime);
+    const currentMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+    const duration = service.duration;
+    const dayBookings = bookings.filter((booking) => {
+      const bookingDateKey = toDateKey(new Date(booking.startTime));
+
+      return bookingDateKey === dateKey && !isBookingCanceled(booking);
+    });
+
+    for (
+      let slotStart = startMinutes;
+      slotStart + duration <= endMinutes;
+      slotStart += duration
+    ) {
+      const slotEnd = slotStart + duration;
+      const isPastTodaySlot = dayIndex === 0 && slotStart <= currentMinutes;
+      const hasConflict = dayBookings.some((booking) => {
+        const bookedStart = getMinutesFromDate(booking.startTime);
+        const bookedEnd = getMinutesFromDate(booking.endTime);
+
+        return slotStart < bookedEnd && slotEnd > bookedStart;
+      });
+
+      if (!isPastTodaySlot && !hasConflict) {
+        slotsByDate[dateKey] = [...(slotsByDate[dateKey] ?? []), formatTime(slotStart)];
+      }
+    }
+  }
+
+  return slotsByDate;
+}
+
+function getCategoryServices(services: ServiziType[], categoryId: number) {
+  return services.filter((service) => service.isActive && service.categoryId === categoryId);
+}
 
 export default function GlobalBookingModal() {
   const dispatch = useAppDispatch();
@@ -48,8 +166,16 @@ export default function GlobalBookingModal() {
   const [confirmedOption, setConfirmedOption] = useState<MasterItem | null>(null);
   const [directBookingForm, setDirectBookingForm] = useState(initialDirectBookingForm);
   const [isDirectBookingLoading, setIsDirectBookingLoading] = useState(false);
+  const [isDirectDataLoading, setIsDirectDataLoading] = useState(false);
   const [directBookingError, setDirectBookingError] = useState<string | null>(null);
   const [directBookingSuccess, setDirectBookingSuccess] = useState<string | null>(null);
+  const [directBookingStep, setDirectBookingStep] = useState<DirectBookingStep>("service");
+  const [directServices, setDirectServices] = useState<ServiziType[]>([]);
+  const [directShadules, setDirectShadules] = useState<ShaduleType[]>([]);
+  const [directBookings, setDirectBookings] = useState<BookingType[]>([]);
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [selectedSlot, setSelectedSlot] = useState("");
 
   // Ref нужен, чтобы возвращать фокус в поле ввода после выбора подсказки
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -97,8 +223,16 @@ export default function GlobalBookingModal() {
     setPresetBooking(null);
     setDirectBookingForm(initialDirectBookingForm);
     setIsDirectBookingLoading(false);
+    setIsDirectDataLoading(false);
     setDirectBookingError(null);
     setDirectBookingSuccess(null);
+    setDirectBookingStep("service");
+    setDirectServices([]);
+    setDirectShadules([]);
+    setDirectBookings([]);
+    setSelectedServiceId(null);
+    setSelectedDate(new Date());
+    setSelectedSlot("");
     nextMessageIdRef.current = 2;
   }, []);
 
@@ -106,6 +240,18 @@ export default function GlobalBookingModal() {
     setIsChatOpen(false);
     resetModalState();
   }, [resetModalState]);
+
+  useEffect(() => {
+    if (!directBookingSuccess) return;
+
+    const closeTimer = window.setTimeout(() => {
+      closeModal();
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(closeTimer);
+    };
+  }, [closeModal, directBookingSuccess]);
 
   useEffect(() => {
     if (!pendingOpen || !isInitialized) return;
@@ -215,16 +361,117 @@ export default function GlobalBookingModal() {
   };
 
   const handleDirectBookingCommentChange = (value: string) => {
-    // Храним только комментарий, остальное сервер пока получит как технические значения
+    // Остальные поля записи собираются из выбранной услуги, дня и слота.
     setDirectBookingForm({ comment: value });
   };
 
-  const handleDirectBookingSubmit = async () => {
-    if (!presetBooking || !user) return;
+  useEffect(() => {
+    if (!isChatOpen || !presetBooking || !user) return;
 
-    // Подставляем текущий момент и длительность услуги, пока сервер не отдает реальные слоты
-    const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + presetBooking.duration * 60_000);
+    const loadDirectBookingData = async () => {
+      try {
+        setIsDirectDataLoading(true);
+        setDirectBookingError(null);
+        setDirectBookingSuccess(null);
+
+        const [servicesResult, shadulesResult, bookingsResult] = await Promise.allSettled([
+          getServicesByMaster(presetBooking.masterId),
+          getShadulesByMaster(presetBooking.masterId),
+          getBookingsByMaster(presetBooking.masterId),
+        ]);
+
+        const loadedServicesFromApi =
+          servicesResult.status === "fulfilled" && servicesResult.value.length > 0
+            ? servicesResult.value
+            : presetBooking.services ?? [];
+        const categoryServices = getCategoryServices(
+          loadedServicesFromApi,
+          presetBooking.categoryId,
+        );
+        const fallbackCategoryServices = getCategoryServices(
+          presetBooking.services ?? [],
+          presetBooking.categoryId,
+        );
+        const loadedShadules = shadulesResult.status === "fulfilled" ? shadulesResult.value : [];
+        const loadedBookings = bookingsResult.status === "fulfilled" ? bookingsResult.value : [];
+
+        setDirectServices(
+          categoryServices.length > 0 ? categoryServices : fallbackCategoryServices,
+        );
+        setDirectShadules(loadedShadules);
+        setDirectBookings(loadedBookings);
+
+        if (servicesResult.status === "rejected") {
+          setDirectBookingError(servicesResult.reason.message);
+        }
+      } finally {
+        setIsDirectDataLoading(false);
+      }
+    };
+
+    void loadDirectBookingData();
+  }, [isChatOpen, presetBooking, user]);
+
+  const selectedDirectService = useMemo(
+    () => directServices.find((service) => service.id === selectedServiceId) ?? null,
+    [directServices, selectedServiceId],
+  );
+
+  const directSlotsByDate = useMemo(
+    () => buildSlotsByDate(selectedDirectService, directShadules, directBookings),
+    [directBookings, directShadules, selectedDirectService],
+  );
+
+  const directMonthDays = useMemo(
+    () => getMonthDays(selectedDate.getFullYear(), selectedDate.getMonth()),
+    [selectedDate],
+  );
+  const selectedDateKey = toDateKey(selectedDate);
+  const selectedDateSlots = directSlotsByDate[selectedDateKey] ?? [];
+  const activeSlot = selectedDateSlots.includes(selectedSlot)
+    ? selectedSlot
+    : selectedDateSlots[0] ?? "";
+  const monthTitle = selectedDate.toLocaleDateString("ru-RU", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const handleDirectServiceSelect = (serviceId: number) => {
+    if (directBookingSuccess) return;
+
+    setSelectedServiceId(serviceId);
+    setSelectedSlot("");
+    setSelectedDate(new Date());
+    setDirectBookingStep("calendar");
+    setDirectBookingError(null);
+    setDirectBookingSuccess(null);
+  };
+
+  const handleDirectMonthChange = (direction: number) => {
+    if (directBookingSuccess) return;
+
+    setSelectedDate(
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth() + direction, 1),
+    );
+    setSelectedSlot("");
+  };
+
+  const handleDirectBookingSubmit = async () => {
+    if (
+      !presetBooking ||
+      !user ||
+      !selectedDirectService ||
+      !activeSlot ||
+      directBookingSuccess
+    ) {
+      return;
+    }
+
+    const { startTime, endTime } = getDateTime(
+      selectedDateKey,
+      activeSlot,
+      selectedDirectService.duration,
+    );
 
     try {
       setIsDirectBookingLoading(true);
@@ -234,15 +481,31 @@ export default function GlobalBookingModal() {
       await createBooking({
         clientId: user.id,
         masterId: presetBooking.masterId,
-        serviziId: presetBooking.serviziId,
-        date: startTime.toISOString(),
+        serviziId: selectedDirectService.id,
+        date: new Date(`${selectedDateKey}T00:00:00`).toISOString(),
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
-        status: "pending",
+        status: "Ожидает подтверждения",
         clientComment: directBookingForm.comment.trim() || undefined,
       });
 
       setDirectBookingSuccess("Запись отправлена мастеру");
+      setDirectBookings((currentBookings) => [
+        ...currentBookings,
+        {
+          id: Date.now(),
+          clientId: user.id,
+          masterId: presetBooking.masterId,
+          serviziId: selectedDirectService.id,
+          date: new Date(`${selectedDateKey}T00:00:00`).toISOString(),
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          status: "Ожидает подтверждения",
+          clientComment: directBookingForm.comment.trim(),
+        },
+      ]);
+      setSelectedSlot("");
+      setDirectBookingForm(initialDirectBookingForm);
     } catch (submitError) {
       setDirectBookingError(
         submitError instanceof Error
@@ -284,30 +547,18 @@ export default function GlobalBookingModal() {
               <div className="booking-direct-card-head">
                 <span className="master-avatar">{presetBooking.masterId}</span>
                 <div className="master-head">
-                  <strong>Мастер #{presetBooking.masterId}</strong>
+                  <strong>{presetBooking.masterName ?? `Мастер #${presetBooking.masterId}`}</strong>
                   <span>{presetBooking.categoryTitle}</span>
                 </div>
               </div>
 
-              <p className="booking-direct-service">{presetBooking.serviceTitle}</p>
-              <p className="booking-direct-description">{presetBooking.serviceDescription}</p>
-              <div className="booking-direct-meta">
-                <span>{presetBooking.price.toLocaleString("ru-RU")} ₽</span>
-                <span>{presetBooking.duration} мин</span>
-              </div>
+              <p className="booking-direct-description">
+                Выберите услугу мастера, затем день и свободное время для записи.
+              </p>
             </article>
 
             <div className="booking-direct-form glass-surface">
-              <label className="booking-direct-field">
-                <span>Комментарий</span>
-                <textarea
-                  className="booking-direct-textarea"
-                  value={directBookingForm.comment}
-                  onChange={(event) => handleDirectBookingCommentChange(event.target.value)}
-                  placeholder="Напишите пожелания к визиту"
-                  rows={4}
-                />
-              </label>
+              {isDirectDataLoading ? <p className="booking-direct-description">Загружаю услуги и расписание</p> : null}
 
               {directBookingError ? (
                 <p className="booking-direct-feedback booking-direct-feedback--error">
@@ -321,10 +572,139 @@ export default function GlobalBookingModal() {
                 </p>
               ) : null}
 
+              {!isDirectDataLoading && directServices.length === 0 ? (
+                <p className="booking-direct-feedback booking-direct-feedback--error">
+                  У мастера пока нет активных услуг для записи.
+                </p>
+              ) : null}
+
+              {directServices.length > 0 ? (
+                <div className="booking-direct-services">
+                  {directServices.map((service) => (
+                    <button
+                      className={`booking-direct-service-card ${
+                        selectedServiceId === service.id ? "booking-direct-service-card-active" : ""
+                      }`}
+                      key={service.id}
+                      type="button"
+                      disabled={!!directBookingSuccess}
+                      onClick={() => handleDirectServiceSelect(service.id)}
+                    >
+                      <strong>{service.title}</strong>
+                      <span>
+                        {service.duration} мин · {service.price.toLocaleString("ru-RU")} ₽
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {directBookingStep === "calendar" && selectedDirectService ? (
+                <div className="booking-direct-calendar">
+                  <div className="booking-direct-calendar-toolbar">
+                    <button
+                      type="button"
+                      onClick={() => handleDirectMonthChange(-1)}
+                      aria-label="Предыдущий месяц"
+                    >
+                      ‹
+                    </button>
+                    <h3>{monthTitle}</h3>
+                    <button
+                      type="button"
+                      onClick={() => handleDirectMonthChange(1)}
+                      aria-label="Следующий месяц"
+                    >
+                      ›
+                    </button>
+                  </div>
+
+                  <div className="booking-direct-weekdays">
+                    {weekDays.map((day) => (
+                      <span key={day}>{day}</span>
+                    ))}
+                  </div>
+
+                  <div className="booking-direct-calendar-grid">
+                    {directMonthDays.map((date, index) => {
+                      if (!date) {
+                        return <div className="booking-direct-day-empty" key={index} />;
+                      }
+
+                      const dateKey = toDateKey(date);
+                      const slotsCount = directSlotsByDate[dateKey]?.length ?? 0;
+                      const isSelected = dateKey === selectedDateKey;
+
+                      return (
+                        <button
+                          className={`booking-direct-day ${
+                            isSelected ? "booking-direct-day-active" : ""
+                          }`}
+                          key={dateKey}
+                          type="button"
+                          disabled={!!directBookingSuccess}
+                          onClick={() => {
+                            if (directBookingSuccess) return;
+                            setSelectedDate(date);
+                            setSelectedSlot("");
+                          }}
+                        >
+                          <span>{date.getDate()}</span>
+                          {slotsCount > 0 ? <small>{slotsCount} окон</small> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="booking-direct-slots">
+                    <h3>
+                      {selectedDate.toLocaleDateString("ru-RU", {
+                        day: "numeric",
+                        month: "long",
+                      })}
+                    </h3>
+                    <div className="booking-direct-slot-list">
+                      {selectedDateSlots.length > 0 ? (
+                        selectedDateSlots.map((slot) => (
+                          <button
+                            className={slot === activeSlot ? "booking-direct-slot-active" : ""}
+                            key={slot}
+                            type="button"
+                            disabled={!!directBookingSuccess}
+                            onClick={() => setSelectedSlot(slot)}
+                          >
+                            {slot}
+                          </button>
+                        ))
+                      ) : (
+                        <p>На этот день свободных окон нет.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <label className="booking-direct-field">
+                    <span>Комментарий</span>
+                    <textarea
+                      className="booking-direct-textarea"
+                      value={directBookingForm.comment}
+                      onChange={(event) => handleDirectBookingCommentChange(event.target.value)}
+                      placeholder="Напишите пожелания к визиту"
+                      rows={4}
+                      disabled={!!directBookingSuccess}
+                    />
+                  </label>
+                </div>
+              ) : null}
+
               <button
                 className="booking-confirm-button"
                 type="button"
-                disabled={isDirectBookingLoading}
+                disabled={
+                  isDirectBookingLoading ||
+                  !selectedDirectService ||
+                  !activeSlot ||
+                  !!directBookingSuccess
+                }
                 onClick={() => void handleDirectBookingSubmit()}
               >
                 {isDirectBookingLoading ? "Отправляю" : "Отправить запись"}
