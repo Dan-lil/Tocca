@@ -9,6 +9,8 @@ const formatResponse = require("../utils/formatResponse");
 const CategoryRouter = require("./CategoryRoute");
 const SaleRouter = require("./SaleRoute");
 const BookingRouter = require("./BookingRoute");
+const ShaduleRouter = require("./ShaduleRoute");
+const EcoRouter = require("./EcoRoute");
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/ai", aiRouter);
@@ -19,6 +21,9 @@ apiRouter.use("/category", CategoryRouter);
 apiRouter.use("/servizi", ServiziRouter);
 apiRouter.use("/booking", BookingRouter);
 apiRouter.use("/sale", SaleRouter);
+apiRouter.use("/shadule", ShaduleRouter);
+apiRouter.use("/eco", EcoRouter);
+
 apiRouter.use((req, res) => {
   res.status(404).json(formatResponse(404, "Ресурс не найден"));
 });
