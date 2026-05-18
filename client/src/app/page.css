@@ -400,11 +400,30 @@ button {
   line-height: 1.45;
 }
 
-.promo-link {
+.promo-date {
   grid-column: 1;
   grid-row: 3;
   align-self: end;
   justify-self: center;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 248, 246, 0.92);
+}
+
+.promo-link {
+  grid-column: 1;
+  grid-row: 4;
+  align-self: end;
+  justify-self: center;
+}
+
+.promo-empty-state {
+  padding: 22px 24px;
+  border-radius: 24px;
+  background: rgba(255, 244, 242, 0.6);
+  color: #9d6f6c;
+  text-align: center;
 }
 
 /* Скрытый слой GSAP Draggable для обработки drag-жестов */

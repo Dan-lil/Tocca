@@ -35,6 +35,20 @@ export type BookingModalPayload = {
   services?: ServiziType[];
 };
 
+export type SaleType = {
+  id: number;
+  masterId: number;
+  bookingId: number;
+  serviziId: number;
+  finalPrice?: number | null;
+  discount: number;
+  comment?: string | null;
+  image?: string | null;
+  date: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type CreateBookingPayload = {
   clientId: number;
   masterId: number;
