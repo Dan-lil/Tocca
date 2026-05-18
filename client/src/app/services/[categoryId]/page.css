@@ -99,6 +99,7 @@
   gap: 18px;
 }
 
+/* ПЕРЕИСПОЛЬЗУЕМЫЕ СТИЛИ КАРТОЧКИ УСЛУГИ */
 .services-directory-card {
   display: grid;
   gap: 10px;
@@ -170,39 +171,6 @@
 .services-directory-badge:focus-visible {
   outline: 1px solid rgba(255, 248, 245, 0.82);
   outline-offset: 2px;
-}
-
-.services-directory-service-title,
-.services-directory-description,
-.services-directory-price,
-.services-directory-slot {
-  margin: 0;
-}
-
-.services-directory-service-title {
-  margin-top: 6px;
-  font-size: 15px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.services-directory-description {
-  font-size: 12px;
-  line-height: 1.5;
-  text-align: center;
-  color: rgba(255, 247, 245, 0.88);
-}
-
-.services-directory-price {
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-}
-
-.services-directory-slot {
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
 }
 
 .services-directory-card-button {

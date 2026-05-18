@@ -22,6 +22,7 @@ type DirectBookingFormState = {
   comment: string;
 };
 
+// Тексты вынесены в константы
 const DEFAULT_DRAFT = "Хочу маникюр завтра после 18:00";
 const DEFAULT_AI_MESSAGE = "Напишите запрос, например «хочу маникюр на завтра»";
 const initialDirectBookingForm: DirectBookingFormState = { comment: "" };
@@ -50,6 +51,7 @@ export default function GlobalBookingModal() {
   const [directBookingError, setDirectBookingError] = useState<string | null>(null);
   const [directBookingSuccess, setDirectBookingSuccess] = useState<string | null>(null);
 
+  // Ref нужен, чтобы возвращать фокус в поле ввода после выбора подсказки
   const inputRef = useRef<HTMLInputElement | null>(null);
   const nextMessageIdRef = useRef(2);
 
@@ -146,6 +148,7 @@ export default function GlobalBookingModal() {
   }, [closeModal, isChatOpen]);
 
   const pushChatMessage = useCallback(
+    // Все сообщения добавляем через одну функцию
     (text: string, role: "ai" | "user", placement: "top" | "bottom" = "top") => {
       const newMessage: ChatMessage = { id: nextMessageIdRef.current, text, role, placement };
       nextMessageIdRef.current += 1;
@@ -155,6 +158,7 @@ export default function GlobalBookingModal() {
   );
 
   const selectedOption = useMemo(
+    // Вычисляем выбранный AI вариант один раз на основе id
     () => options.find((item) => item.id === selectedOptionId) ?? null,
     [options, selectedOptionId],
   );
@@ -275,6 +279,7 @@ export default function GlobalBookingModal() {
               <p>Вы выбрали услугу и можете сразу отправить заявку мастеру</p>
             </div>
 
+            {/* Этот сценарий открывается из карточек услуг, а не из AI поиска */}
             <article className="booking-direct-card glass-surface">
               <div className="booking-direct-card-head">
                 <span className="master-avatar">{presetBooking.masterId}</span>
@@ -328,6 +333,7 @@ export default function GlobalBookingModal() {
           </div>
         ) : (
           <>
+            {/* Этот сценарий оставляет старый AI подбор мастеров */}
             <div className="booking-chat-thread">
               {topMessages.map((message) => (
                 <div

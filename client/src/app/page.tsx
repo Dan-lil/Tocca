@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -39,7 +39,7 @@ const services = [
 ];
 
 export default function HomePage() {
-  // Все AI-кнопки на странице вызывают один сценарий открытия модалки
+  // Все AI кнопки на странице вызывают один и тот же сценарий модалки
   const handleAiClick = useCallback(() => {
     dispatchBookingModalOpen();
   }, []);
@@ -65,6 +65,7 @@ export default function HomePage() {
 
           <div className="services-grid">
             {services.map((service) => (
+              // На главной пока оставляем статическую витрину услуг
               <article className="service-card" key={service.title}>
                 <div className="service-media">
                   <Image src={service.image} alt={service.title} fill />

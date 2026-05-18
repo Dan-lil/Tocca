@@ -12,27 +12,13 @@ import { CategoryType, ServiziType } from "@/shared/types";
 
 type ServiceDirectoryCard = {
   id: number;
-  masterId: number;
   masterName: string;
-  initials: string;
   meta: string;
-  serviceTitle: string;
-  serviceDescription: string;
-  priceLabel: string;
-  scheduleLabel: string;
   detailBadges: string[];
 };
 
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
-
 function buildServiceCards(services: ServiziType[], categoryTitle: string): ServiceDirectoryCard[] {
+  // В карточки пускаем активные услуги, а если их нет, то весь список категории
   const activeServices = services.filter((service) => service.isActive);
   const visibleServices = activeServices.length > 0 ? activeServices : services;
 
@@ -42,23 +28,16 @@ function buildServiceCards(services: ServiziType[], categoryTitle: string): Serv
 
     return {
       id: service.id,
-      masterId: service.masterId,
       masterName,
-      initials: getInitials(masterName),
-      // Пока на клиенте доступны только данные услуги и технический id мастера
-      meta: `${skillLabel} / ${service.duration} мин`,
-      serviceTitle: service.title,
-      serviceDescription: service.description,
-      priceLabel: `${service.price.toLocaleString("ru-RU")} ₽ • ${service.duration} мин`,
-      // Точные слоты появятся после подключения расписания мастеров
-      scheduleLabel: "Свободные слоты появятся после подключения расписания",
-      // Эти блоки уже заложены в схеме сервера, но пока не приходят в ответе
-      detailBadges: ["Профиль мастера", "Отзывы", "Расписание"],
+      // Пока в карточке оставляем только категорию как доступную мету
+      meta: skillLabel,
+      detailBadges: ["Профиль мастера", "Отзывы"],
     };
   });
 }
 
 export default function CategoryPage() {
+  // Берем categoryId из клиентского маршрута services/[categoryId]
   const params = useParams<{ categoryId: string }>();
   const categoryId = params?.categoryId;
 
@@ -94,6 +73,7 @@ export default function CategoryPage() {
   }, [categoryId]);
 
   const serviceCards = useMemo(
+    // Собираем упрощенные карточки из ответа по категории
     () => buildServiceCards(services, category?.title ?? ""),
     [category?.title, services],
   );
@@ -131,10 +111,10 @@ export default function CategoryPage() {
 
         {!isLoading && !error && serviceCards.length > 0 ? (
           <section className="services-directory-grid">
+            {/* ПЕРЕИСПОЛЬЗУЕМАЯ СТРУКТУРА КАРТОЧКИ УСЛУГИ */}
             {serviceCards.map((card) => (
               <article className="services-directory-card glass-surface" key={card.id}>
                 <div className="services-directory-card-head">
-                  <span className="services-directory-avatar">{card.initials}</span>
                   <div className="services-directory-card-head-copy">
                     <strong>{card.masterName}</strong>
                     <span>{card.meta}</span>
@@ -148,11 +128,6 @@ export default function CategoryPage() {
                     </button>
                   ))}
                 </div>
-
-                <p className="services-directory-service-title">{card.serviceTitle}</p>
-                <p className="services-directory-description">{card.serviceDescription}</p>
-                <p className="services-directory-price">{card.priceLabel}</p>
-                <p className="services-directory-slot">{card.scheduleLabel}</p>
 
                 <button className="services-directory-card-button" type="button">
                   Записаться

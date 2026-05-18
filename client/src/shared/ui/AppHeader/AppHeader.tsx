@@ -12,7 +12,7 @@ import { CategoryType } from "@/shared/types";
 
 const navigationItems = [
   { href: "/", label: "Домашняя страница" },
-  { href: "#", label: "Профиль" },
+  { href: "/profile", label: "Профиль" },
   { href: "#", label: "AI Помощник", action: "open-chat" as const },
 ];
 
@@ -22,6 +22,7 @@ export default function AppHeader() {
   const pathname = usePathname();
   const { user } = useAppSelector((state) => state.user);
   const isHomePage = pathname === "/";
+  // Ref помогает закрывать dropdown кликом вне меню
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -98,6 +99,7 @@ export default function AppHeader() {
             )}
 
             <div className="top-nav-dropdown" ref={dropdownRef}>
+              {/* Кнопка открывает список категорий, которые приходят с сервера */}
               <button
                 className="glass-button glass-button--compact top-nav-link top-nav-button"
                 type="button"
@@ -108,6 +110,7 @@ export default function AppHeader() {
                 Услуги
               </button>
 
+              {/* По категории уходим на отдельную страницу выбора услуги */}
               {isDropdownOpen ? (
                 <div className="top-nav-dropdown-menu glass-surface" role="menu">
                   {isCategoriesLoading ? (
