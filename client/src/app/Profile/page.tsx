@@ -267,16 +267,18 @@ export default function ProfilePage() {
           {services.length === 0 ? (
             <p>У вас пока нет услуг</p>
           ) : (
-            services.map((service: Servizi) => (
-              <div key={service.id} className="service-card">
-                <span>
-                  {service.title} - {service.price} руб. ({service.duration} мин)
-                </span>
-                <button type="button" onClick={() => dispatch(deleteServiceThunk(service.id))}>
-                  Удалить
-                </button>
-              </div>
-            ))
+            <div className="services-list">
+              {services.map((service: Servizi) => (
+                <div key={service.id} className="service-card">
+                  <span>
+                    {service.title} - {service.price} руб. ({service.duration} мин)
+                  </span>
+                  <button type="button" onClick={() => dispatch(deleteServiceThunk(service.id))}>
+                    Удалить
+                  </button>
+                </div>
+              ))}
+            </div>
           )}
         </section>
 
@@ -374,11 +376,11 @@ export default function ProfilePage() {
                     min={0}
                     step={0.5}
                     type="number"
-                    value={masterProfile.experience}
+                    value={masterProfile.experience || ""}
                     onChange={(event) =>
                       setMasterProfile((profile) => ({
                         ...profile,
-                        experience: Number(event.target.value),
+                        experience: event.target.value === "" ? 0 : Number(event.target.value),
                       }))
                     }
                   />
@@ -448,8 +450,13 @@ export default function ProfilePage() {
                   <input
                     placeholder="Например, 2500"
                     type="number"
-                    value={newService.price}
-                    onChange={(event) => setNewService({ ...newService, price: Number(event.target.value) })}
+                    value={newService.price || ""}
+                    onChange={(event) =>
+                      setNewService({
+                        ...newService,
+                        price: event.target.value === "" ? 0 : Number(event.target.value),
+                      })
+                    }
                   />
                 </label>
                 <label>
@@ -457,8 +464,13 @@ export default function ProfilePage() {
                   <input
                     placeholder="Например, 90"
                     type="number"
-                    value={newService.duration}
-                    onChange={(event) => setNewService({ ...newService, duration: Number(event.target.value) })}
+                    value={newService.duration || ""}
+                    onChange={(event) =>
+                      setNewService({
+                        ...newService,
+                        duration: event.target.value === "" ? 0 : Number(event.target.value),
+                      })
+                    }
                   />
                 </label>
               </div>
