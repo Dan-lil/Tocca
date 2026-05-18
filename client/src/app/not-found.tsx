@@ -93,9 +93,20 @@
     },
   ];
 
+  type StickerPosition = {
+    left: number | string;
+    top: number | string;
+  };
+
+  type PlacedSticker = StickerPosition & {
+    uniqueId: number;
+    image: string;
+    caption: string;
+  };
+
   export default function NotFoundPage() {
-    const [stickers, setStickers] = useState([]);
-    const containerRef = useRef(null);
+    const [stickers, setStickers] = useState<PlacedSticker[]>([]);
+    const containerRef = useRef<HTMLElement | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
 
     // рандом место
@@ -139,7 +150,7 @@ const getRandomPosition = () => {
     };
 
     // Удаление стикера
-    const removeSticker = (uniqueId) => {
+    const removeSticker = (uniqueId: number) => {
       setStickers(prev => prev.filter(sticker => sticker.uniqueId !== uniqueId));
     };
 
