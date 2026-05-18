@@ -6,8 +6,8 @@ import AppFooter from "@/shared/ui/AppFooter/AppFooter";
 import GlobalBookingModal from "@/shared/ui/GlobalBookingModal/GlobalBookingModal";
 
 export const metadata: Metadata = {
-  title: "Tocca",
-  description: "Tocca",
+  title: "Tossa",
+  description: "Tossa",
 };
 
 export default function RootLayout({
@@ -16,15 +16,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ru">
       <body>
         <StoreProvider>
-          {/* Layout держит общую шапку, футер и глобальную модалку для всех страниц */}
           <div className="site-shell">
             <AppHeader />
             <div className="site-content">{children}</div>
             <AppFooter />
-            {/* Глобальная модалка нужна и для AI сценария, и для прямой записи */}
+            {/* Глобальная AI-модалка доступна на всех страницах приложения */}
             <GlobalBookingModal />
           </div>
         </StoreProvider>

@@ -1,0 +1,259 @@
+.profile-page {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 32px 20px 56px;
+}
+
+.profile-container {
+  display: grid;
+  gap: 24px;
+}
+
+.profile-header,
+.section-header,
+.service-card,
+.booking-card,
+.sale-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-header {
+  padding: 24px;
+  border: 1px solid rgba(122, 77, 75, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.profile-header h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.profile-header p {
+  margin-top: 6px;
+  color: rgba(122, 77, 75, 0.76);
+}
+
+.profile-page button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(122, 77, 75, 0.22);
+  border-radius: 8px;
+  color: #754846;
+  background: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+
+.profile-page button:hover {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.profile-page button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.profile-section,
+.master-profile-summary,
+.stats-grid {
+  padding: 22px;
+  border: 1px solid rgba(122, 77, 75, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.profile-section {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-section h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.master-profile-summary,
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.master-profile-summary div,
+.stat-card {
+  display: grid;
+  gap: 6px;
+  min-height: 76px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 247, 246, 0.74);
+}
+
+.master-profile-summary span {
+  color: rgba(122, 77, 75, 0.68);
+  font-size: 13px;
+}
+
+.stat-card {
+  align-content: center;
+  font-weight: 700;
+}
+
+.service-card,
+.booking-card,
+.sale-card,
+.portfolio-item {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 247, 246, 0.72);
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.portfolio-item {
+  display: grid;
+  gap: 10px;
+}
+
+.portfolio-item img,
+.portfolio-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+}
+
+.portfolio-item img {
+  object-fit: cover;
+}
+
+.portfolio-placeholder {
+  display: grid;
+  place-items: center;
+  color: rgba(122, 77, 75, 0.64);
+  background: rgba(122, 77, 75, 0.08);
+}
+
+.profile-error {
+  padding: 12px 14px;
+  border: 1px solid rgba(170, 42, 42, 0.22);
+  border-radius: 8px;
+  color: #9c3030;
+  background: rgba(255, 232, 232, 0.82);
+}
+
+.profile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(69, 42, 40, 0.36);
+}
+
+.profile-modal {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 680px);
+  max-height: min(760px, 92vh);
+  padding: 24px;
+  overflow: auto;
+  border-radius: 8px;
+  background: #fff8f7;
+  box-shadow: 0 24px 70px rgba(72, 43, 42, 0.24);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.modal-header h2,
+.profile-modal h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.profile-modal label {
+  display: grid;
+  gap: 7px;
+  color: rgba(122, 77, 75, 0.76);
+  font-size: 14px;
+}
+
+.profile-modal input,
+.profile-modal textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid rgba(122, 77, 75, 0.2);
+  border-radius: 8px;
+  color: #5f3837;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.profile-modal input[type="file"] {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.profile-modal textarea {
+  resize: vertical;
+}
+
+.file-note {
+  margin: -4px 0 0;
+  color: rgba(122, 77, 75, 0.68);
+  font-size: 14px;
+}
+
+.profile-form-row,
+.modal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+@media (max-width: 760px) {
+  .profile-header,
+  .section-header,
+  .service-card,
+  .booking-card,
+  .sale-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .master-profile-summary,
+  .stats-grid,
+  .profile-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    justify-content: stretch;
+  }
+
+  .modal-actions button {
+    flex: 1;
+  }
+}
