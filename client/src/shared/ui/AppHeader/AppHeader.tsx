@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 const navigationItems = [
   { href: "/", label: "Домашняя страница" },
   { href: "#", label: "Услуги" },
-  { href: "/ClientProfile", label: "Профиль" },
+  { href: "/Profile", label: "Профиль" },
   // AI не ведет по ссылке, а открывает глобальную модалку через событие
   { href: "#", label: "AI Помощник", action: "open-chat" as const },
 ];

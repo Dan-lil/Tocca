@@ -4,11 +4,25 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '@/app/store/store';
 import { fetchUpcomingBookingsThunk } from '@/entities/booking/api/BookingApiThunk';
 import { fetchSalesForClientThunk } from '@/entities/sale/api/SaleApiThunk';
-import { fetchMasterStatsThunk, fetchMasterMoneyThunk, fetchMasterServicesThunk, fetchMasterPortfolioThunk, fetchUpcomingBookingsForMasterThunk, addServiceThunk, deleteServiceThunk, addPortfolioItemThunk, deletePortfolioItemThunk} from '@/entities/master/api/masterThunk';
+import { 
+  fetchMasterStatsThunk, 
+  fetchMasterMoneyThunk,
+  fetchMasterServicesThunk,
+  fetchMasterPortfolioThunk,
+  fetchUpcomingBookingsForMasterThunk,
+  addServiceThunk,
+  deleteServiceThunk,
+  addPortfolioItemThunk,
+  deletePortfolioItemThunk
+} from '@/entities/master/api/masterThunk';
+import { Servizi } from '@/entities/servizi/model/index';
+import type { PortfolioItem, BookingToMaster } from '@/entities/master/model/index';
+import type { Sale } from '@/entities/sale/model';
+import type { Booking } from '@/entities/booking/model';
 
 const ProfilePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user } = useSelector((state: RootState) => state.user);
   
   // Данные клиента
   const { upcomingBookings } = useSelector((state: RootState) => state.booking);
@@ -19,8 +33,19 @@ const ProfilePage: React.FC = () => {
   const { stats, earnings, services, portfolio, upcomingBookings: masterBookings, loading } = masterState;
   
   const [showAddService, setShowAddService] = useState(false);
-  const [newService, setNewService] = useState({ title: '', description: '', price: 0, duration: 60, categoryId: 1 });
-  const [newPhoto, setNewPhoto] = useState({ imageUrl: '', title: '', description: '' });
+  const [showAddPhoto, setShowAddPhoto] = useState(false);
+  const [newService, setNewService] = useState({ 
+    title: '', 
+    description: '', 
+    price: 0, 
+    duration: 60, 
+    categoryId: 1 
+  });
+  const [newPhoto, setNewPhoto] = useState({ 
+    imageUrl: '', 
+    title: '', 
+    description: '' 
+  });
 
   const isMaster = user?.role === 'master';
 
@@ -43,35 +68,35 @@ const ProfilePage: React.FC = () => {
   if (!user) return <div>Загрузка...</div>;
   if (isMaster && loading) return <div>Загрузка данных мастера...</div>;
 
-  // ============ КЛИЕНТ ============
+  // КЛИЕНТ
   if (!isMaster) {
     return (
       <div className="profile-page">
         <div className="container">
           <div className="profile-header">
             <h1>Личный кабинет</h1>
-            <button onClick={() => alert('Редактирование профиля')}>✏️ Редактировать</button>
+            <button onClick={() => alert('Редактирование профиля')}> Редактировать</button>
           </div>
 
           <section>
-            <h2>📅 Ближайшие записи</h2>
+            <h2> Ближайшие записи</h2>
             {upcomingBookings.length === 0 ? (
-              <p>✨ Вы еще не записаны</p>
+              <p> Вы еще не записаны</p>
             ) : (
-              upcomingBookings.map((booking) => (
+              upcomingBookings.map((booking: Booking) => (
                 <div key={booking.id} className="booking-card">
-                  {booking.date} в {booking.startTime}:00 - {booking.servizi?.title || 'Услуга'}
+                  {booking.date} в {booking.startTime}:00
                 </div>
               ))
             )}
           </section>
 
           <section>
-            <h2>🎁 Акции для вас</h2>
+            <h2> Акции для вас</h2>
             {salesForClient.length === 0 ? (
               <p>Нет активных акций</p>
             ) : (
-              salesForClient.map((sale) => (
+              salesForClient.map((sale: Sale) => (
                 <div key={sale.id}>🔥 -{sale.discount}% {sale.comment}</div>
               ))
             )}
@@ -81,31 +106,31 @@ const ProfilePage: React.FC = () => {
     );
   }
 
-  // ============ МАСТЕР ============
+  // МАСТЕР 
   return (
     <div className="profile-page">
       <div className="container">
         <div className="profile-header">
           <h1>Личный кабинет мастера</h1>
-          <button onClick={() => alert('Редактирование профиля')}>✏️ Редактировать</button>
+          <button onClick={() => alert('Редактирование профиля')}> Редактировать</button>
         </div>
 
         {/* Статистика */}
         <div className="stats-grid">
-          <div className="stat-card">💰 {earnings?.total || 0} ₽</div>
-          <div className="stat-card">📊 {stats?.totalBookings || 0} записей</div>
-          <div className="stat-card">⭐ {stats?.rating || 0} рейтинг</div>
-          <div className="stat-card">💼 {services.length} услуг</div>
-          <div className="stat-card">📸 {portfolio.length} фото</div>
+          <div className="stat-card"> {earnings?.total || 0} ₽</div>
+          <div className="stat-card"> {stats?.totalBookings || 0} записей</div>
+          <div className="stat-card"> {stats?.rating || 0} рейтинг</div>
+          <div className="stat-card"> {services.length} услуг</div>
+          <div className="stat-card"> {portfolio.length} фото</div>
         </div>
 
         {/* Записи к мастеру */}
         <section>
-          <h2>📅 Ближайшие записи</h2>
+          <h2>Ближайшие записи</h2>
           {masterBookings.length === 0 ? (
             <p>Пока нет записей</p>
           ) : (
-            masterBookings.map((booking) => (
+            masterBookings.map((booking: BookingToMaster) => (
               <div key={booking.id} className="booking-card">
                 {booking.date} в {booking.startTime}:00 - {booking.client.name} - {booking.service.title} ({booking.totalPrice}₽)
               </div>
@@ -115,13 +140,13 @@ const ProfilePage: React.FC = () => {
 
         {/* Услуги мастера */}
         <section>
-          <h2>💼 Мои услуги</h2>
+          <h2>Мои услуги</h2>
           <button onClick={() => setShowAddService(true)}>+ Добавить услугу</button>
           
           {services.length === 0 ? (
             <p>У вас пока нет услуг</p>
           ) : (
-            services.map((service) => (
+            services.map((service: Servizi) => (
               <div key={service.id} className="service-card">
                 <span>{service.title} - {service.price}₽ ({service.duration} мин)</span>
                 <button onClick={() => dispatch(deleteServiceThunk(service.id))}>🗑️</button>
@@ -139,7 +164,7 @@ const ProfilePage: React.FC = () => {
             {portfolio.length === 0 ? (
               <p>Портфолио пусто</p>
             ) : (
-              portfolio.map((item) => (
+              portfolio.map((item: PortfolioItem) => (
                 <div key={item.id} className="portfolio-item">
                   <img src={item.imageUrl} alt={item.title} width="100" />
                   <p>{item.title}</p>
@@ -174,7 +199,7 @@ const ProfilePage: React.FC = () => {
             />
             <button onClick={async () => {
               await dispatch(addServiceThunk(newService));
-              dispatch(fetchMasterServicesThunk()); // обновляем список
+              dispatch(fetchMasterServicesThunk());
               setShowAddService(false);
               setNewService({ title: '', description: '', price: 0, duration: 60, categoryId: 1 });
             }}>Сохранить</button>
@@ -200,7 +225,7 @@ const ProfilePage: React.FC = () => {
             />
             <button onClick={async () => {
               await dispatch(addPortfolioItemThunk(newPhoto));
-              dispatch(fetchMasterPortfolioThunk()); // обновляем список
+              dispatch(fetchMasterPortfolioThunk());
               setShowAddPhoto(false);
               setNewPhoto({ imageUrl: '', title: '', description: '' });
             }}>Сохранить</button>
