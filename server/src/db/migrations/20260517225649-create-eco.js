@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Servizis", {
+    await queryInterface.createTable("Ecos", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -11,36 +11,25 @@ module.exports = {
       },
       masterId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: { model: "Users", key: "id" },
-        allowNull: false,
       },
-      title: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-      description: {
-        type: Sequelize.STRING(1000),
-        allowNull: false,
-      },
-      price: {
-        type: Sequelize.FLOAT,
-        allowNull: false,
-      },
-      duration: {
-        type: Sequelize.FLOAT,
-        allowNull: false,
-      },
-      categoryId: {
+      clientId: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        references: { model: "Categories", key: "id" },
+        references: { model: "Users", key: "id" },
       },
-      isActive: {
-        type: Sequelize.BOOLEAN,
+      bookingId: {
+        type: Sequelize.INTEGER,
         allowNull: false,
+        references: { model: "Bookings", key: "id" },
       },
-      image: {
+      rating: {
+        type: Sequelize.INTEGER,
+      },
+      text: {
         type: Sequelize.STRING,
+        allowNull: false,
       },
       createdAt: {
         allowNull: false,
@@ -55,6 +44,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("Servizis");
+    await queryInterface.dropTable("Ecos");
   },
 };

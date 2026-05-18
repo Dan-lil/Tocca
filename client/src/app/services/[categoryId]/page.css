@@ -1,0 +1,227 @@
+.services-directory-page {
+  min-height: 100vh;
+  padding: 20px 20px 80px;
+}
+
+.services-directory-shell {
+  display: grid;
+  gap: 24px;
+  width: min(100%, 1397px);
+  margin: 0 auto;
+}
+
+.services-directory-hero {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 34px 30px;
+  border-radius: 32px;
+  background:
+    linear-gradient(135deg, rgba(255, 252, 251, 0.65), rgba(255, 240, 241, 0.28)),
+    url("/фон3.jpeg") center center / cover no-repeat;
+  box-shadow: 0 24px 60px rgba(181, 119, 129, 0.24);
+}
+
+.services-directory-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 246, 0.75), rgba(255, 247, 246, 0.12)),
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.35), transparent 32%);
+  pointer-events: none;
+}
+
+.services-directory-hero-copy,
+.services-directory-back {
+  position: relative;
+  z-index: 1;
+}
+
+.services-directory-hero-copy {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 680px);
+  padding: 22px 24px;
+  border-radius: 28px;
+}
+
+.services-directory-eyebrow {
+  color: #bc7f79;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.services-directory-hero-copy h1 {
+  margin: 0;
+  color: #8c5b58;
+  font-size: clamp(30px, 3vw, 44px);
+}
+
+.services-directory-hero-copy p {
+  margin: 0;
+  color: #9a6f6d;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.services-directory-back {
+  align-self: flex-start;
+  border-color: rgba(255, 244, 242, 0.84);
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  color: #fffaf8;
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.26);
+  text-shadow: none;
+}
+
+.services-directory-back:hover {
+  background: linear-gradient(180deg, #e3b9ae 0%, #cb8f81 100%);
+  box-shadow: 0 18px 36px rgba(177, 107, 97, 0.32);
+}
+
+.services-directory-state {
+  padding: 24px 26px;
+  border-radius: 28px;
+}
+
+.services-directory-state p {
+  margin: 0;
+  color: #8f6765;
+  font-size: 16px;
+}
+
+.services-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* ПЕРЕИСПОЛЬЗУЕМЫЕ СТИЛИ КАРТОЧКИ УСЛУГИ */
+.services-directory-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px 18px 16px;
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08)),
+    linear-gradient(180deg, rgba(236, 151, 158, 0.95), rgba(223, 141, 148, 0.88));
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  color: #fff8f6;
+  box-shadow: 0 18px 40px rgba(190, 115, 121, 0.24);
+}
+
+.services-directory-card-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.services-directory-avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 245, 245, 0.28);
+  color: #fff9f8;
+  font-size: 10px;
+  font-weight: 700;
+  flex: 0 0 24px;
+}
+
+.services-directory-card-head-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.services-directory-card-head-copy strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.services-directory-card-head-copy span {
+  font-size: 11px;
+  color: rgba(255, 244, 242, 0.92);
+}
+
+.services-directory-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.services-directory-badge {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 247, 245, 0.9);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.services-directory-badge:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.services-directory-badge:focus-visible {
+  outline: 1px solid rgba(255, 248, 245, 0.82);
+  outline-offset: 2px;
+}
+
+.services-directory-card-button {
+  margin-top: 4px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  color: #fff7f5;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 24px rgba(177, 107, 97, 0.18);
+}
+
+.services-directory-card-button:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 18px 30px rgba(177, 107, 97, 0.24);
+}
+
+@media (max-width: 1199px) {
+  .services-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 991px) {
+  .services-directory-hero {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 767px) {
+  .services-directory-page {
+    padding: 12px 12px 88px;
+  }
+
+  .services-directory-hero,
+  .services-directory-hero-copy,
+  .services-directory-state,
+  .services-directory-card {
+    border-radius: 24px;
+  }
+
+  .services-directory-hero {
+    padding: 18px;
+  }
+
+  .services-directory-hero-copy {
+    padding: 18px;
+  }
+
+  .services-directory-grid {
+    grid-template-columns: 1fr;
+  }
+}

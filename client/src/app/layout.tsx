@@ -30,11 +30,12 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         <StoreProvider>
+          {/* Layout держит общую шапку, футер и глобальную модалку для всех страниц */}
           <div className="site-shell">
             <AppHeader />
             <div className="site-content">{children}</div>
             <AppFooter />
-            {/* Глобальная AI-модалка доступна на всех страницах приложения */}
+            {/* Глобальная модалка нужна и для AI сценария, и для прямой записи */}
             <GlobalBookingModal />
           </div>
         </StoreProvider>
