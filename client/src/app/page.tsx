@@ -7,6 +7,7 @@ import { useCallback } from "react";
 import "./page.css";
 import { promotions } from "@/features/promotions/model/promotions.data";//заглушки для акций
 import { PromotionsSection } from "@/features/promotions/ui/PromotionsSection";//блок с акциями
+import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
 
 const services = [
   {
@@ -40,7 +41,7 @@ const services = [
 export default function HomePage() {
   // Все AI-кнопки на странице вызывают один сценарий открытия модалки
   const handleAiClick = useCallback(() => {
-    window.dispatchEvent(new Event("open-booking-modal"));
+    dispatchBookingModalOpen();
   }, []);
 
   return (
