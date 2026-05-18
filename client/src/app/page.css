@@ -54,7 +54,7 @@ button {
 
 .page-shell {
   display: grid;
-  gap: 26px;
+  gap: 60px;
   width: min(100%, 1397px);
   margin: 0 auto;
 }
@@ -92,9 +92,9 @@ button {
   flex-direction: column;
   justify-content: space-evenly;
   overflow: hidden;
-  min-height: 560px;
+  min-height: 710px;
   margin-top: -24px;
-  padding: 50px 24px 42px;
+  padding: 58px 32px 50px;
   border-radius: 0 0 32px 32px;
   background: url("/sea.gif") center center/cover no-repeat;
   box-shadow: var(--shadow-main);
@@ -197,8 +197,8 @@ button {
 .section-heading {
   display: flex;
   justify-content: center;
-  margin-top: 28px;
-  margin-bottom: 22px;
+  margin-top: 34px;
+  margin-bottom: 28px;
 }
 
 .section-heading span {
@@ -217,7 +217,7 @@ button {
   display: grid;
   align-content: end;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 18px;
+  gap: 24px;
 }
 
 .service-load-error {
@@ -297,8 +297,9 @@ button {
 /* Секция акций на домашней странице */
 .promotions-section {
   display: grid;
-  gap: 28px;
+  gap: 36px;
   overflow: hidden;
+  padding-top: 18px;
 }
 
 .promo-header {
@@ -307,6 +308,7 @@ button {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  padding-bottom: 6px;
 }
 
 .promotions-heading {
@@ -325,9 +327,10 @@ button {
 /* Стили для GSAP-карусели блока акций: начало*/
 .promo-carousel-shell {
   position: relative;
-  height: 380px;
+  height: 530px;
   overflow: hidden;
-  padding: 12px 0 18px;
+  margin-inline: -40px;
+  padding: 26px 68px 36px;
 }
 
 .promo-scroll-button {
@@ -350,6 +353,7 @@ button {
   height: 100%;
   cursor: grab;
   touch-action: pan-y;
+  overflow: hidden;
 }
 
 /* Карточки располагаются друг над другом, GSAP двигает их через transform */
@@ -357,8 +361,8 @@ button {
   position: absolute;
   top: 0;
   left: 50%;
-  width: min(32vw, 360px);
-  min-width: 280px;
+  width: min(36vw, 410px);
+  min-width: 320px;
   height: 100%;
   overflow: hidden;
   border: 1px solid var(--card-border);
@@ -384,11 +388,11 @@ button {
   z-index: 1;
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr auto auto;
-  row-gap: 10px;
+  grid-template-rows: 1fr auto auto auto;
+  row-gap: 12px;
   align-items: center;
   min-height: 100%;
-  padding: 20px 18px;
+  padding: 28px 24px;
   background: linear-gradient(
     180deg,
     #492c2a0a,
@@ -405,9 +409,9 @@ button {
   text-align: center;
   max-width: 90%;
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: rgba(255, 246, 243, 0.84);
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .promo-date {
@@ -421,9 +425,20 @@ button {
   color: rgba(255, 248, 246, 0.92);
 }
 
-.promo-link {
+.promo-master {
   grid-column: 1;
   grid-row: 4;
+  align-self: end;
+  justify-self: center;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 245, 242, 0.94);
+}
+
+.promo-link {
+  grid-column: 1;
+  grid-row: 5;
   align-self: end;
   justify-self: center;
 }
@@ -763,7 +778,7 @@ button {
   }
 
   .promo-card {
-    width: min(44vw, 340px);
+    width: min(48vw, 380px);
   }
 
 }
@@ -783,7 +798,7 @@ button {
   .services-section {
     min-height: 0;
     margin-top: 0;
-    padding: 108px 14px 24px;
+    padding: 108px 18px 30px;
   }
 
   .services-grid {
@@ -797,12 +812,13 @@ button {
  
 
   .promo-carousel-shell {
-    height: 340px;
-    padding-bottom: 8px;
+    height: 450px;
+    margin-inline: -16px;
+    padding: 18px 30px 8px;
   }
 
   .promo-card {
-    width: 78vw;
+    width: 82vw;
     min-width: 0;
   }
 
