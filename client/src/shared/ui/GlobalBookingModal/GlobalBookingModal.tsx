@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
@@ -49,12 +49,20 @@ export default function GlobalBookingModal() {
     if (!pendingOpen || !isInitialized) return;
 
     if (user) {
-      setIsChatOpen(true);
-    } else {
-      router.push("/auth");
+      const openTimer = window.setTimeout(() => {
+        setIsChatOpen(true);
+        setPendingOpen(false);
+      }, 0);
+
+      return () => window.clearTimeout(openTimer);
     }
 
-    setPendingOpen(false);
+    const redirectTimer = window.setTimeout(() => {
+      router.push("/auth");
+      setPendingOpen(false);
+    }, 0);
+
+    return () => window.clearTimeout(redirectTimer);
   }, [isInitialized, pendingOpen, router, user]);
 
   useEffect(() => {
@@ -79,7 +87,7 @@ export default function GlobalBookingModal() {
     };
   }, [isChatOpen]);
 
-  const resetModalState = () => {
+  const resetModalState = useCallback(() => {
     // После закрытия возвращаем окно в исходный вид
     setStep("idle");
     setIsLoading(false);
@@ -93,12 +101,12 @@ export default function GlobalBookingModal() {
     nextMessageIdRef.current = 2;
     setBookingConfirmed(false);
     setConfirmedOption(null);
-  };
+  }, []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setIsChatOpen(false);
     resetModalState();
-  };
+  }, [resetModalState]);
 
   useEffect(() => {
     if (!isChatOpen) return;
@@ -115,7 +123,7 @@ export default function GlobalBookingModal() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isChatOpen]);
+  }, [closeModal, isChatOpen]);
 
   const pushChatMessage = (text: string, role: "ai" | "user", placement: "top" | "bottom" = "top") => {
     const newMessage: ChatMessage = { id: nextMessageIdRef.current, text, role, placement };

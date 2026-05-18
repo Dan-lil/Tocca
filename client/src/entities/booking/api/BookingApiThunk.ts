@@ -1,6 +1,6 @@
-import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createAsyncThunk } from '@reduxjs/toolkit';
 import { axiosInstance } from '@/shared/lib/axiosInstance';
-import { Booking, BookingState, NewBooking } from '@/entities/booking/model/index';
+import { Booking, NewBooking } from '@/entities/booking/model/index';
 import { ServerResponseType } from "@/shared/types/index";
 import { AxiosError } from 'axios';
 

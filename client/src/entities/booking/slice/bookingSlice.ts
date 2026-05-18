@@ -1,6 +1,5 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { axiosInstance } from '@/shared/lib/axiosInstance';
-import { Booking, BookingState } from '@/entities/booking/model/index';
+import { createSlice } from '@reduxjs/toolkit';
+import { BookingState } from '@/entities/booking/model/index';
 import { fetchUpcomingBookingsThunk, fetchPastBookingsThunk, cancelBookingThunk, createBookingThunk } from "@/entities/booking/api/BookingApiThunk";
 
 

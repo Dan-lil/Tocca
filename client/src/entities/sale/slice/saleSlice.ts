@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { fetchSalesForClientThunk } from '@/entities/sale/api/SaleApiThunk';
-import { Sale, SaleState } from "@/entities/sale/model";
+import { SaleState } from "@/entities/sale/model";
 
 
 const initialState: SaleState = {

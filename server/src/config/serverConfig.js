@@ -1,9 +1,9 @@
-const express = require('express');
-const morgan = require('morgan');
-const path = require('path');
-const removeXPoweredHeader = require('../middleware/removeHeader');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
+const express = require("express");
+const morgan = require("morgan");
+const path = require("path");
+const removeXPoweredHeader = require("../middleware/removeHeader");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
 const corsOrigins = require("./corsOrigins");
 
@@ -14,12 +14,12 @@ const corsOptons = {
 
 const serverConfig = (app) => {
   app.use(cors(corsOptons));
-  app.use(morgan('dev')); // логирует запросы
+  app.use(morgan("dev"));
   app.use(cookieParser());
-  app.use(express.urlencoded({ extended: true })); // парсит данные из формы
-  app.use(express.json()); // парсит данные из JSON
-  app.use(removeXPoweredHeader); // срезает заголовок X-Powered-By у всех ответов
-  app.use(express.static(path.join(__dirname, '../public'))); // раздаёт статические файлы с сервера
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+  app.use(express.json({ limit: "10mb" }));
+  app.use(removeXPoweredHeader);
+  app.use(express.static(path.join(__dirname, "../public")));
 };
 
 module.exports = serverConfig;

@@ -19,7 +19,12 @@ export type MasterEarnings = {
 
 // для добавления фото
 export type CreatePortfolio = {
-  imageUrl: string;
+  imageUrl?: string;
+  imageFile?: {
+    name: string;
+    type: string;
+    data: string;
+  };
   title: string;
 }
 

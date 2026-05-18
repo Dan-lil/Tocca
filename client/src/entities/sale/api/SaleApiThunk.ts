@@ -2,7 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { axiosInstance } from '@/shared/lib/axiosInstance';
 import { ServerResponseType } from "@/shared/types/index";
 import { AxiosError } from 'axios';
-import { Sale, SaleState } from "@/entities/sale/model";
+import { Sale } from "@/entities/sale/model";
 
 export const SALE_THUNK_NAMES = {
   FETCH_FOR_CLIENT: 'sale/fetchForClient',
