@@ -7,6 +7,7 @@ import { ServerResponseType, ServiziType } from "@/shared/types";
 const SERVIZI_API_URLS = {
   findByCategory: (categoryId: number | string) =>
     `/servizi/findByCategory/${categoryId}`,
+  findByMaster: (masterId: number | string) => `/servizi/findAll/${masterId}`,
 } as const;
 
 export async function getServicesByCategory(categoryId: number | string) {
@@ -22,6 +23,22 @@ export async function getServicesByCategory(categoryId: number | string) {
     const message =
       (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
       "Не удалось загрузить услуги категории";
+
+    throw new Error(message);
+  }
+}
+
+export async function getServicesByMaster(masterId: number | string) {
+  try {
+    const { data } = await axiosInstance.get<ServerResponseType<ServiziType[]>>(
+      SERVIZI_API_URLS.findByMaster(masterId),
+    );
+
+    return data.data ?? [];
+  } catch (error) {
+    const message =
+      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      "Не удалось загрузить услуги мастера";
 
     throw new Error(message);
   }
