@@ -93,27 +93,25 @@
     },
   ];
 
-  type StickerPosition = {
+  type StickerItem = {
+    uniqueId: number;
+    image: string;
+    caption: string;
     left: number | string;
     top: number | string;
   };
 
-  type PlacedSticker = StickerPosition & {
-    uniqueId: number;
-    image: string;
-    caption: string;
-  };
-
   export default function NotFoundPage() {
-    const [stickers, setStickers] = useState<PlacedSticker[]>([]);
-    const containerRef = useRef<HTMLElement | null>(null);
+    const [stickers, setStickers] = useState<StickerItem[]>([]);
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
 
     // рандом место
 const getRandomPosition = () => {
   if (!containerRef.current) return { left: '50%', top: '50%' };
   
-  const gratitudeStage = containerRef.current.querySelector('.gratitude-stage');
+  const gratitudeStage =
+    containerRef.current.querySelector<HTMLElement>('.gratitude-stage');
   if (!gratitudeStage) return { left: '50%', top: '50%' };
   
   const stageRect = gratitudeStage.getBoundingClientRect();
@@ -144,13 +142,13 @@ const getRandomPosition = () => {
         left: left,
         top: top,
       };
-      setStickers(prev => [...prev, newSticker]);
+      setStickers((prev) => [...prev, newSticker]);
       setCurrentIndex((prev) => (prev + 1) % stickersLibrary.length);
     };
 
     // Удаление стикера
     const removeSticker = (uniqueId: number) => {
-      setStickers(prev => prev.filter(sticker => sticker.uniqueId !== uniqueId));
+      setStickers((prev) => prev.filter((sticker) => sticker.uniqueId !== uniqueId));
     };
 
     return (
@@ -237,3 +235,4 @@ const getRandomPosition = () => {
       </main>
     );
   }
+

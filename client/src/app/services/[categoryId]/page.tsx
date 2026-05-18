@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import "../../page.css";
 import "./page.css";
@@ -13,14 +13,19 @@ import { CategoryType, ServiziType } from "@/shared/types";
 
 type ServiceDirectoryCard = {
   id: number;
+  masterId: number;
   masterName: string;
   meta: string;
+  serviceTitle: string;
+  serviceDescription: string;
   detailBadges: string[];
-  masterId: number;
   services: ServiziType[];
 };
 
-function buildServiceCards(services: ServiziType[], categoryTitle: string): ServiceDirectoryCard[] {
+function buildServiceCards(
+  services: ServiziType[],
+  categoryTitle: string,
+): ServiceDirectoryCard[] {
   // В карточки пускаем активные услуги, а если их нет, то весь список категории
   const activeServices = services.filter((service) => service.isActive);
   const visibleServices = activeServices.length > 0 ? activeServices : services;
@@ -36,13 +41,17 @@ function buildServiceCards(services: ServiziType[], categoryTitle: string): Serv
     const skillLabel = categoryTitle || "Услуги";
     const priceFrom = Math.min(...masterServices.map((service) => service.price));
     const servicesCount = masterServices.length;
+    const primaryService = masterServices[0];
 
     return {
       id: masterId,
+      masterId,
       masterName,
       meta: `${skillLabel} · от ${priceFrom.toLocaleString("ru-RU")} ₽`,
+      // Для карточки мастера берем первую услугу как основную
+      serviceTitle: primaryService?.title ?? skillLabel,
+      serviceDescription: primaryService?.description ?? "",
       detailBadges: [`${servicesCount} услуг`, "Профиль мастера", "Отзывы"],
-      masterId,
       services: masterServices,
     };
   });
@@ -51,7 +60,9 @@ function buildServiceCards(services: ServiziType[], categoryTitle: string): Serv
 export default function CategoryPage() {
   // Берем categoryId из клиентского маршрута services/[categoryId]
   const params = useParams<{ categoryId: string }>();
+  const searchParams = useSearchParams();
   const categoryId = params?.categoryId;
+  const selectedServiceId = searchParams.get("serviceId");
 
   const [category, setCategory] = useState<CategoryType | null>(null);
   const [services, setServices] = useState<ServiziType[]>([]);
@@ -75,7 +86,11 @@ export default function CategoryPage() {
         setCategory(categoryData);
         setServices(servicesData);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить страницу");
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Не удалось загрузить страницу",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -84,10 +99,21 @@ export default function CategoryPage() {
     void loadCategoryPage();
   }, [categoryId]);
 
+  const visibleServices = useMemo(() => {
+    // Если в маршруте передана конкретная услуга, показываем только ее карточку
+    if (!selectedServiceId) return services;
+
+    const serviceId = Number(selectedServiceId);
+    if (Number.isNaN(serviceId)) return services;
+
+    const matchedService = services.filter((service) => service.id === serviceId);
+    return matchedService.length > 0 ? matchedService : services;
+  }, [selectedServiceId, services]);
+
   const serviceCards = useMemo(
-    // Собираем упрощенные карточки из ответа по категории
-    () => buildServiceCards(services, category?.title ?? ""),
-    [category?.title, services],
+    // Собираем карточки из ответа по категории
+    () => buildServiceCards(visibleServices, category?.title ?? ""),
+    [category?.title, visibleServices],
   );
 
   return (
@@ -139,6 +165,11 @@ export default function CategoryPage() {
                       {badge}
                     </button>
                   ))}
+                </div>
+
+                <div className="services-directory-card-copy">
+                  <strong>{card.serviceTitle}</strong>
+                  <p>{card.serviceDescription}</p>
                 </div>
 
                 <button

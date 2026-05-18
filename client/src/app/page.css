@@ -220,6 +220,17 @@ button {
   gap: 18px;
 }
 
+.service-load-error {
+  position: relative;
+  z-index: 1;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 244, 242, 0.74);
+  color: #a06f6b;
+  text-align: center;
+}
+
 .service-card {
   position: relative;
   overflow: hidden;

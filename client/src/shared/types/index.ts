@@ -22,6 +22,7 @@ export type ServiziType = {
   duration: number;
   categoryId: number;
   isActive: boolean;
+  image?: string | null;
   createdAt?: string;
   updatedAt?: string;
 };
