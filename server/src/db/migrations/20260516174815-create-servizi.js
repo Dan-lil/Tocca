@@ -2,41 +2,43 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("ProfileMasters", {
+    await queryInterface.createTable("Servizis", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      userId: {
+      masterId: {
         type: Sequelize.INTEGER,
         references: { model: "Users", key: "id" },
-        onDelete: "cascade",
         allowNull: false,
       },
       title: {
         type: Sequelize.STRING,
+        allowNull: false,
       },
       description: {
-        type: Sequelize.STRING,
+        type: Sequelize.STRING(1000),
+        allowNull: false,
       },
-      city: {
-        type: Sequelize.STRING,
-      },
-      address: {
-        type: Sequelize.STRING,
-      },
-      experience: {
+      price: {
         type: Sequelize.FLOAT,
+        allowNull: false,
       },
-      category: {
-        type: Sequelize.STRING,
-      },
-      rating: {
+      duration: {
         type: Sequelize.FLOAT,
+        allowNull: false,
       },
-
+      categoryId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: { model: "Categories", key: "id" },
+      },
+      isActive: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -50,6 +52,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("ProfileMasters");
+    await queryInterface.dropTable("Servizis");
   },
 };

@@ -14,10 +14,10 @@ module.exports = {
         references: { model: "Users", key: "id" },
         onDelete: "cascade",
       },
-      telegram: {
+      contact: {
         type: Sequelize.STRING,
       },
-      inst: {
+      network: {
         type: Sequelize.STRING,
       },
       createdAt: {

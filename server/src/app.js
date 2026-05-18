@@ -1,3 +1,4 @@
+require("./config/loadEnv");
 const express = require("express");
 const apiRouter = require("./routes/apiRoute");
 

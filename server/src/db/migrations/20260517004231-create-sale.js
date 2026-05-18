@@ -2,41 +2,42 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("ProfileMasters", {
+    await queryInterface.createTable("Sales", {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      userId: {
+      masterId: {
         type: Sequelize.INTEGER,
+        allowNull: false,
         references: { model: "Users", key: "id" },
-        onDelete: "cascade",
+      },
+      bookingId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: { model: "Bookings", key: "id" },
+      },
+      serviziId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: { model: "Servizis", key: "id" },
+      },
+      finalPrice: {
+        type: Sequelize.FLOAT,
+      },
+      discount: {
+        type: Sequelize.FLOAT,
         allowNull: false,
       },
-      title: {
+      comment: {
         type: Sequelize.STRING,
       },
-      description: {
-        type: Sequelize.STRING,
+      date: {
+        type: Sequelize.DATE,
+        allowNull: false,
       },
-      city: {
-        type: Sequelize.STRING,
-      },
-      address: {
-        type: Sequelize.STRING,
-      },
-      experience: {
-        type: Sequelize.FLOAT,
-      },
-      category: {
-        type: Sequelize.STRING,
-      },
-      rating: {
-        type: Sequelize.FLOAT,
-      },
-
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -50,6 +51,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("ProfileMasters");
+    await queryInterface.dropTable("Sales");
   },
 };
