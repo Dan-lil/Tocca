@@ -64,7 +64,8 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
               </div>
               <div className="promo-copy">
                 <p>{promotion.comment}</p>
-                <span className="promo-date">До {promotion.expiresAt}</span>
+                <span className="promo-date">Акция действует до {promotion.expiresAt}</span>
+                <span className="promo-master">{promotion.masterName}</span>
                 <Link
                   className="glass-button glass-button--compact promo-link"
                   href="#"

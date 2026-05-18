@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import "./page.css";
-import { PromotionItem } from "@/features/promotions/model/promotions.data";
+import type { PromotionItem } from "@/features/promotions/model/promotions.data";
 import { PromotionsSection } from "@/features/promotions/ui/PromotionsSection";
 import { getSales } from "@/shared/api/saleApi";
 import { getServices } from "@/shared/api/serviziApi";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
-import { SaleType, ServiziType } from "@/shared/types";
+import type { SaleType, ServiziType } from "@/shared/types";
 
 const SERVICE_IMAGE_FALLBACK = "/услуги на главной/ногти9.jpg";
 
@@ -32,14 +32,26 @@ function getPromotionImageSrc(imagePath?: string | null) {
 }
 
 // Преобразуем сущность Sale в формат карточки акции на клиенте
-function mapSalesToPromotions(sales: SaleType[]): PromotionItem[] {
-  return sales.map((sale) => ({
-    id: sale.id,
-    title: sale.comment || `Акция ${sale.discount}%`,
-    comment: sale.comment || `Скидка ${sale.discount}%`,
-    image: getPromotionImageSrc(sale.image),
-    expiresAt: new Date(sale.date).toLocaleDateString("ru-RU"),
-  }));
+function mapSalesToPromotions(
+  sales: SaleType[],
+  services: ServiziType[],
+): PromotionItem[] {
+  return sales.map((sale) => {
+    const relatedService =
+      services.find((service) => service.id === sale.serviziId) ?? null;
+    const serviceTitle = relatedService?.title ?? "Услуга";
+    const masterName = `Мастер #${sale.masterId}`;
+
+    return {
+      id: sale.id,
+      title: sale.comment || `Акция ${sale.discount}%`,
+      comment: sale.comment || `Скидка ${sale.discount}%`,
+      image: getPromotionImageSrc(sale.image),
+      expiresAt: new Date(sale.date).toLocaleDateString("ru-RU"),
+      masterName,
+      serviceTitle,
+    };
+  });
 }
 
 export default function HomePage() {
@@ -66,7 +78,7 @@ export default function HomePage() {
         ]);
 
         setServices(servicesData);
-        setPromotions(mapSalesToPromotions(salesData));
+        setPromotions(mapSalesToPromotions(salesData, servicesData));
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "Не удалось загрузить данные";
@@ -121,9 +133,12 @@ export default function HomePage() {
                     {service.title}
                   </Link>
                   <p>{service.description}</p>
-                  <button className="card-button glass-button glass-button--compact" type="button">
+                  <Link
+                    className="card-button glass-button glass-button--compact"
+                    href={`/services/${service.categoryId}?serviceId=${service.id}`}
+                  >
                     Записаться
-                  </button>
+                  </Link>
                 </div>
               </article>
             ))}

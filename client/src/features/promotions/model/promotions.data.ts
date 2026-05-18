@@ -4,4 +4,6 @@ export type PromotionItem = {
   comment: string;
   image: string;
   expiresAt: string;
+  masterName: string;
+  serviceTitle: string;
 };
