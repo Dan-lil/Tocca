@@ -20,6 +20,10 @@ module.exports = {
         title: "Massage & SPA",
         photo: "beard_trim.jpg",
       },
+      {
+        title: "Makeup & Brow",
+        photo: "beard_trim.jpg",
+      },
     ]);
     /**
      * Add seed commands here.
