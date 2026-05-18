@@ -115,6 +115,19 @@
   background: rgba(255, 247, 246, 0.72);
 }
 
+.services-list {
+  display: grid;
+  gap: 12px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.service-card span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .portfolio-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

@@ -134,6 +134,7 @@ export default function CalendarClientPage() {
       <section className="client-master-list">
         {masters.map((master) => (
           <article className="client-master-card" key={master.id}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={master.image} alt={master.title} />
             <div className="client-master-card-content">
               <div className="client-master-card-top">

@@ -181,6 +181,7 @@ const getRandomPosition = () => {
                    onClick={() => removeSticker(sticker.uniqueId)}
     >
                 <div className="photo-sticker">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={sticker.image} 
                     alt={sticker.caption}
