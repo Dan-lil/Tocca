@@ -19,7 +19,7 @@ export default function AuthPage() {
     if (isInitialized && user) {
       router.replace('/');
     }
-  }, [isInitialized, user]);
+  }, [isInitialized, router, user]);
 
   if (isInitialized && user) {
     return null;

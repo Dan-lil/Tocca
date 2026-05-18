@@ -121,7 +121,6 @@ const getRandomPosition = () => {
   const relativeLeft = stageRect.left - containerRect.left;
   const relativeTop = stageRect.top - containerRect.top;
   const stickerWidth = 110;
-  const stickerHeight = 130;
   
   const minLeft = relativeLeft + 20;
   const maxLeft = relativeLeft + stageRect.width - stickerWidth - 20;
@@ -182,6 +181,7 @@ const getRandomPosition = () => {
                    onClick={() => removeSticker(sticker.uniqueId)}
     >
                 <div className="photo-sticker">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={sticker.image} 
                     alt={sticker.caption}

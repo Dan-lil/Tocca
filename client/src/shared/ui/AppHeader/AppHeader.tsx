@@ -12,7 +12,7 @@ import { CategoryType } from "@/shared/types";
 
 const navigationItems = [
   { href: "/", label: "Домашняя страница" },
-  { href: "/profile", label: "Профиль" },
+  { href: "/Profile", label: "Профиль" },
   { href: "#", label: "AI Помощник", action: "open-chat" as const },
 ];
 

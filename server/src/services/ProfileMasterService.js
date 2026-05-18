@@ -9,15 +9,28 @@ class ProfileMasterService {
     return plainProfile;
   }
 
+  static async findByUserId(id) {
+    const profile = await ProfileMaster.findOne({ where: { userId: id } });
+
+    return profile ? profile.get() : null;
+  }
+
   static async update(id, ProfileData) {
-    const [rows] = await ProfileMaster.update(ProfileData, {
+    const [profile] = await ProfileMaster.findOrCreate({
       where: { userId: id },
+      defaults: {
+        ...ProfileData,
+        userId: id,
+        rating: ProfileData.rating ?? 0,
+      },
     });
 
-    if (rows === 0) {
-      return null;
+    if (!profile.isNewRecord) {
+      await profile.update({
+        ...ProfileData,
+        userId: id,
+      });
     }
-    const profile = await ProfileMaster.findOne({ where: { userId: id } });
 
     const plainProfile = profile.get();
 
