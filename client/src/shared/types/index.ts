@@ -30,11 +30,8 @@ export type BookingModalPayload = {
   categoryId: number;
   categoryTitle: string;
   masterId: number;
-  serviziId: number;
-  serviceTitle: string;
-  serviceDescription: string;
-  price: number;
-  duration: number;
+  masterName?: string;
+  services?: ServiziType[];
 };
 
 export type CreateBookingPayload = {
@@ -46,4 +43,22 @@ export type CreateBookingPayload = {
   endTime: string;
   status: string;
   clientComment?: string;
+};
+
+export type BookingType = CreateBookingPayload & {
+  id: number;
+  cancelReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type ShaduleType = {
+  id: number;
+  masterId: number;
+  dayOdWeek: number;
+  startTime: string;
+  endTime: string;
+  isWorkingDay: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };

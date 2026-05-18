@@ -1,11 +1,12 @@
 import { AxiosError } from "axios";
 
 import { axiosInstance } from "@/shared/lib/axiosInstance";
-import { CreateBookingPayload, ServerResponseType } from "@/shared/types";
+import { BookingType, CreateBookingPayload, ServerResponseType } from "@/shared/types";
 
 // Адреса booking endpoints собраны в одном объекте
 const BOOKING_API_URLS = {
   create: "/booking/bookings",
+  findByMaster: (masterId: number | string) => `/booking/bookings/master/${masterId}`,
 } as const;
 
 export async function createBooking(payload: CreateBookingPayload) {
@@ -26,6 +27,22 @@ export async function createBooking(payload: CreateBookingPayload) {
     const message =
       (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
       (error instanceof Error ? error.message : "Не удалось создать запись");
+
+    throw new Error(message);
+  }
+}
+
+export async function getBookingsByMaster(masterId: number | string) {
+  try {
+    const { data } = await axiosInstance.get<ServerResponseType<BookingType[]>>(
+      BOOKING_API_URLS.findByMaster(masterId),
+    );
+
+    return data.data ?? [];
+  } catch (error) {
+    const message =
+      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      "Не удалось загрузить записи мастера";
 
     throw new Error(message);
   }
