@@ -2,47 +2,53 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import "./page.css";
-import { promotions } from "@/features/promotions/model/promotions.data";//заглушки для акций
-import { PromotionsSection } from "@/features/promotions/ui/PromotionsSection";//блок с акциями
+import { promotions } from "@/features/promotions/model/promotions.data";
+import { PromotionsSection } from "@/features/promotions/ui/PromotionsSection";
+import { getServices } from "@/shared/api/serviziApi";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
+import { ServiziType } from "@/shared/types";
 
-const services = [
-  {
-    title: "Ногти",
-    image: "/услуги на главной/ногти9.jpg",
-    description: "Уход, покрытие и дизайн",
-  },
-  {
-    title: "Макияж",
-    image: "/услуги на главной/макияж1.jpg",
-    description: "Дневные и вечерние образы с естественным сиянием",
-  },
-  {
-    title: "Массаж",
-    image: "/услуги на главной/массаж8.jpg",
-    description: "Расслабляющие ритуалы для тела и восстановления",
-  },
-  {
-    title: "Косметология",
-    image: "/услуги на главной/косметология11.jpg",
-    description: "Процедуры для свежей кожи, ровного тона и твоей красоты",
-  },
-  {
-    title: "Волосы",
-    image: "/услуги на главной/прическа2.jpg",
-    description:
-      "Уход за волосами, укладки и прически под событие или настроение",
-  },
-];
+const SERVICE_IMAGE_FALLBACK = "/услуги на главной/ногти9.jpg";
+
+// Собираем путь до картинки услуги из базы или берем локальную заглушку
+function getServiceImageSrc(service: ServiziType) {
+  return service.image || SERVICE_IMAGE_FALLBACK;
+}
 
 export default function HomePage() {
+  const [services, setServices] = useState<ServiziType[]>([]);
+  const [servicesError, setServicesError] = useState<string | null>(null);
+
   // Все AI кнопки на странице вызывают один и тот же сценарий модалки
   const handleAiClick = useCallback(() => {
     dispatchBookingModalOpen();
   }, []);
+
+  useEffect(() => {
+    // Для витрины на главной берем услуги прямо из базы через серверный API
+    const loadServices = async () => {
+      try {
+        setServicesError(null);
+        const servicesData = await getServices();
+        setServices(servicesData);
+      } catch (error) {
+        setServicesError(
+          error instanceof Error ? error.message : "Не удалось загрузить услуги",
+        );
+      }
+    };
+
+    void loadServices();
+  }, []);
+
+  const visibleServices = useMemo(
+    // Показываем на главной только активные услуги из базы
+    () => services.filter((service) => service.isActive).slice(0, 5),
+    [services],
+  );
 
   return (
     <main className="home-page">
@@ -63,15 +69,20 @@ export default function HomePage() {
             <span>Услуги</span>
           </div>
 
+          {servicesError ? <p className="service-load-error">{servicesError}</p> : null}
+
           <div className="services-grid">
-            {services.map((service) => (
-              // На главной пока оставляем статическую витрину услуг
-              <article className="service-card" key={service.title}>
+            {visibleServices.map((service) => (
+              // На главной показываем услуги из базы вместе с путями до изображений
+              <article className="service-card" key={service.id}>
                 <div className="service-media">
-                  <Image src={service.image} alt={service.title} fill />
+                  <Image src={getServiceImageSrc(service)} alt={service.title} fill />
                 </div>
                 <div className="service-overlay">
-                  <Link className="glass-button glass-button--compact service-title-link" href="#">
+                  <Link
+                    className="glass-button glass-button--compact service-title-link"
+                    href={`/services/${service.categoryId}`}
+                  >
                     {service.title}
                   </Link>
                   <p>{service.description}</p>
@@ -83,7 +94,8 @@ export default function HomePage() {
             ))}
           </div>
         </section>
-{/* подключаем блок с акциями */}
+
+        {/* Подключаем блок с акциями */}
         <PromotionsSection promotions={promotions} />
       </div>
 

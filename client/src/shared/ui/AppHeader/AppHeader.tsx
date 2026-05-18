@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { logoutThunk } from "@/entities/user/api/UserApiThunk";
-import { getCategories } from "@/shared/api/categoryApi";
+import { getServices } from "@/shared/api/serviziApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
-import { CategoryType } from "@/shared/types";
+import { ServiziType } from "@/shared/types";
 
 const navigationItems = [
   { href: "/", label: "Домашняя страница" },
@@ -16,18 +16,25 @@ const navigationItems = [
   { href: "#", label: "AI Помощник", action: "open-chat" as const },
 ];
 
+type HeaderServiceLink = {
+  id: number;
+  categoryId: number;
+  title: string;
+};
+
 export default function AppHeader() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAppSelector((state) => state.user);
   const isHomePage = pathname === "/";
+
   // Ref помогает закрывать dropdown кликом вне меню
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [services, setServices] = useState<ServiziType[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
-  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [isServicesLoading, setIsServicesLoading] = useState(true);
+  const [servicesError, setServicesError] = useState<string | null>(null);
 
   const handleOpenChat = () => {
     dispatchBookingModalOpen();
@@ -39,23 +46,23 @@ export default function AppHeader() {
   };
 
   useEffect(() => {
-    // Подгружаем категории для перехода к выбору услуги и записи
-    const loadCategories = async () => {
+    // Подгружаем услуги из базы для dropdown в header
+    const loadServices = async () => {
       try {
-        setIsCategoriesLoading(true);
-        setCategoriesError(null);
-        const categoriesData = await getCategories();
-        setCategories(categoriesData);
+        setIsServicesLoading(true);
+        setServicesError(null);
+        const servicesData = await getServices();
+        setServices(servicesData);
       } catch (error) {
-        setCategoriesError(
-          error instanceof Error ? error.message : "Не удалось загрузить категории",
+        setServicesError(
+          error instanceof Error ? error.message : "Не удалось загрузить услуги",
         );
       } finally {
-        setIsCategoriesLoading(false);
+        setIsServicesLoading(false);
       }
     };
 
-    void loadCategories();
+    void loadServices();
   }, []);
 
   useEffect(() => {
@@ -71,6 +78,19 @@ export default function AppHeader() {
       document.removeEventListener("mousedown", handleDocumentClick);
     };
   }, []);
+
+  const dropdownServices = useMemo<HeaderServiceLink[]>(
+    // В dropdown показываем активные услуги с теми названиями, которые пришли из базы
+    () =>
+      services
+        .filter((service) => service.isActive)
+        .map((service) => ({
+          id: service.id,
+          categoryId: service.categoryId,
+          title: service.title,
+        })),
+    [services],
+  );
 
   return (
     <header className="site-header">
@@ -99,7 +119,7 @@ export default function AppHeader() {
             )}
 
             <div className="top-nav-dropdown" ref={dropdownRef}>
-              {/* Кнопка открывает список категорий, которые приходят с сервера */}
+              {/* Кнопка открывает список услуг, которые приходят из Servizi */}
               <button
                 className="glass-button glass-button--compact top-nav-link top-nav-button"
                 type="button"
@@ -110,26 +130,26 @@ export default function AppHeader() {
                 Услуги
               </button>
 
-              {/* По категории уходим на отдельную страницу выбора услуги */}
+              {/* По услуге уходим на страницу категории и передаем serviceId для точного выбора */}
               {isDropdownOpen ? (
                 <div className="top-nav-dropdown-menu glass-surface" role="menu">
-                  {isCategoriesLoading ? (
-                    <span className="top-nav-dropdown-state">Загрузка категорий</span>
+                  {isServicesLoading ? (
+                    <span className="top-nav-dropdown-state">Загрузка услуг</span>
                   ) : null}
 
-                  {categoriesError ? (
-                    <span className="top-nav-dropdown-state">{categoriesError}</span>
+                  {servicesError ? (
+                    <span className="top-nav-dropdown-state">{servicesError}</span>
                   ) : null}
 
-                  {!isCategoriesLoading && !categoriesError
-                    ? categories.map((category) => (
+                  {!isServicesLoading && !servicesError
+                    ? dropdownServices.map((service) => (
                         <Link
                           className="top-nav-dropdown-link"
-                          href={`/services/${category.id}`}
-                          key={category.id}
+                          href={`/services/${service.categoryId}?serviceId=${service.id}`}
+                          key={service.id}
                           onClick={() => setIsDropdownOpen(false)}
                         >
-                          {category.title}
+                          {service.title}
                         </Link>
                       ))
                     : null}
