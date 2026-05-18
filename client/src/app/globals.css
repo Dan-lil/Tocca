@@ -95,6 +95,92 @@ body {
     min-height: 100%;
 }
 
+/* Общие CSS-переменные для стеклянных поверхностей и кнопок по всему приложению */
+:root {
+    --glass-border: 1px solid rgba(255, 255, 255, 0.28);
+    --glass-text: rgba(255, 248, 246, 0.96);
+    --glass-text-shadow: 0 1px 8px rgba(118, 73, 71, 0.18);
+    --glass-bg:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.22),
+            rgba(255, 255, 255, 0.06)
+        ),
+        rgba(173, 113, 106, 0.18);
+    --glass-bg-hover:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.28),
+            rgba(255, 255, 255, 0.08)
+        ),
+        rgba(181, 120, 112, 0.2);
+    --glass-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        0 14px 30px rgba(108, 61, 62, 0.12);
+    --glass-shadow-hover:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+        0 18px 36px rgba(115, 69, 68, 0.12);
+    --glass-backdrop: blur(16px) saturate(135%);
+}
+
+/* Базовая стеклянная поверхность для карточек и контейнеров */
+.glass-surface {
+    background: var(--glass-bg);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+}
+
+/* Универсальная стеклянная кнопка, которая используется в разных частях интерфейса */
+.glass-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 132px;
+    padding: 10px 16px;
+    border: var(--glass-border);
+    border-radius: 999px;
+    color: var(--glass-text);
+    text-decoration: none;
+    text-align: center;
+    text-shadow: var(--glass-text-shadow);
+    background: var(--glass-bg);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease,
+        color 0.2s ease,
+        opacity 0.2s ease;
+}
+
+/* Состояния наведения и фокуса для общей кнопки */
+.glass-button:hover {
+    background: var(--glass-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+.glass-button:focus-visible {
+    outline: 1px solid rgba(255, 248, 245, 0.78);
+    outline-offset: 2px;
+}
+
+/* Компактный вариант общей кнопки */
+.glass-button--compact {
+    min-width: auto;
+    padding: 10px 16px;
+    font-size: 13px;
+    line-height: 1;
+}
+
+/* Глобальные размеры документа и фон приложения */
+html,
 body {
     font-family: Arial, Helvetica, sans-serif;
     background:
@@ -184,80 +270,13 @@ body {
 }
 
 .top-nav-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 168px;
     padding: 6px 10px;
-    border: 1px solid transparent;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    border: none;
     color: rgba(255, 248, 246, 0.94);
     font-size: 13px;
     letter-spacing: 0.02em;
     line-height: 1;
-    text-shadow: none;
-}
-
-.top-nav-link:hover,
-.top-nav-link:focus-visible {
-    border: var(--glass-border);
-    background: var(--glass-bg-hover);
-    box-shadow: var(--glass-shadow-hover);
-    text-shadow: var(--glass-text-shadow);
-    backdrop-filter: var(--glass-backdrop);
-    -webkit-backdrop-filter: var(--glass-backdrop);
-}
-
-.top-nav-button {
-    transform: none;
-}
-
-.top-nav-button:hover,
-.top-nav-button:focus-visible {
-    transform: translateY(-1px);
-}
-
-.top-nav-dropdown {
-    position: relative;
-}
-
-.top-nav-dropdown-menu {
-    position: absolute;
-    top: calc(100% + 12px);
-    left: 50%;
-    z-index: 15;
-    display: grid;
-    gap: 8px;
-    min-width: 240px;
-    padding: 14px;
-    border-radius: 22px;
-    transform: translateX(-50%);
-}
-
-.top-nav-dropdown-link,
-.top-nav-dropdown-state {
-    display: block;
-    padding: 10px 12px;
-    border-radius: 16px;
-    color: rgba(255, 248, 246, 0.96);
-    text-decoration: none;
-    text-shadow: var(--glass-text-shadow);
-    transition:
-        background-color 0.2s ease,
-        transform 0.2s ease;
-}
-
-.top-nav-dropdown-link:hover {
-    background: rgba(255, 255, 255, 0.14);
-    transform: translateY(-1px);
-}
-
-.top-nav-dropdown-state {
-    color: rgba(255, 248, 246, 0.78);
-    font-size: 13px;
+    box-shadow: none;
 }
 
 /* зона в шапке с акцией дня и кнопкой заказать */
@@ -323,88 +342,6 @@ body {
     line-height: 1.5;
 }
 
-.booking-direct-mode {
-    display: grid;
-    gap: 14px;
-}
-
-.booking-direct-card,
-.booking-direct-form {
-    display: grid;
-    gap: 14px;
-    padding: 18px;
-    border-radius: 24px;
-    background: rgba(255, 241, 242, 0.58);
-}
-
-.booking-direct-card-head {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-}
-
-.booking-direct-service,
-.booking-direct-description,
-.booking-direct-feedback {
-    margin: 0;
-}
-
-.booking-direct-service {
-    color: #8d605f;
-    font-size: 18px;
-    font-weight: 700;
-}
-
-.booking-direct-description {
-    color: #9f7370;
-    line-height: 1.5;
-}
-
-.booking-direct-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 16px;
-    color: #a47471;
-    font-weight: 700;
-}
-
-.booking-direct-field {
-    display: grid;
-    gap: 8px;
-    color: #8f6765;
-    font-size: 14px;
-}
-
-.booking-direct-textarea {
-    width: 100%;
-    padding: 13px 14px;
-    border: 1px solid rgba(233, 188, 185, 0.72);
-    border-radius: 18px;
-    background: rgba(255, 251, 250, 0.78);
-    color: #8d605f;
-}
-
-.booking-direct-textarea {
-    resize: vertical;
-    min-height: 110px;
-}
-
-.booking-direct-feedback {
-    padding: 12px 14px;
-    border-radius: 18px;
-    font-size: 14px;
-}
-
-.booking-direct-feedback--error {
-    background: rgba(201, 83, 83, 0.12);
-    color: #a35e5b;
-}
-
-.booking-direct-feedback--success {
-    background: rgba(91, 170, 118, 0.14);
-    color: #5d8e67;
-}
-
 /* Адаптация глобального layout и шапки для мобильных экранов */
 @media (max-width: 767px) {
     .site-header,
@@ -437,14 +374,10 @@ body {
     }
 
     .top-nav-link {
-        min-width: 140px;
         font-size: 12px;
         padding: 6px 8px;
     }
 
-    .top-nav-dropdown-menu {
-        left: 0;
-        transform: none;
-        min-width: 100%;
-    }
+
+
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -36,7 +36,9 @@ export default function HomePage() {
         setServices(servicesData);
       } catch (error) {
         setServicesError(
-          error instanceof Error ? error.message : "Не удалось загрузить услуги",
+          error instanceof Error
+            ? error.message
+            : "Не удалось загрузить услуги",
         );
       }
     };
@@ -60,7 +62,11 @@ export default function HomePage() {
               <strong>AI - помощник</strong>
               <span>Опишите, что вы хотите - я найду подходящих мастеров</span>
             </div>
-            <button className="small-button" type="button" onClick={handleAiClick}>
+            <button
+              className="small-button"
+              type="button"
+              onClick={handleAiClick}
+            >
               Записаться
             </button>
           </div>
@@ -69,14 +75,20 @@ export default function HomePage() {
             <span>Услуги</span>
           </div>
 
-          {servicesError ? <p className="service-load-error">{servicesError}</p> : null}
+          {servicesError ? (
+            <p className="service-load-error">{servicesError}</p>
+          ) : null}
 
           <div className="services-grid">
             {visibleServices.map((service) => (
               // На главной показываем услуги из базы вместе с путями до изображений
               <article className="service-card" key={service.id}>
                 <div className="service-media">
-                  <Image src={getServiceImageSrc(service)} alt={service.title} fill />
+                  <Image
+                    src={getServiceImageSrc(service)}
+                    alt={service.title}
+                    fill
+                  />
                 </div>
                 <div className="service-overlay">
                   <Link
@@ -86,7 +98,10 @@ export default function HomePage() {
                     {service.title}
                   </Link>
                   <p>{service.description}</p>
-                  <button className="card-button glass-button glass-button--compact" type="button">
+                  <button
+                    className="card-button glass-button glass-button--compact"
+                    type="button"
+                  >
                     Записаться
                   </button>
                 </div>

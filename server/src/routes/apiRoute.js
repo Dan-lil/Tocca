@@ -1,6 +1,7 @@
 const apiRouter = require("express").Router();
 const authRouter = require("./authRoute");
 const aiRouter = require("./aiRoute");
+const masterRouter = require("./masterRoute");
 const MasterPortfolioRouter = require("./masterPortfolioRoute");
 const profileMasterRouter = require("./profileMasterRoute");
 const ServiziRouter = require("./ServiziRoute");
@@ -14,6 +15,7 @@ const EcoRouter = require("./EcoRoute");
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/ai", aiRouter);
+apiRouter.use("/master", masterRouter);
 apiRouter.use("/profile", profileMasterRouter);
 apiRouter.use("/portfolio", MasterPortfolioRouter);
 apiRouter.use("/social", MasterSocialRouter);
