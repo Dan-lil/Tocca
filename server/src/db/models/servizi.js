@@ -32,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
       duration: DataTypes.FLOAT,
       categoryId: DataTypes.INTEGER,
       isActive: DataTypes.BOOLEAN,
+      image: DataTypes.STRING,
     },
     {
       sequelize,
