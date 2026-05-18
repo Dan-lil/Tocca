@@ -2,6 +2,9 @@ export type UserType = {
   id: number;
   name: string;
   email: string;
+  phone: string,
+  avatar: string,
+  role: 'client' | 'master' | 'admin',
   createdAt: string;
   updatedAt: string;
 };

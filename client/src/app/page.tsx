@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -7,7 +7,6 @@ import { useCallback } from "react";
 import "./page.css";
 import { promotions } from "@/features/promotions/model/promotions.data";//заглушки для акций
 import { PromotionsSection } from "@/features/promotions/ui/PromotionsSection";//блок с акциями
-import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
 
 const services = [
   {
@@ -39,9 +38,9 @@ const services = [
 ];
 
 export default function HomePage() {
-  // Все AI кнопки на странице вызывают один и тот же сценарий модалки
+  // Все AI-кнопки на странице вызывают один сценарий открытия модалки
   const handleAiClick = useCallback(() => {
-    dispatchBookingModalOpen();
+    window.dispatchEvent(new Event("open-booking-modal"));
   }, []);
 
   return (
@@ -65,7 +64,6 @@ export default function HomePage() {
 
           <div className="services-grid">
             {services.map((service) => (
-              // На главной пока оставляем статическую витрину услуг
               <article className="service-card" key={service.title}>
                 <div className="service-media">
                   <Image src={service.image} alt={service.title} fill />
