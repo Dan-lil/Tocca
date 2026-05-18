@@ -34,6 +34,9 @@ module.exports = {
       comment: {
         type: Sequelize.STRING,
       },
+      image: {
+        type: Sequelize.STRING,
+      },
       date: {
         type: Sequelize.DATE,
         allowNull: false,
