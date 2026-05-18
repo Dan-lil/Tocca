@@ -1,0 +1,822 @@
+:root {
+  color-scheme: light;
+  --page-bg: linear-gradient(
+    180deg,
+    #b97b79 0%,
+    #f7dddd 24%,
+    #fff7f6 64%,
+    #f0c3c9 100%
+  );
+  --card-border: rgba(255, 255, 255, 0.74);
+  --text-main: #7a4d4b;
+  --text-soft: #9d6f6c;
+  --text-strong: #fffaf9;
+  --shadow-main: 0 24px 60px rgba(181, 119, 129, 0.24);
+}
+
+/* Файл со стилями именно для главной страницы:
+   первый экран, акции, модальное окно записи и адаптив */
+/* Базовые стили страницы и общие сбросы */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--page-bg);
+  color: var(--text-main);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  text-align: center;
+}
+
+.home-page {
+  min-height: 100vh;
+  padding: 24px 20px 80px;
+  background:
+    radial-gradient(
+      circle at top center,
+      rgba(255, 255, 255, 0.35),
+      transparent 34%
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+}
+
+.page-shell {
+  display: grid;
+  gap: 26px;
+  width: min(100%, 1397px);
+  margin: 0 auto;
+}
+
+/* Общие кнопки и повторно используемые элементы интерфейса */
+.small-button {
+  padding: 10px 18px;
+  font-size: 14px;
+  color: #fffaf8;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.26);
+}
+
+.small-button:hover,
+.chat-fab:hover,
+.master-card:hover,
+.promo-scroll-button:hover,
+.booking-confirm-button:hover,
+.booking-ai-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 36px rgba(177, 107, 97, 0.32);
+}
+
+.card-button {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+/* услуги и карточка AI-помощника */
+.services-section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  overflow: hidden;
+  min-height: 560px;
+  margin-top: -24px;
+  padding: 50px 24px 42px;
+  border-radius: 0 0 32px 32px;
+  background: url("/sea.gif") center center/cover no-repeat;
+  box-shadow: var(--shadow-main);
+}
+
+.services-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 18% 32%,
+      rgba(255, 255, 255, 0.1),
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 78% 10%,
+      rgba(255, 204, 214, 0.08),
+      transparent 22%
+    );
+  pointer-events: none;
+}
+
+.services-section::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 32px 32px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 247, 246, 0.95) 0%,
+      rgba(255, 247, 246, 0) 16%,
+      rgba(255, 247, 246, 0) 84%,
+      rgba(255, 247, 246, 0.95) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 247, 246, 0.95) 0%,
+      rgba(255, 247, 246, 0) 12%,
+      rgba(255, 247, 246, 0) 88%,
+      rgba(255, 247, 246, 0.95) 100%
+    );
+  pointer-events: none;
+}
+
+.hero-assistant-card {
+  right: 28px;
+  bottom: -52px;
+  left: 28px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 700px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+  background: rgba(255, 244, 241, 0.84);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(175, 121, 114, 0.14);
+}
+
+.assistant-badge {
+  display: grid;
+  flex: 0 0 40px;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #cb8c7f 0%, #ad6d61 100%);
+  color: #fff8f6;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.assistant-copy {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.assistant-copy strong {
+  font-size: 16px;
+  color: #95615d;
+}
+
+.assistant-copy span {
+  font-size: 14px;
+  color: #b27d79;
+}
+
+.section-heading,
+.promotions-section {
+  position: relative;
+  z-index: 1;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+  margin-bottom: 22px;
+}
+
+.section-heading span {
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: rgba(255, 245, 244, 0.8);
+  color: #bc7f79;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.services-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  align-content: end;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.service-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 300px;
+  border-radius: 28px;
+  box-shadow: 0 18px 48px rgba(168, 122, 127, 0.22);
+}
+
+.service-media {
+  position: absolute;
+  inset: 0;
+}
+
+.service-media img {
+  object-fit: cover;
+}
+
+.service-overlay {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 300px;
+  padding: 20px 18px;
+  background: linear-gradient(
+    180deg,
+    rgba(73, 44, 42, 0.04),
+    rgba(73, 44, 42, 0.74)
+  );
+  color: #fff5f3;
+}
+
+.service-title-link {
+  align-self: center;
+}
+
+.service-overlay p {
+  margin-top: auto;
+  text-align: center;
+  max-width: 90%;
+  margin-bottom: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 246, 243, 0.84);
+}
+
+.service-overlay .card-button {
+  align-self: center;
+  white-space: nowrap;
+}
+
+/* Секция акций на домашней странице */
+.promotions-section {
+  display: grid;
+  gap: 28px;
+  overflow: hidden;
+}
+
+.promo-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.promotions-heading {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0;
+}
+
+.promo-controls {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Стили для GSAP-карусели блока акций: начало*/
+.promo-carousel-shell {
+  position: relative;
+  height: 380px;
+  overflow: hidden;
+  padding: 12px 0 18px;
+}
+
+.promo-scroll-button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  color: #fff8f6;
+  font-size: 28px;
+  line-height: 1;
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.22);
+}
+
+.promo-grid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+/* Карточки располагаются друг над другом, GSAP двигает их через transform */
+.promo-card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(32vw, 360px);
+  min-width: 280px;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  border-radius: 28px;
+  transform: translateX(-50%);
+  transform-origin: center center;
+  will-change: transform, opacity;
+  box-shadow: 0 18px 48px rgba(168, 122, 127, 0.22);
+}
+
+.promo-image {
+  position: absolute;
+  inset: 0;
+}
+
+.promo-image img {
+  object-fit: cover;
+  object-position: center top;
+}
+
+.promo-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr auto auto;
+  row-gap: 10px;
+  align-items: center;
+  min-height: 100%;
+  padding: 20px 18px;
+  background: linear-gradient(
+    180deg,
+    #492c2a0a,
+    #492c2a7a
+  );
+  color: #fff5f3;
+}
+
+.promo-copy p {
+  grid-column: 1;
+  grid-row: 2;
+  align-self: end;
+  justify-self: center;
+  text-align: center;
+  max-width: 90%;
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 246, 243, 0.84);
+  line-height: 1.45;
+}
+
+.promo-link {
+  grid-column: 1;
+  grid-row: 3;
+  align-self: end;
+  justify-self: center;
+}
+
+/* Скрытый слой GSAP Draggable для обработки drag-жестов */
+.promo-drag-proxy {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+/* Стили для GSAP-карусели блока акций: конец  */
+
+/* кнопка и модальное окно записи через AI-помощника */
+.chat-fab {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 30;
+  width: 68px;
+  height: 68px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #db9d94 0%, #bf7367 100%);
+  color: #fffaf8;
+  box-shadow: 0 22px 42px rgba(171, 98, 89, 0.34);
+}
+
+.chat-fab span {
+  display: inline-block;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.chat-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(125, 77, 82, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.booking-modal {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(100%, 760px);
+  max-height: min(92vh, 960px);
+  padding: 20px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 34px;
+    
+  box-shadow: 0 32px 90px rgba(126, 74, 85, 0.28);
+}
+
+.booking-intro,
+.booking-confirm-title,
+.booking-ai-panel,
+.booking-ai-input-row,
+.booking-chip {
+  backdrop-filter: blur(2px);
+}
+
+.booking-intro {
+  padding: 20px 18px;
+  border-radius: 22px;
+  background: rgba(255, 241, 242, 0.56);
+  color: #8f6765;
+  font-size: 19px;
+  line-height: 1.35;
+}
+
+.booking-intro p,
+.booking-confirm-title,
+.master-service,
+.master-meta,
+.master-slot,
+.booking-summary-time,
+.booking-summary-price {
+  margin: 0;
+}
+
+.booking-chat-thread {
+  display: grid;
+  gap: 10px;
+}
+
+.booking-intro--user {
+  margin-left: auto;
+  max-width: 82%;
+  background: rgba(255, 248, 244, 0.72);
+}
+
+.booking-masters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.master-card {
+  padding: 16px 16px 14px;
+  border-radius: 22px;
+  border-width: 0px;
+  background: linear-gradient(
+    180deg,
+    rgba(236, 151, 158, 0.9),
+    rgba(223, 141, 148, 0.82)
+  );
+  color: #fff8f6;
+  box-shadow: 0 16px 34px rgba(190, 115, 121, 0.22);
+}
+
+.master-topline {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.master-avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 245, 245, 0.28);
+  color: #fff9f8;
+  font-size: 10px;
+  font-weight: 700;
+  flex: 0 0 24px;
+}
+
+.master-head {
+  display: grid;
+  gap: 3px;
+}
+
+.master-head strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.master-head span {
+  font-size: 11px;
+  color: rgba(255, 244, 242, 0.92);
+}
+
+.master-service {
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.master-meta {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.master-slot {
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.booking-confirm {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.booking-confirm-title {
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: rgba(255, 245, 245, 0.52);
+  color: #8b6664;
+  font-size: 18px;
+}
+
+.booking-summary-card {
+  width: min(100%, 300px);
+  margin-left: auto;
+  margin-right: auto;
+  padding: 16px 16px 14px;
+  border-radius: 22px;
+  border-width: 0px;
+  background: linear-gradient(
+    180deg,
+    rgba(236, 151, 158, 0.95),
+    rgba(223, 141, 148, 0.88)
+  );
+  color: #fff9f7;
+  box-shadow: 0 18px 40px rgba(190, 115, 121, 0.24);
+}
+
+/* Делаем карточки вариантов и подтверждения чуть прозрачнее, сохраняя исходный оттенок */
+.master-card.glass-surface,
+.booking-summary-card.glass-surface {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.24),
+      rgba(255, 255, 255, 0.1)
+    ),
+    rgba(223, 141, 148, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+}
+
+.booking-summary-time {
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.booking-summary-price {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.booking-confirm-button {
+  padding: 13px 22px;
+  font-size: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  color: #fff7f5;
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.26);
+}
+
+.booking-ai-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(255, 241, 241, 0.58);
+}
+
+.booking-ai-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.booking-ai-badge {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.booking-ai-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.booking-ai-copy strong {
+  font-size: 15px;
+  color: #8e615d;
+}
+
+.booking-ai-copy span {
+  font-size: 12px;
+  color: #ae7b77;
+}
+
+.booking-ai-input-row {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid rgba(233, 188, 185, 0.72);
+  border-radius: 18px;
+  background: rgba(255, 251, 250, 0.72);
+}
+
+.booking-ai-input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px 14px;
+  border: none;
+  background: transparent;
+  color: #8d605f;
+  outline: none;
+}
+
+.booking-ai-input::placeholder {
+  color: #c29a97;
+}
+
+.booking-ai-button {
+  margin: 4px;
+  padding: 10px 16px;
+  font-size: 14px;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  color: #fff7f5;
+  background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.26);
+}
+
+.booking-ai-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.booking-chip {
+  border: 1px solid rgba(234, 189, 190, 0.8);
+  border-radius: 999px;
+  color: #a97774;
+  background: rgba(255, 250, 249, 0.7);
+  padding: 8px 12px;
+  font-size: 12px;
+  box-shadow: 0 10px 20px rgba(212, 158, 160, 0.12);
+}
+
+.booking-chip:hover {
+  background: rgba(255, 244, 242, 0.9);
+}
+
+/* Адаптация домашней страницы для планшетов */
+@media (max-width: 1199px) {
+  .services-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .promo-card {
+    width: min(44vw, 340px);
+  }
+
+}
+
+/* Адаптация домашней страницы для мобильных экранов */
+@media (max-width: 767px) {
+  .home-page {
+    padding: 12px 12px 88px;
+  }
+
+  .services-section,
+  .promo-card,
+  .booking-modal {
+    border-radius: 24px;
+  }
+
+  .services-section {
+    min-height: 0;
+    margin-top: 0;
+    padding: 108px 14px 24px;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .promo-header {
+    align-items: stretch;
+  }
+
+ 
+
+  .promo-carousel-shell {
+    height: 340px;
+    padding-bottom: 8px;
+  }
+
+  .promo-card {
+    width: 78vw;
+    min-width: 0;
+  }
+
+  .service-card,
+  .service-overlay {
+    min-height: 280px;
+  }
+
+  .booking-modal {
+    width: min(100%, 420px);
+    padding: 14px;
+  }
+
+  .booking-intro {
+    font-size: 16px;
+  }
+
+  .booking-masters {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-confirm-title {
+    font-size: 16px;
+  }
+
+  .booking-confirm-button,
+  .booking-ai-button,
+  .primary-button {
+    width: 100%;
+  }
+
+  .booking-ai-input-row {
+    flex-direction: column;
+    border-radius: 18px;
+    background: transparent;
+    border: none;
+    gap: 10px;
+  }
+
+  .booking-ai-input {
+    border: 1px solid rgba(233, 188, 185, 0.72);
+    border-radius: 18px;
+    background: rgba(255, 251, 250, 0.72);
+  }
+
+  .booking-ai-button {
+    margin: 0;
+  }
+
+  .chat-fab {
+    right: 16px;
+    bottom: 16px;
+    width: 60px;
+    height: 60px;
+    border-radius: 20px;
+  }
+}
