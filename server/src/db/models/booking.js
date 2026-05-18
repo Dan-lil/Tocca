@@ -20,6 +20,9 @@ module.exports = (sequelize, DataTypes) => {
       this.hasOne(models.Sale, {
         foreignKey: "bookingId",
       });
+      this.hasOne(models.Eco, {
+        foreignKey: "bookingId",
+      });
       // define association here
     }
   }
