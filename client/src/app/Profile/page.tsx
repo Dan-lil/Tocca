@@ -1,6 +1,7 @@
 "use client";
 
 import "./page.css";
+import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/store/store";
@@ -424,6 +425,9 @@ export default function ProfilePage() {
             // eslint-disable-next-line @next/next/no-img-element
             <img className="profile-avatar" src={getMediaUrl(user.avatar)} alt="Фото профиля" />
           ) : null}
+          <Link className="profile-link-button" href="/calendarMaster">
+            Посмотреть календарь
+          </Link>
           <button type="button" onClick={handleOpenMasterProfileModal}>
             Редактировать
           </button>
@@ -472,7 +476,7 @@ export default function ProfilePage() {
           )}
         </section>
 
-        <section className="profile-section">
+        <section className="profile-section profile-section--services">
           <div className="section-header">
             <h2>Мои услуги</h2>
             <button type="button" onClick={() => setShowAddService(true)}>

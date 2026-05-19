@@ -4,7 +4,9 @@ import { axiosInstance } from "@/shared/lib/axiosInstance";
 import { ServerResponseType, ShaduleType } from "@/shared/types";
 
 const SHADULE_API_URLS = {
+  create: "/shadule/create",
   findByMaster: (masterId: number | string) => `/shadule/findByMasterId/${masterId}`,
+  update: (id: number | string) => `/shadule/update/${id}`,
 } as const;
 
 export async function getShadulesByMaster(masterId: number | string) {
@@ -18,6 +20,56 @@ export async function getShadulesByMaster(masterId: number | string) {
     const message =
       (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
       "Не удалось загрузить расписание мастера";
+
+    throw new Error(message);
+  }
+}
+
+export type SaveShadulePayload = {
+  masterId: number;
+  dayOdWeek: number;
+  startTime: string;
+  endTime: string;
+  isWorkingDay: boolean;
+};
+
+export async function createShadule(payload: SaveShadulePayload) {
+  try {
+    const { data } = await axiosInstance.post<ServerResponseType<ShaduleType>>(
+      SHADULE_API_URLS.create,
+      payload,
+    );
+
+    if (!data.data) {
+      throw new Error(data.message || "Не удалось создать расписание");
+    }
+
+    return data.data;
+  } catch (error) {
+    const message =
+      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      (error instanceof Error ? error.message : "Не удалось создать расписание");
+
+    throw new Error(message);
+  }
+}
+
+export async function updateShadule(id: number | string, payload: SaveShadulePayload) {
+  try {
+    const { data } = await axiosInstance.put<ServerResponseType<ShaduleType>>(
+      SHADULE_API_URLS.update(id),
+      payload,
+    );
+
+    if (!data.data) {
+      throw new Error(data.message || "Не удалось обновить расписание");
+    }
+
+    return data.data;
+  } catch (error) {
+    const message =
+      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      (error instanceof Error ? error.message : "Не удалось обновить расписание");
 
     throw new Error(message);
   }

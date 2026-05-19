@@ -46,6 +46,100 @@
   margin: 0 auto;
 }
 
+.master-schedule-panel {
+  max-width: 1220px;
+  padding: 22px;
+  margin: 0 auto 24px;
+  background: rgb(255 255 255 / 78%);
+  border: 1px solid rgb(181 124 108 / 18%);
+  border-radius: 8px;
+  box-shadow: 0 20px 50px rgb(107 73 64 / 10%);
+}
+
+.master-schedule-panel__header {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.master-schedule-panel__header h2 {
+  font-size: 24px;
+}
+
+.master-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.master-schedule-day {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  background: #fff8f6;
+  border: 1px solid #f0d3ca;
+  border-radius: 8px;
+}
+
+.master-schedule-day__toggle {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4e3c36;
+}
+
+.master-schedule-day__toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: #b86f5d;
+}
+
+.master-schedule-day__time {
+  display: grid;
+  gap: 8px;
+}
+
+.master-schedule-day__time label {
+  display: grid;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #80645c;
+}
+
+.master-schedule-day__time input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px;
+  color: #3d3430;
+  background: #fff;
+  border: 1px solid #e7c7bd;
+  border-radius: 8px;
+}
+
+.master-schedule-day__time input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.master-schedule-message {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  color: #7a5a15;
+  background: #f7e7bd;
+  border-radius: 8px;
+}
+
+.master-schedule-message--success {
+  color: #386a45;
+  background: #dff0df;
+}
+
 .master-calendar-panel,
 .master-day-panel {
   background: rgb(255 255 255 / 78%);
@@ -395,6 +489,10 @@
   .master-calendar-layout {
     grid-template-columns: 1fr;
   }
+
+  .master-schedule-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (width <= 680px) {
@@ -405,6 +503,14 @@
   .master-calendar-hero {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .master-schedule-panel__header {
+    flex-direction: column;
+  }
+
+  .master-schedule-grid {
+    grid-template-columns: 1fr;
   }
 
   .master-calendar-hero h1 {
