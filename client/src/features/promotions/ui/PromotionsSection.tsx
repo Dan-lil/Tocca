@@ -11,6 +11,8 @@ type PromotionsSectionProps = {
   promotions: PromotionItem[];
 };
 
+const PROMOTION_IMAGE_FALLBACK = "/акция_дня.jpeg";
+
 export function PromotionsSection({ promotions }: PromotionsSectionProps) {
   // Ref нужны GSAP-карусели для управления контейнером, карточками и drag-слоем
   const promotionsRef = useRef<HTMLDivElement | null>(null);
@@ -60,7 +62,12 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
               }}
             >
               <div className="promo-image">
-                <Image src={promotion.image} alt={promotion.title} fill unoptimized />
+                <Image
+                  src={promotion.image || PROMOTION_IMAGE_FALLBACK}
+                  alt={promotion.title}
+                  fill
+                  unoptimized
+                />
               </div>
               <div className="promo-copy">
                 <p>{promotion.comment}</p>

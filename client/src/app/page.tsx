@@ -12,7 +12,8 @@ import { getServices } from "@/shared/api/serviziApi";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
 import type { SaleType, ServiziType } from "@/shared/types";
 
-const SERVICE_IMAGE_FALLBACK = "/услуги на главной/ногти9.jpg";
+const SERVICE_IMAGE_FALLBACK = "/фон3.jpeg";
+const PROMOTION_IMAGE_FALLBACK = "/акция_дня.jpeg";
 
 // Собираем путь до картинки услуги из базы или берем локальную заглушку
 function getServiceImageSrc(service: ServiziType) {
@@ -21,7 +22,7 @@ function getServiceImageSrc(service: ServiziType) {
 
 // Собираем полный путь до картинки акции на сервере
 function getPromotionImageSrc(imagePath?: string | null) {
-  if (!imagePath) return "";
+  if (!imagePath) return PROMOTION_IMAGE_FALLBACK;
 
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
     return imagePath;

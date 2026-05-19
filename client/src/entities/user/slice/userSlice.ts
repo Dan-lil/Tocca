@@ -1,6 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { initialUserState } from "../model";
-import { loginThunk, logoutThunk, refreshTokenThunk, registerThunk } from '../api/UserApiThunk';
+import {
+    loginThunk,
+    logoutThunk,
+    refreshTokenThunk,
+    registerThunk,
+    updateUserProfileThunk,
+} from '../api/UserApiThunk';
 
 // создаём slice - часть хранилища, которая отвечает за состояние пользователя
 const userSlice = createSlice({
@@ -77,6 +83,21 @@ const userSlice = createSlice({
             state.isLoading = false;
             state.isInitialized = true;
             state.error = action.payload ?? 'Ошибка при выходе из приложения'
+        })
+
+        // Update profile
+        builder.addCase(updateUserProfileThunk.pending, (state) => {
+            state.error = null;
+            state.isLoading = true
+        })
+        builder.addCase(updateUserProfileThunk.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.user = action.payload
+            state.error = null;
+        })
+        builder.addCase(updateUserProfileThunk.rejected, (state, action) => {
+            state.isLoading = false;
+            state.error = action.payload ?? 'Ошибка при обновлении профиля'
         })
     }
 })

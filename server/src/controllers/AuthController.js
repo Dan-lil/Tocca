@@ -2,8 +2,41 @@ const AuthService = require("../services/AuthService");
 const formatResponse = require("../utils/formatResponse");
 const { User } = require("../db/models");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
+const fs = require("fs/promises");
 const generateTokens = require("../utils/generateTokens");
+const path = require("path");
 const cookieConfig = require("../config/cookieConfig");
+
+async function saveProfileAvatar(imageFile) {
+  if (!imageFile?.data || !imageFile?.type) {
+    return null;
+  }
+
+  const match = imageFile.data.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+
+  if (!match) {
+    throw new Error("Invalid avatar file");
+  }
+
+  const mimeType = match[1];
+  const base64Data = match[2];
+  const extension = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+  const allowedExtensions = new Set(["jpg", "png", "webp", "gif"]);
+
+  if (!allowedExtensions.has(extension)) {
+    throw new Error("Unsupported avatar file type");
+  }
+
+  const uploadsDir = path.join(__dirname, "../public/uploads/profile");
+  const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const filePath = path.join(uploadsDir, fileName);
+
+  await fs.mkdir(uploadsDir, { recursive: true });
+  await fs.writeFile(filePath, Buffer.from(base64Data, "base64"));
+
+  return `/uploads/profile/${fileName}`;
+}
 
 class AuthController {
   static async register(req, res) {
@@ -161,6 +194,66 @@ class AuthController {
       return res
         .status(500)
         .json(formatResponse(500, "Ошибка сервера при выходе из приложения"));
+    }
+  }
+
+  static async updateProfile(req, res) {
+    const { user } = res.locals;
+    const { name, email, phone, avatar, avatarFile } = req.body;
+
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      return res
+        .status(400)
+        .json(formatResponse(400, "Ошибка валидации", null, "Некорректное имя пользователя"));
+    }
+
+    if (!email || typeof email !== "string" || !User.validateEmail(email)) {
+      return res
+        .status(400)
+        .json(formatResponse(400, "Ошибка валидации", null, "Некорректный адрес электронной почты"));
+    }
+
+    try {
+      const normalizedEmail = email.toLowerCase().trim();
+      const existingUser = await AuthService.findUserByEmail(normalizedEmail);
+
+      if (existingUser && existingUser.id !== user.id) {
+        return res
+          .status(400)
+          .json(formatResponse(400, "Пользователь с такой почтой уже существует"));
+      }
+
+      const avatarUrl = avatarFile ? await saveProfileAvatar(avatarFile) : avatar;
+      const updatedUser = await AuthService.updateProfile(user.id, {
+        name: name.trim(),
+        email: normalizedEmail,
+        phone: typeof phone === "string" ? phone.trim() : "",
+        avatar: typeof avatarUrl === "string" ? avatarUrl.trim() : "",
+      });
+
+      if (!updatedUser) {
+        return res
+          .status(404)
+          .json(formatResponse(404, "Пользователь не найден"));
+      }
+
+      const { accessToken, refreshToken } = generateTokens({ user: updatedUser });
+
+      return res
+        .status(200)
+        .cookie("refreshToken", refreshToken, cookieConfig)
+        .json(
+          formatResponse(200, "Профиль обновлен", {
+            user: updatedUser,
+            accessToken,
+          }),
+        );
+    } catch (error) {
+      console.log("======== AuthController.updateProfile =========");
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, "Ошибка сервера при обновлении профиля"));
     }
   }
 
