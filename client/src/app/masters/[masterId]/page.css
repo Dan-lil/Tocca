@@ -125,6 +125,35 @@
   gap: 12px;
 }
 
+.public-master-socials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.public-master-social-link {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  padding: 12px 14px;
+  border: 1px solid rgba(233, 188, 185, 0.72);
+  border-radius: 14px;
+  color: #754846;
+  text-decoration: none;
+  background: rgba(255, 251, 250, 0.72);
+}
+
+.public-master-social-link span {
+  color: rgba(122, 77, 75, 0.68);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.public-master-social-link strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
 .public-master-service,
 .public-master-review {
   display: flex;

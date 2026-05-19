@@ -26,8 +26,19 @@ import type { Booking } from "@/entities/booking/model";
 import { getBookingsByClient } from "@/shared/api/bookingApi";
 import { getCategories } from "@/shared/api/categoryApi";
 import { createReview, getReviewsByClient, getReviewsByMaster } from "@/shared/api/ecoApi";
+import {
+  createMasterSocial,
+  deleteMasterSocial,
+  getMyMasterSocials,
+} from "@/shared/api/masterSocialApi";
 import { axiosInstance } from "@/shared/lib/axiosInstance";
-import type { BookingType, CategoryType, EcoReviewType, ServerResponseType } from "@/shared/types";
+import type {
+  BookingType,
+  CategoryType,
+  EcoReviewType,
+  MasterSocialType,
+  ServerResponseType,
+} from "@/shared/types";
 
 type ProfileMaster = {
   id?: number;
@@ -59,6 +70,41 @@ type ReviewDraft = {
   rating: number;
   text: string;
 };
+
+type MasterSocialForm = {
+  telegram: string;
+  vk: string;
+  instagram: string;
+};
+
+const emptyMasterSocials: MasterSocialForm = {
+  telegram: "",
+  vk: "",
+  instagram: "",
+};
+
+function normalizeSocialContact(network: string, value: string) {
+  const contact = value.trim();
+
+  if (!contact) return "";
+  if (contact.startsWith("http://") || contact.startsWith("https://")) return contact;
+
+  const username = contact.replace(/^@/, "");
+
+  if (network === "telegram") {
+    return `https://t.me/${username.replace(/^t\.me\//, "")}`;
+  }
+
+  if (network === "instagram") {
+    return `https://instagram.com/${username.replace(/^instagram\.com\//, "")}`;
+  }
+
+  if (network === "vk") {
+    return `https://vk.com/${username.replace(/^vk\.com\//, "")}`;
+  }
+
+  return contact;
+}
 
 const emptyMasterProfile: ProfileMaster = {
   title: "",
@@ -141,6 +187,9 @@ export default function ProfilePage() {
   const [clientHistoryError, setClientHistoryError] = useState<string | null>(null);
   const [masterReviews, setMasterReviews] = useState<EcoReviewType[]>([]);
   const [masterReviewsError, setMasterReviewsError] = useState<string | null>(null);
+  const [masterSocials, setMasterSocials] = useState<MasterSocialType[]>([]);
+  const [masterSocialForm, setMasterSocialForm] =
+    useState<MasterSocialForm>(emptyMasterSocials);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [newService, setNewService] = useState({
@@ -208,14 +257,28 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!isMaster) return;
 
-    axiosInstance
-      .get<ServerResponseType<ProfileMaster | null>>("/profile/me")
-      .then((response) => {
-        setMasterProfile(response.data.data ?? emptyMasterProfile);
-      })
-      .catch(() => {
+    const loadMasterProfile = async () => {
+      try {
+        const [profileResponse, socialsData] = await Promise.all([
+          axiosInstance.get<ServerResponseType<ProfileMaster | null>>("/profile/me"),
+          getMyMasterSocials(),
+        ]);
+
+        setMasterProfile(profileResponse.data.data ?? emptyMasterProfile);
+        setMasterSocials(socialsData);
+        setMasterSocialForm({
+          telegram:
+            socialsData.find((social) => social.network === "telegram")?.contact ?? "",
+          vk: socialsData.find((social) => social.network === "vk")?.contact ?? "",
+          instagram:
+            socialsData.find((social) => social.network === "instagram")?.contact ?? "",
+        });
+      } catch {
         setProfileError("Не удалось загрузить профиль мастера");
-      });
+      }
+    };
+
+    void loadMasterProfile();
   }, [isMaster]);
 
   useEffect(() => {
@@ -290,6 +353,19 @@ export default function ProfilePage() {
       if (response.data.data) {
         setMasterProfile(response.data.data);
       }
+
+      await Promise.all(masterSocials.map((social) => deleteMasterSocial(social.id)));
+
+      const nextSocials = Object.entries(masterSocialForm)
+        .map(([network, contact]) => ({
+          network,
+          contact: normalizeSocialContact(network, contact),
+        }))
+        .filter((social) => social.contact);
+
+      const savedSocials = await Promise.all(nextSocials.map(createMasterSocial));
+
+      setMasterSocials(savedSocials);
       dispatch(fetchMasterStatsThunk());
       setIsProfileModalOpen(false);
     } catch {
@@ -668,6 +744,28 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        <section className="profile-section">
+          <h2>Социальные сети</h2>
+          {masterSocials.length === 0 ? (
+            <p>Социальные сети пока не указаны</p>
+          ) : (
+            <div className="master-social-list">
+              {masterSocials.map((social) => (
+                <a
+                  className="master-social-link"
+                  href={social.contact}
+                  key={social.id}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <span>{social.network}</span>
+                  <strong>{social.contact}</strong>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
+
         <div className="stats-grid">
           <div className="stat-card">{earnings?.total || 0} руб.</div>
           <div className="stat-card">{stats?.totalBookings || 0} записей</div>
@@ -838,6 +936,47 @@ export default function ProfilePage() {
                   />
                 </div>
               ) : null}
+
+              <div className="profile-form-row">
+                <label>
+                  <span>Telegram</span>
+                  <input
+                    value={masterSocialForm.telegram}
+                    onChange={(event) =>
+                      setMasterSocialForm((socials) => ({
+                        ...socials,
+                        telegram: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label>
+                  <span>VK</span>
+                  <input
+                    value={masterSocialForm.vk}
+                    onChange={(event) =>
+                      setMasterSocialForm((socials) => ({
+                        ...socials,
+                        vk: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <label>
+                <span>Instagram</span>
+                <input
+                  value={masterSocialForm.instagram}
+                  onChange={(event) =>
+                    setMasterSocialForm((socials) => ({
+                      ...socials,
+                      instagram: event.target.value,
+                    }))
+                  }
+                />
+              </label>
 
               <div className="profile-form-row">
                 <label>

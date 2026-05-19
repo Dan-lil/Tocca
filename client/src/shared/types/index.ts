@@ -35,6 +35,15 @@ export type PublicMasterPortfolioItem = {
   title: string;
 };
 
+export type MasterSocialType = {
+  id: number;
+  userId: number;
+  network: string;
+  contact: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type PublicMasterProfileType = {
   user: {
     id: number;
@@ -55,6 +64,7 @@ export type PublicMasterProfileType = {
     rating?: number | null;
   } | null;
   portfolio: PublicMasterPortfolioItem[];
+  socials?: MasterSocialType[];
 };
 
 export type BookingModalPayload = {

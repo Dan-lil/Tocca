@@ -140,6 +140,28 @@ export default function PublicMasterPage() {
         </section>
 
         <section className="public-master-section glass-surface">
+          <h2>Социальные сети</h2>
+          {!master.socials || master.socials.length === 0 ? (
+            <p>Мастер пока не указал социальные сети.</p>
+          ) : (
+            <div className="public-master-socials">
+              {master.socials.map((social) => (
+                <a
+                  className="public-master-social-link"
+                  href={social.contact}
+                  key={social.id}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <span>{social.network}</span>
+                  <strong>{social.contact}</strong>
+                </a>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="public-master-section glass-surface">
           <h2>Услуги мастера</h2>
           {services.length === 0 ? (
             <p>У мастера пока нет активных услуг.</p>

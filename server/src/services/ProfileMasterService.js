@@ -1,4 +1,4 @@
-const { MasterPortfolio, ProfileMaster, User } = require("../db/models");
+const { MasterPortfolio, MasterSocial, ProfileMaster, User } = require("../db/models");
 
 function mapPortfolioItem(item) {
   return {
@@ -24,7 +24,7 @@ class ProfileMasterService {
   }
 
   static async findPublicByUserId(id) {
-    const [user, profile, portfolio] = await Promise.all([
+    const [user, profile, portfolio, socials] = await Promise.all([
       User.findOne({
         where: { id, role: "master" },
         attributes: ["id", "name", "email", "phone", "avatar"],
@@ -33,6 +33,10 @@ class ProfileMasterService {
       MasterPortfolio.findAll({
         where: { userId: id },
         order: [["id", "DESC"]],
+      }),
+      MasterSocial.findAll({
+        where: { userId: id },
+        order: [["id", "ASC"]],
       }),
     ]);
 
@@ -44,6 +48,7 @@ class ProfileMasterService {
       user: user.get(),
       profile: profile ? profile.get() : null,
       portfolio: portfolio.map(mapPortfolioItem),
+      socials: socials.map((social) => social.get()),
     };
   }
 
