@@ -16,6 +16,14 @@ class ProfileMasterService {
     const res = await MasterPortfolio.destroy({ where: { id } });
     return true;
   }
+
+  static async findByMasterId(masterId) {
+    const res = await MasterPortfolio.findAll({ where: { masterId } });
+    if (!res) {
+      return null;
+    }
+    return res.map((item) => item.get());
+  }
 }
 
 module.exports = ProfileMasterService;
