@@ -2,6 +2,9 @@ export type UserType = {
   id: number;
   name: string;
   email: string;
+  phone: string,
+  avatar: string,
+  role: 'client' | 'master' | 'admin',
   createdAt: string;
   updatedAt: string;
 };
@@ -19,6 +22,18 @@ export type UserLoginData = {
 
 export type UserRegisterData = UserLoginData & {
   name: string
+}
+
+export type UserProfileUpdateData = {
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  avatarFile?: {
+    name: string;
+    type: string;
+    data: string;
+  };
 }
 
 export type UserStateType = {

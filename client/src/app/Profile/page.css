@@ -1,0 +1,554 @@
+.profile-page {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 32px 20px 56px;
+  color: #754846;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.74), transparent 34%),
+    linear-gradient(135deg, rgba(255, 247, 246, 0.88), rgba(244, 207, 213, 0.58));
+  border-radius: 28px;
+}
+
+.profile-container {
+  display: grid;
+  gap: 24px;
+}
+
+.profile-header,
+.section-header,
+.service-card,
+.booking-card,
+.sale-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-header {
+  position: relative;
+  overflow: hidden;
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(255, 246, 245, 0.42)),
+    rgba(255, 255, 255, 0.44);
+  box-shadow: 0 24px 60px rgba(181, 119, 129, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.profile-header > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.profile-header::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0.42), transparent 42%);
+}
+
+.profile-header h1 {
+  margin: 0;
+  font-size: 30px;
+  color: #754846;
+}
+
+.profile-header p {
+  margin-top: 6px;
+  color: rgba(122, 77, 75, 0.76);
+}
+
+.profile-avatar {
+  order: -1;
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  border: 1px solid rgba(122, 77, 75, 0.2);
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 247, 246, 0.74);
+}
+
+.profile-page button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: #fffaf8;
+  background:
+    linear-gradient(135deg, rgba(179, 108, 99, 0.92), rgba(220, 151, 141, 0.84)),
+    rgba(255, 255, 255, 0.62);
+  box-shadow: 0 16px 34px rgba(177, 107, 97, 0.28);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.profile-link-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: #fffaf8;
+  background:
+    linear-gradient(135deg, rgba(179, 108, 99, 0.92), rgba(220, 151, 141, 0.84)),
+    rgba(255, 255, 255, 0.62);
+  box-shadow: 0 16px 34px rgba(177, 107, 97, 0.28);
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.profile-page button:hover {
+  background:
+    linear-gradient(135deg, rgba(158, 91, 84, 0.96), rgba(220, 151, 141, 0.92)),
+    rgba(255, 255, 255, 0.66);
+  box-shadow: 0 20px 42px rgba(177, 107, 97, 0.34);
+  transform: translateY(-1px);
+}
+
+.profile-link-button:hover {
+  background:
+    linear-gradient(135deg, rgba(158, 91, 84, 0.96), rgba(220, 151, 141, 0.92)),
+    rgba(255, 255, 255, 0.66);
+  box-shadow: 0 20px 42px rgba(177, 107, 97, 0.34);
+  transform: translateY(-1px);
+}
+
+.profile-page button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.profile-section,
+.client-profile-summary,
+.master-profile-summary,
+.stats-grid {
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(255, 247, 246, 0.48)),
+    rgba(255, 255, 255, 0.5);
+  box-shadow: 0 18px 44px rgba(181, 119, 129, 0.13);
+  backdrop-filter: blur(14px);
+}
+
+.profile-section {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-section--services {
+  align-self: start;
+}
+
+.profile-section h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.client-profile-summary,
+.master-profile-summary,
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.client-profile-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stats-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.client-profile-summary div,
+.master-profile-summary div,
+.stat-card {
+  display: grid;
+  gap: 6px;
+  min-height: 76px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 16px;
+  background: rgba(255, 247, 246, 0.74);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+.client-profile-summary span,
+.master-profile-summary span {
+  color: rgba(122, 77, 75, 0.68);
+  font-size: 13px;
+}
+
+.stat-card {
+  align-content: center;
+  font-weight: 700;
+}
+
+.service-card,
+.booking-card,
+.sale-card,
+.client-history-card,
+.portfolio-item {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 247, 246, 0.58)),
+    rgba(255, 247, 246, 0.72);
+  box-shadow: 0 10px 24px rgba(181, 119, 129, 0.1);
+}
+
+.client-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.master-reviews-list {
+  display: grid;
+  gap: 12px;
+}
+
+.master-social-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.master-social-link {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  padding: 12px 14px;
+  border: 1px solid rgba(233, 188, 185, 0.72);
+  border-radius: 14px;
+  color: #754846;
+  text-decoration: none;
+  background: rgba(255, 251, 250, 0.72);
+}
+
+.master-social-link span {
+  color: rgba(122, 77, 75, 0.68);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.master-social-link strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.client-history-card,
+.master-review-card {
+  display: grid;
+  gap: 14px;
+}
+
+.client-history-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.client-history-card__top div {
+  display: grid;
+  gap: 4px;
+}
+
+.client-history-card__top strong {
+  color: #754846;
+}
+
+.client-history-card__top span {
+  color: rgba(122, 77, 75, 0.7);
+  font-size: 14px;
+}
+
+.client-review-form,
+.client-review-saved {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(233, 188, 185, 0.72);
+  border-radius: 14px;
+  background: rgba(255, 251, 250, 0.72);
+}
+
+.client-review-form label {
+  display: grid;
+  gap: 6px;
+  color: rgba(122, 77, 75, 0.76);
+  font-size: 14px;
+}
+
+.client-review-form select,
+.client-review-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(122, 77, 75, 0.2);
+  border-radius: 8px;
+  color: #5f3837;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.client-review-form textarea {
+  resize: vertical;
+}
+
+.client-review-form button {
+  justify-self: start;
+}
+
+.client-review-saved strong {
+  color: #d68f58;
+  letter-spacing: 0.08em;
+}
+
+.client-review-saved p {
+  margin: 0;
+  color: #80645c;
+}
+
+.master-review-card {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 247, 246, 0.58)),
+    rgba(255, 247, 246, 0.72);
+  box-shadow: 0 10px 24px rgba(181, 119, 129, 0.1);
+}
+
+.master-review-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.master-review-card__head strong {
+  color: #754846;
+}
+
+.master-review-card__head span {
+  color: #d68f58;
+  letter-spacing: 0.08em;
+}
+
+.master-review-card p {
+  margin: 0;
+  color: #80645c;
+}
+
+.services-list {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.services-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.services-list::-webkit-scrollbar-thumb {
+  background: rgba(177, 107, 97, 0.28);
+  border-radius: 999px;
+}
+
+.profile-section--services .service-card {
+  min-height: 0;
+  padding: 10px 12px;
+}
+
+.service-card span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.portfolio-item {
+  display: grid;
+  gap: 10px;
+}
+
+.portfolio-item img,
+.portfolio-placeholder {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 8px;
+}
+
+.portfolio-item img {
+  object-fit: cover;
+}
+
+.portfolio-placeholder {
+  display: grid;
+  place-items: center;
+  color: rgba(122, 77, 75, 0.64);
+  background: rgba(122, 77, 75, 0.08);
+}
+
+.profile-error {
+  padding: 12px 14px;
+  border: 1px solid rgba(170, 42, 42, 0.22);
+  border-radius: 8px;
+  color: #9c3030;
+  background: rgba(255, 232, 232, 0.82);
+}
+
+.profile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(69, 42, 40, 0.36);
+}
+
+.profile-modal {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 680px);
+  max-height: min(760px, 92vh);
+  padding: 24px;
+  overflow: auto;
+  border-radius: 8px;
+  background: #fff8f7;
+  box-shadow: 0 24px 70px rgba(72, 43, 42, 0.24);
+}
+
+.profile-modal::-webkit-scrollbar {
+  display: none;
+}
+
+.profile-modal {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.modal-header h2,
+.profile-modal h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.profile-modal label {
+  display: grid;
+  gap: 7px;
+  color: rgba(122, 77, 75, 0.76);
+  font-size: 14px;
+}
+
+.profile-modal input,
+.profile-modal select,
+.profile-modal textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid rgba(122, 77, 75, 0.2);
+  border-radius: 8px;
+  color: #5f3837;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.profile-modal input[type="file"] {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.profile-modal textarea {
+  resize: vertical;
+}
+
+.file-note {
+  margin: -4px 0 0;
+  color: rgba(122, 77, 75, 0.68);
+  font-size: 14px;
+}
+
+.profile-avatar-preview {
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+  border: 1px solid rgba(122, 77, 75, 0.2);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.profile-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-form-row,
+.modal-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+@media (max-width: 760px) {
+  .profile-header,
+  .section-header,
+  .service-card,
+  .booking-card,
+  .sale-card,
+  .client-history-card__top {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .client-profile-summary,
+  .master-profile-summary,
+  .stats-grid,
+  .profile-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    justify-content: stretch;
+  }
+
+  .modal-actions button {
+    flex: 1;
+  }
+}

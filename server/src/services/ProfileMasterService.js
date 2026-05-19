@@ -1,4 +1,12 @@
-const { ProfileMaster } = require("../db/models");
+const { MasterPortfolio, MasterSocial, ProfileMaster, User } = require("../db/models");
+
+function mapPortfolioItem(item) {
+  return {
+    id: String(item.id),
+    imageUrl: item.portfolioImages,
+    title: item.text,
+  };
+}
 
 class ProfileMasterService {
   static async create(ProfileData) {
@@ -9,15 +17,57 @@ class ProfileMasterService {
     return plainProfile;
   }
 
-  static async update(id, ProfileData) {
-    const [rows] = await ProfileMaster.update(ProfileData, {
-      where: { userId: id },
-    });
+  static async findByUserId(id) {
+    const profile = await ProfileMaster.findOne({ where: { userId: id } });
 
-    if (rows === 0) {
+    return profile ? profile.get() : null;
+  }
+
+  static async findPublicByUserId(id) {
+    const [user, profile, portfolio, socials] = await Promise.all([
+      User.findOne({
+        where: { id, role: "master" },
+        attributes: ["id", "name", "email", "phone", "avatar"],
+      }),
+      ProfileMaster.findOne({ where: { userId: id } }),
+      MasterPortfolio.findAll({
+        where: { userId: id },
+        order: [["id", "DESC"]],
+      }),
+      MasterSocial.findAll({
+        where: { userId: id },
+        order: [["id", "ASC"]],
+      }),
+    ]);
+
+    if (!user) {
       return null;
     }
-    const profile = await ProfileMaster.findOne({ where: { userId: id } });
+
+    return {
+      user: user.get(),
+      profile: profile ? profile.get() : null,
+      portfolio: portfolio.map(mapPortfolioItem),
+      socials: socials.map((social) => social.get()),
+    };
+  }
+
+  static async update(id, ProfileData) {
+    const [profile] = await ProfileMaster.findOrCreate({
+      where: { userId: id },
+      defaults: {
+        ...ProfileData,
+        userId: id,
+        rating: ProfileData.rating ?? 0,
+      },
+    });
+
+    if (!profile.isNewRecord) {
+      await profile.update({
+        ...ProfileData,
+        userId: id,
+      });
+    }
 
     const plainProfile = profile.get();
 

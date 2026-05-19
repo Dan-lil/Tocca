@@ -18,7 +18,18 @@ class ShaduleController {
     }
 
     try {
-      const newShadule = await ShaduleService.create(shaduleData);
+      const masterId = user.id ?? shaduleData.masterId;
+
+      if (!masterId) {
+        return res
+          .status(400)
+          .json(formatResponse(400, "Не удалось определить мастера для графика"));
+      }
+
+      const newShadule = await ShaduleService.create({
+        ...shaduleData,
+        masterId,
+      });
       return res
         .status(201)
         .json(formatResponse(201, "График успешно создан!", newShadule));
@@ -27,7 +38,14 @@ class ShaduleController {
       console.log(error);
       return res
         .status(500)
-        .json(formatResponse(500, "Ошибка сервера при создании графика"));
+        .json(
+          formatResponse(
+            500,
+            "Ошибка сервера при создании графика",
+            null,
+            error.message,
+          ),
+        );
     }
   }
 
@@ -70,7 +88,18 @@ class ShaduleController {
     }
 
     try {
-      const updatedShadule = await ShaduleService.update(id, shaduleData);
+      const masterId = user.id ?? shaduleData.masterId;
+
+      if (!masterId) {
+        return res
+          .status(400)
+          .json(formatResponse(400, "Не удалось определить мастера для графика"));
+      }
+
+      const updatedShadule = await ShaduleService.update(id, {
+        ...shaduleData,
+        masterId,
+      });
       if (!updatedShadule) {
         return res
           .status(404)
@@ -89,7 +118,14 @@ class ShaduleController {
       console.log(error);
       return res
         .status(500)
-        .json(formatResponse(500, "Ошибка сервера при обновлении графика"));
+        .json(
+          formatResponse(
+            500,
+            "Ошибка сервера при обновлении графика",
+            null,
+            error.message,
+          ),
+        );
     }
   }
 
@@ -136,7 +172,7 @@ class ShaduleController {
     }
 
     try {
-      await ShaduleService.deleteByMasterId(masterId);
+      await ShaduleService.deleteByMasterId(user.id ?? masterId);
       return res
         .status(200)
         .json(formatResponse(200, "Графики успешно удалены"));

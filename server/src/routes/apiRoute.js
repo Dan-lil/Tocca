@@ -1,6 +1,7 @@
 const apiRouter = require("express").Router();
 const authRouter = require("./authRoute");
 const aiRouter = require("./aiRoute");
+const masterRouter = require("./masterRoute");
 const MasterPortfolioRouter = require("./masterPortfolioRoute");
 const profileMasterRouter = require("./profileMasterRoute");
 const ServiziRouter = require("./ServiziRoute");
@@ -11,9 +12,12 @@ const SaleRouter = require("./SaleRoute");
 const BookingRouter = require("./BookingRoute");
 const ShaduleRouter = require("./ShaduleRoute");
 const EcoRouter = require("./EcoRoute");
+const ChatRouter = require("./ChatRoute");
+const MessageRouter = require("./MessageRoute");
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/ai", aiRouter);
+apiRouter.use("/master", masterRouter);
 apiRouter.use("/profile", profileMasterRouter);
 apiRouter.use("/portfolio", MasterPortfolioRouter);
 apiRouter.use("/social", MasterSocialRouter);
@@ -23,6 +27,8 @@ apiRouter.use("/booking", BookingRouter);
 apiRouter.use("/sale", SaleRouter);
 apiRouter.use("/shadule", ShaduleRouter);
 apiRouter.use("/eco", EcoRouter);
+apiRouter.use("/chat", ChatRouter);
+apiRouter.use("/message", MessageRouter);
 
 apiRouter.use((req, res) => {
   res.status(404).json(formatResponse(404, "Ресурс не найден"));
