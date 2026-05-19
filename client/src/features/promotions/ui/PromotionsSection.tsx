@@ -1,17 +1,17 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRef } from "react";
 
 import type { PromotionItem } from "@/features/promotions/model/promotions.data";
 import { usePromotionsCarousel } from "@/shared/hooks/usePromotionsCarousel";
+import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
 
 type PromotionsSectionProps = {
   promotions: PromotionItem[];
 };
 
-const PROMOTION_IMAGE_FALLBACK = "/акция_дня.jpeg";
+const PROMOTION_IMAGE_FALLBACK = "/Р°РєС†РёСЏ_РґРЅСЏ.jpeg";
 
 export function PromotionsSection({ promotions }: PromotionsSectionProps) {
   // Ref нужны GSAP-карусели для управления контейнером, карточками и drag-слоем
@@ -73,12 +73,21 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
                 <p>{promotion.comment}</p>
                 <span className="promo-date">Акция действует до {promotion.expiresAt}</span>
                 <span className="promo-master">{promotion.masterName}</span>
-                <Link
+                <button
                   className="glass-button glass-button--compact promo-link"
-                  href="#"
+                  type="button"
+                  onClick={() =>
+                    dispatchBookingModalOpen({
+                      categoryId: promotion.categoryId,
+                      categoryTitle: promotion.serviceTitle,
+                      masterId: promotion.masterId,
+                      masterName: promotion.masterName,
+                      services: promotion.services,
+                    })
+                  }
                 >
                   Воспользоваться акцией
-                </Link>
+                </button>
               </div>
             </article>
           ))}
