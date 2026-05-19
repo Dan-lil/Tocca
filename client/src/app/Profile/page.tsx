@@ -470,6 +470,9 @@ export default function ProfilePage() {
               // eslint-disable-next-line @next/next/no-img-element
               <img className="profile-avatar" src={getMediaUrl(user.avatar)} alt="Фото профиля" />
             ) : null}
+            <Link className="profile-link-button" href="/messages">
+              Чат
+            </Link>
             <button type="button" onClick={handleOpenClientProfileModal}>
               Редактировать
             </button>
@@ -717,6 +720,9 @@ export default function ProfilePage() {
           ) : null}
           <Link className="profile-link-button" href="/calendarMaster">
             Посмотреть календарь
+          </Link>
+          <Link className="profile-link-button" href="/messages">
+            Чат
           </Link>
           <button type="button" onClick={handleOpenMasterProfileModal}>
             Редактировать
