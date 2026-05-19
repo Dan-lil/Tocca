@@ -171,6 +171,12 @@ export default function ProfilePage() {
 
   async function handleSaveMasterProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!user) {
+      setProfileError("Не удалось определить пользователя");
+      return;
+    }
+
     setIsProfileSaving(true);
     setProfileError(null);
 

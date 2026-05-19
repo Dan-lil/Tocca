@@ -120,9 +120,9 @@ export default function HomePage() {
           {servicesError ? <p className="service-load-error">{servicesError}</p> : null}
 
           <div className="services-grid">
-            {visibleServices.map((service) => (
+            {visibleServices.map((service, index) => (
               // На главной показываем услуги из базы вместе с путями до изображений
-              <article className="service-card" key={service.id}>
+              <article className="service-card" key={`service-${service.id}-${index}`}>
                 <div className="service-media">
                   <Image src={getServiceImageSrc(service)} alt={service.title} fill />
                 </div>

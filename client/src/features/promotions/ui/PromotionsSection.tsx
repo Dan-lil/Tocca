@@ -56,7 +56,7 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
           {promotions.map((promotion, index) => (
             <article
               className="promo-card"
-              key={promotion.id}
+              key={`promotion-${promotion.id}-${index}`}
               ref={(node) => {
                 promoCardsRef.current[index] = node;
               }}

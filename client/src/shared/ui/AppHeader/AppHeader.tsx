@@ -80,14 +80,28 @@ export default function AppHeader() {
 
   const dropdownServices = useMemo<HeaderServiceLink[]>(
     // В dropdown показываем активные услуги с теми названиями, которые пришли из базы
-    () =>
+    () => {
+      const uniqueServices = new Map<string, HeaderServiceLink>();
+
       services
         .filter((service) => service.isActive)
-        .map((service) => ({
+        .forEach((service) => {
+          const title = service.title.trim();
+          const uniqueKey = `${service.categoryId}-${title.toLowerCase()}`;
+
+          if (uniqueServices.has(uniqueKey)) {
+            return;
+          }
+
+          uniqueServices.set(uniqueKey, {
           id: service.id,
           categoryId: service.categoryId,
-          title: service.title,
-        })),
+            title,
+          });
+        });
+
+      return Array.from(uniqueServices.values());
+    },
     [services],
   );
 
@@ -148,11 +162,11 @@ export default function AppHeader() {
                   ) : null}
 
                   {!isServicesLoading && !servicesError
-                    ? dropdownServices.map((service) => (
+                    ? dropdownServices.map((service, index) => (
                         <Link
                           className="top-nav-dropdown-link"
                           href={`/services/${service.categoryId}?serviceId=${service.id}`}
-                          key={service.id}
+                          key={`header-service-${service.categoryId}-${service.id}-${index}`}
                           onClick={() => setIsDropdownOpen(false)}
                         >
                           {service.title}

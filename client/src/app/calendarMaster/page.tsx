@@ -447,8 +447,11 @@ export default function CalendarMasterPage() {
         ) : null}
 
         <div className="master-schedule-grid">
-          {scheduleDrafts.map((draft) => (
-            <article className="master-schedule-day" key={draft.dayOdWeek}>
+          {scheduleDrafts.map((draft, index) => (
+            <article
+              className="master-schedule-day"
+              key={`schedule-${draft.dayOdWeek}-${draft.id ?? index}`}
+            >
               <label className="master-schedule-day__toggle">
                 <input
                   type="checkbox"
@@ -509,14 +512,19 @@ export default function CalendarMasterPage() {
 
           <div className="master-calendar-weekdays">
             {weekDays.map((day) => (
-              <span key={day}>{day}</span>
+              <span key={`weekday-${day}`}>{day}</span>
             ))}
           </div>
 
           <div className="master-calendar-grid">
             {monthDays.map((date, index) => {
               if (!date) {
-                return <div className="master-calendar-day master-calendar-day--empty" key={index} />;
+                return (
+                  <div
+                    className="master-calendar-day master-calendar-day--empty"
+                    key={`empty-${index}`}
+                  />
+                );
               }
 
               const dateKey = toDateKey(date);
@@ -641,8 +649,8 @@ export default function CalendarMasterPage() {
                     disabled={selectedFreeSlots.length === 0}
                   >
                     {selectedFreeSlots.length > 0 ? (
-                      selectedFreeSlots.map((slot) => (
-                        <option key={slot} value={slot}>
+                      selectedFreeSlots.map((slot, index) => (
+                        <option key={`form-slot-${selectedKey}-${slot}-${index}`} value={slot}>
                           {slot}
                         </option>
                       ))
@@ -684,8 +692,11 @@ export default function CalendarMasterPage() {
             <h3>Записи клиентов</h3>
             <div className="master-appointments">
               {selectedAppointments.length > 0 ? (
-                selectedAppointments.map((appointment) => (
-                  <article className="master-appointment-card" key={appointment.id}>
+                selectedAppointments.map((appointment, index) => (
+                  <article
+                    className="master-appointment-card"
+                    key={`appointment-${selectedKey}-${appointment.id}-${appointment.time}-${index}`}
+                  >
                     <div className="master-appointment-card__top">
                       <div>
                         <strong>{appointment.clientName}</strong>
@@ -732,7 +743,11 @@ export default function CalendarMasterPage() {
             <h3>Свободные окна</h3>
             <div className="master-slots">
               {selectedFreeSlots.length > 0 ? (
-                selectedFreeSlots.map((slot) => <button type="button" key={slot}>{slot}</button>)
+                selectedFreeSlots.map((slot, index) => (
+                  <button type="button" key={`slot-${selectedKey}-${slot}-${index}`}>
+                    {slot}
+                  </button>
+                ))
               ) : (
                 <p className="master-empty-state">Свободных окон пока не добавлено.</p>
               )}
