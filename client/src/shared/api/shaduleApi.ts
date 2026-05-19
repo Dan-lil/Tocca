@@ -17,8 +17,10 @@ export async function getShadulesByMaster(masterId: number | string) {
 
     return data.data ?? [];
   } catch (error) {
+    const response = (error as AxiosError<ServerResponseType<null>>).response?.data;
     const message =
-      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      response?.error ??
+      response?.message ??
       "Не удалось загрузить расписание мастера";
 
     throw new Error(message);
@@ -46,8 +48,10 @@ export async function createShadule(payload: SaveShadulePayload) {
 
     return data.data;
   } catch (error) {
+    const response = (error as AxiosError<ServerResponseType<null>>).response?.data;
     const message =
-      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      response?.error ??
+      response?.message ??
       (error instanceof Error ? error.message : "Не удалось создать расписание");
 
     throw new Error(message);
@@ -67,8 +71,10 @@ export async function updateShadule(id: number | string, payload: SaveShadulePay
 
     return data.data;
   } catch (error) {
+    const response = (error as AxiosError<ServerResponseType<null>>).response?.data;
     const message =
-      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      response?.error ??
+      response?.message ??
       (error instanceof Error ? error.message : "Не удалось обновить расписание");
 
     throw new Error(message);

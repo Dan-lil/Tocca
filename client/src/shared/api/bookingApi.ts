@@ -7,12 +7,13 @@ import { BookingType, CreateBookingPayload, ServerResponseType } from "@/shared/
 const BOOKING_API_URLS = {
   create: "/booking/bookings",
   findByMaster: (masterId: number | string) => `/booking/bookings/master/${masterId}`,
+  update: (id: number | string) => `/booking/bookings/${id}`,
 } as const;
 
 export async function createBooking(payload: CreateBookingPayload) {
   try {
     // Отправляем на сервер заявку на запись с выбранной услугой
-    const { data } = await axiosInstance.post<ServerResponseType<CreateBookingPayload>>(
+    const { data } = await axiosInstance.post<ServerResponseType<BookingType>>(
       BOOKING_API_URLS.create,
       payload,
     );
@@ -27,6 +28,27 @@ export async function createBooking(payload: CreateBookingPayload) {
     const message =
       (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
       (error instanceof Error ? error.message : "Не удалось создать запись");
+
+    throw new Error(message);
+  }
+}
+
+export async function updateBooking(id: number | string, payload: Partial<CreateBookingPayload>) {
+  try {
+    const { data } = await axiosInstance.put<ServerResponseType<BookingType>>(
+      BOOKING_API_URLS.update(id),
+      payload,
+    );
+
+    if (!data.data) {
+      throw new Error(data.message || "Не удалось обновить запись");
+    }
+
+    return data.data;
+  } catch (error) {
+    const message =
+      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      (error instanceof Error ? error.message : "Не удалось обновить запись");
 
     throw new Error(message);
   }
