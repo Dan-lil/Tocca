@@ -5,9 +5,10 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import "./page.css";
+import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
-import { PublicMasterProfileType, ServiziType } from "@/shared/types";
+import { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shared/types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 
@@ -31,6 +32,7 @@ export default function PublicMasterPage() {
 
   const [master, setMaster] = useState<PublicMasterProfileType | null>(null);
   const [services, setServices] = useState<ServiziType[]>([]);
+  const [reviews, setReviews] = useState<EcoReviewType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,13 +44,15 @@ export default function PublicMasterPage() {
         setIsLoading(true);
         setError(null);
 
-        const [masterData, servicesData] = await Promise.all([
+        const [masterData, servicesData, reviewsData] = await Promise.all([
           getPublicMasterProfile(masterId),
           getServicesByMaster(masterId),
+          getReviewsByMaster(masterId),
         ]);
 
         setMaster(masterData);
         setServices(servicesData.filter((service) => service.isActive));
+        setReviews(reviewsData);
       } catch (loadError) {
         setError(
           loadError instanceof Error ? loadError.message : "Не удалось загрузить профиль мастера",
@@ -148,6 +152,28 @@ export default function PublicMasterPage() {
                     <p>{service.description || "Описание услуги скоро появится."}</p>
                   </div>
                   <span>{service.price.toLocaleString("ru-RU")} руб.</span>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="public-master-section glass-surface">
+          <h2>Отзывы</h2>
+          {reviews.length === 0 ? (
+            <p>У мастера пока нет отзывов.</p>
+          ) : (
+            <div className="public-master-reviews">
+              {reviews.map((review) => (
+                <article className="public-master-review" key={review.id}>
+                  <div className="public-master-review-head">
+                    <strong>Клиент #{review.clientId}</strong>
+                    <span>
+                      {"★".repeat(review.rating)}
+                      {"☆".repeat(Math.max(0, 5 - review.rating))}
+                    </span>
+                  </div>
+                  <p>{review.text}</p>
                 </article>
               ))}
             </div>

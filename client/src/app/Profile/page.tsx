@@ -23,8 +23,11 @@ import { Servizi } from "@/entities/servizi/model/index";
 import type { BookingToMaster, PortfolioItem } from "@/entities/master/model/index";
 import type { Sale } from "@/entities/sale/model";
 import type { Booking } from "@/entities/booking/model";
+import { getBookingsByClient } from "@/shared/api/bookingApi";
+import { getCategories } from "@/shared/api/categoryApi";
+import { createReview, getReviewsByClient, getReviewsByMaster } from "@/shared/api/ecoApi";
 import { axiosInstance } from "@/shared/lib/axiosInstance";
-import type { ServerResponseType } from "@/shared/types";
+import type { BookingType, CategoryType, EcoReviewType, ServerResponseType } from "@/shared/types";
 
 type ProfileMaster = {
   id?: number;
@@ -50,6 +53,11 @@ type ClientProfileForm = {
   phone: string;
   avatar: string;
   avatarFile: UploadedImage | null;
+};
+
+type ReviewDraft = {
+  rating: number;
+  text: string;
 };
 
 const emptyMasterProfile: ProfileMaster = {
@@ -126,6 +134,15 @@ export default function ProfilePage() {
     avatar: "",
     avatarFile: null,
   });
+  const [clientPastBookings, setClientPastBookings] = useState<BookingType[]>([]);
+  const [clientReviews, setClientReviews] = useState<EcoReviewType[]>([]);
+  const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>({});
+  const [reviewSavingId, setReviewSavingId] = useState<number | null>(null);
+  const [clientHistoryError, setClientHistoryError] = useState<string | null>(null);
+  const [masterReviews, setMasterReviews] = useState<EcoReviewType[]>([]);
+  const [masterReviewsError, setMasterReviewsError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [newService, setNewService] = useState({
     title: "",
     description: "",
@@ -157,6 +174,38 @@ export default function ProfilePage() {
   }, [dispatch, isMaster, user]);
 
   useEffect(() => {
+    if (!user || isMaster) return;
+
+    const loadClientHistory = async () => {
+      try {
+        setClientHistoryError(null);
+
+        const [bookingsData, reviewsData] = await Promise.all([
+          getBookingsByClient(user.id),
+          getReviewsByClient(user.id),
+        ]);
+        const now = Date.now();
+
+        setClientPastBookings(
+          bookingsData
+            .filter((booking) => new Date(booking.endTime).getTime() < now)
+            .sort(
+              (a, b) =>
+                new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+            ),
+        );
+        setClientReviews(reviewsData);
+      } catch (error) {
+        setClientHistoryError(
+          error instanceof Error ? error.message : "Не удалось загрузить прошлые записи",
+        );
+      }
+    };
+
+    void loadClientHistory();
+  }, [isMaster, user]);
+
+  useEffect(() => {
     if (!isMaster) return;
 
     axiosInstance
@@ -168,6 +217,48 @@ export default function ProfilePage() {
         setProfileError("Не удалось загрузить профиль мастера");
       });
   }, [isMaster]);
+
+  useEffect(() => {
+    if (!user || !isMaster) return;
+
+    const loadMasterReviews = async () => {
+      try {
+        setMasterReviewsError(null);
+        const reviewsData = await getReviewsByMaster(user.id);
+
+        setMasterReviews(reviewsData);
+      } catch (error) {
+        setMasterReviewsError(
+          error instanceof Error ? error.message : "Не удалось загрузить отзывы",
+        );
+      }
+    };
+
+    void loadMasterReviews();
+  }, [isMaster, user]);
+
+  useEffect(() => {
+    if (!user || !isMaster) return;
+
+    const loadCategories = async () => {
+      try {
+        setCategoriesError(null);
+        const categoriesData = await getCategories();
+
+        setCategories(categoriesData);
+        setNewService((currentService) => ({
+          ...currentService,
+          categoryId: currentService.categoryId || categoriesData[0]?.id || 1,
+        }));
+      } catch (error) {
+        setCategoriesError(
+          error instanceof Error ? error.message : "Не удалось загрузить категории",
+        );
+      }
+    };
+
+    void loadCategories();
+  }, [isMaster, user]);
 
   async function handleSaveMasterProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -254,6 +345,39 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleCreateReview(booking: BookingType) {
+    const draft = reviewDrafts[booking.id] ?? { rating: 5, text: "" };
+
+    if (!draft.text.trim()) {
+      setClientHistoryError("Напишите текст отзыва");
+      return;
+    }
+
+    try {
+      setReviewSavingId(booking.id);
+      setClientHistoryError(null);
+
+      const review = await createReview({
+        masterId: booking.masterId,
+        bookingId: booking.id,
+        rating: draft.rating,
+        text: draft.text.trim(),
+      });
+
+      setClientReviews((currentReviews) => [review, ...currentReviews]);
+      setReviewDrafts((currentDrafts) => ({
+        ...currentDrafts,
+        [booking.id]: { rating: 5, text: "" },
+      }));
+    } catch (error) {
+      setClientHistoryError(
+        error instanceof Error ? error.message : "Не удалось сохранить отзыв",
+      );
+    } finally {
+      setReviewSavingId(null);
+    }
+  }
+
   if (!user) return <div className="profile-page">Загрузка...</div>;
   if (isMaster && loading) return <div className="profile-page">Загрузка данных мастера...</div>;
 
@@ -302,6 +426,90 @@ export default function ProfilePage() {
                   {formatDateTime(booking.startTime)}
                 </div>
               ))
+            )}
+          </section>
+
+          <section className="profile-section">
+            <h2>Прошлые записи</h2>
+            {clientHistoryError ? <p className="profile-error">{clientHistoryError}</p> : null}
+            {clientPastBookings.length === 0 ? (
+              <p>Прошлых записей пока нет</p>
+            ) : (
+              <div className="client-history-list">
+                {clientPastBookings.map((booking) => {
+                  const existingReview = clientReviews.find(
+                    (review) => review.bookingId === booking.id,
+                  );
+                  const draft = reviewDrafts[booking.id] ?? { rating: 5, text: "" };
+
+                  return (
+                    <article className="client-history-card" key={booking.id}>
+                      <div className="client-history-card__top">
+                        <div>
+                          <strong>Мастер #{booking.masterId}</strong>
+                          <span>{formatDateTime(booking.startTime)}</span>
+                        </div>
+                        <span>Услуга #{booking.serviziId}</span>
+                      </div>
+
+                      {existingReview ? (
+                        <div className="client-review-saved">
+                          <strong>{"★".repeat(existingReview.rating)}</strong>
+                          <p>{existingReview.text}</p>
+                        </div>
+                      ) : (
+                        <div className="client-review-form">
+                          <label>
+                            <span>Оценка</span>
+                            <select
+                              value={draft.rating}
+                              onChange={(event) =>
+                                setReviewDrafts((currentDrafts) => ({
+                                  ...currentDrafts,
+                                  [booking.id]: {
+                                    ...draft,
+                                    rating: Number(event.target.value),
+                                  },
+                                }))
+                              }
+                            >
+                              {[5, 4, 3, 2, 1].map((rating) => (
+                                <option key={rating} value={rating}>
+                                  {rating}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            <span>Отзыв</span>
+                            <textarea
+                              value={draft.text}
+                              onChange={(event) =>
+                                setReviewDrafts((currentDrafts) => ({
+                                  ...currentDrafts,
+                                  [booking.id]: {
+                                    ...draft,
+                                    text: event.target.value,
+                                  },
+                                }))
+                              }
+                              placeholder="Расскажите, как прошла запись"
+                              rows={3}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            disabled={reviewSavingId === booking.id}
+                            onClick={() => void handleCreateReview(booking)}
+                          >
+                            {reviewSavingId === booking.id ? "Сохранение..." : "Оставить отзыв"}
+                          </button>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
             )}
           </section>
 
@@ -509,6 +717,29 @@ export default function ProfilePage() {
         </section>
 
         <section className="profile-section">
+          <h2>Отзывы клиентов</h2>
+          {masterReviewsError ? <p className="profile-error">{masterReviewsError}</p> : null}
+          {masterReviews.length === 0 ? (
+            <p>Отзывов пока нет</p>
+          ) : (
+            <div className="master-reviews-list">
+              {masterReviews.map((review) => (
+                <article className="master-review-card" key={review.id}>
+                  <div className="master-review-card__head">
+                    <strong>Клиент #{review.clientId}</strong>
+                    <span>
+                      {"★".repeat(review.rating)}
+                      {"☆".repeat(Math.max(0, 5 - review.rating))}
+                    </span>
+                  </div>
+                  <p>{review.text}</p>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="profile-section">
           <div className="section-header">
             <h2>Портфолио</h2>
             <button type="button" onClick={() => setShowAddPhoto(true)}>
@@ -692,6 +923,32 @@ export default function ProfilePage() {
             <div className="profile-modal">
               <h2>Добавить услугу</h2>
               <label>
+                <span>Категория</span>
+                <select
+                  value={newService.categoryId}
+                  disabled={categories.length === 0}
+                  onChange={(event) =>
+                    setNewService({
+                      ...newService,
+                      categoryId: Number(event.target.value),
+                    })
+                  }
+                >
+                  {categories.length > 0 ? (
+                    categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.title}
+                      </option>
+                    ))
+                  ) : (
+                    <option value={newService.categoryId}>
+                      {categoriesError ? "Категории не загрузились" : "Загрузка категорий..."}
+                    </option>
+                  )}
+                </select>
+                {categoriesError ? <p className="file-note">{categoriesError}</p> : null}
+              </label>
+              <label>
                 <span>Название услуги</span>
                 <input
                   placeholder="Маникюр с покрытием"
@@ -740,11 +997,18 @@ export default function ProfilePage() {
               <div className="modal-actions">
                 <button
                   type="button"
+                  disabled={categories.length === 0}
                   onClick={async () => {
                     await dispatch(addServiceThunk(newService));
                     dispatch(fetchMasterServicesThunk());
                     setShowAddService(false);
-                    setNewService({ title: "", description: "", price: 0, duration: 60, categoryId: 1 });
+                    setNewService({
+                      title: "",
+                      description: "",
+                      price: 0,
+                      duration: 60,
+                      categoryId: categories[0]?.id || 1,
+                    });
                   }}
                 >
                   Сохранить

@@ -1,8 +1,11 @@
 const { Eco } = require("../db/models");
 
 class EcoService {
-  static async create(EcoData) {
-    const newEco = await Eco.create(EcoData);
+  static async create(clientId, EcoData) {
+    const newEco = await Eco.create({
+      ...EcoData,
+      clientId,
+    });
 
     const plainEco = newEco.get();
 

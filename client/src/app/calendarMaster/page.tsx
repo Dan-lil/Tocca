@@ -441,12 +441,6 @@ export default function CalendarMasterPage() {
     );
   }
 
-  async function handleRefresh() {
-    if (!masterId) return;
-
-    await loadMasterCalendarData(masterId);
-  }
-
   async function handleChangeAppointmentStatus(appointment: Appointment) {
     const nextUiStatus = nextStatus[appointment.status];
 
@@ -672,14 +666,6 @@ export default function CalendarMasterPage() {
             }}
           >
             Добавить запись
-          </button>
-          <button
-            className="master-calendar-primary"
-            type="button"
-            disabled={!masterId || isPageLoading}
-            onClick={() => void handleRefresh()}
-          >
-            {isPageLoading ? "Загрузка..." : "Обновить данные"}
           </button>
         </div>
       </section>

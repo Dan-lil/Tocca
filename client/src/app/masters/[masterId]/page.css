@@ -120,7 +120,13 @@
   gap: 10px;
 }
 
-.public-master-service {
+.public-master-reviews {
+  display: grid;
+  gap: 12px;
+}
+
+.public-master-service,
+.public-master-review {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -129,6 +135,26 @@
   border: 1px solid rgba(233, 188, 185, 0.72);
   border-radius: 16px;
   background: rgba(255, 251, 250, 0.72);
+}
+
+.public-master-review {
+  display: grid;
+}
+
+.public-master-review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.public-master-review-head strong {
+  color: #754846;
+}
+
+.public-master-review-head span {
+  color: #d68f58;
+  letter-spacing: 0.08em;
 }
 
 .public-master-service strong {
