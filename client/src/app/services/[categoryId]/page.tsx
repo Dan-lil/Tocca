@@ -21,7 +21,6 @@ type ServiceDirectoryCard = {
   meta: string;
   serviceTitle: string;
   serviceDescription: string;
-  detailBadges: string[];
   services: ServiziType[];
 };
 
@@ -53,7 +52,6 @@ function buildServiceCards(
       meta: `${skillLabel} · от ${priceFrom.toLocaleString("ru-RU")} ₽`,
       serviceTitle: primaryService?.title ?? skillLabel,
       serviceDescription: primaryService?.description ?? "",
-      detailBadges: ["Профиль мастера", "Отзывы"],
       services: masterServices,
     };
   });
@@ -223,22 +221,21 @@ export default function CategoryPage() {
                   </div>
 
                   <div className="services-directory-badges">
-                    {card.detailBadges.map((badge) => (
-                      <button
-                        className={`services-directory-badge${
-                          badge === "Отзывы" && isReviewsOpen ? " is-active" : ""
-                        }`}
-                        key={badge}
-                        type="button"
-                        onClick={() => {
-                          if (badge === "Отзывы") {
-                            void handleToggleReviews(card.masterId);
-                          }
-                        }}
-                      >
-                        {badge}
-                      </button>
-                    ))}
+                    <Link
+                      className="services-directory-badge services-directory-badge-link"
+                      href={`/masters/${card.masterId}`}
+                    >
+                      Профиль мастера
+                    </Link>
+                    <button
+                      className={`services-directory-badge${isReviewsOpen ? " is-active" : ""}`}
+                      type="button"
+                      onClick={() => {
+                        void handleToggleReviews(card.masterId);
+                      }}
+                    >
+                      Отзывы
+                    </button>
                   </div>
 
                   {isReviewsOpen ? (

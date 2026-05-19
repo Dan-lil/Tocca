@@ -29,6 +29,34 @@ export type ServiziType = {
   updatedAt?: string;
 };
 
+export type PublicMasterPortfolioItem = {
+  id: string;
+  imageUrl: string;
+  title: string;
+};
+
+export type PublicMasterProfileType = {
+  user: {
+    id: number;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    avatar?: string | null;
+  };
+  profile: {
+    id?: number;
+    userId?: number;
+    title?: string | null;
+    description?: string | null;
+    city?: string | null;
+    address?: string | null;
+    experience?: number | null;
+    category?: string | null;
+    rating?: number | null;
+  } | null;
+  portfolio: PublicMasterPortfolioItem[];
+};
+
 export type BookingModalPayload = {
   categoryId: number;
   categoryTitle: string;
