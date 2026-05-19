@@ -5,7 +5,7 @@ import SignInForm from "@/features/auth/ui/SignInForm/SignInForm";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/shared/hooks/useReduxHooks";
-import { setError } from "@/entities/user/slice/userSlice"; 
+import { setError } from "@/entities/user/slice/userSlice";
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -14,10 +14,10 @@ export default function AuthPage() {
   const router = useRouter();
 
   const { user, isInitialized, error } = useAppSelector((state) => state.user);
-//строкой путь на домашнюю 
+  // строкой путь на домашнюю
   useEffect(() => {
     if (isInitialized && user) {
-      router.replace('/');
+      router.replace("/");
     }
   }, [isInitialized, router, user]);
 
@@ -26,14 +26,15 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="app-container">
+    <div className="app-container auth-page">
       <div className="form-container">
         {isSignUp ? <SignUpForm /> : <SignInForm />}
-        {error && <p>{error}</p>}
+        {error && <p className="auth-error">{error}</p>}
         {isSignUp ? (
-          <>
+          <div className="auth-switch">
             <p>Уже есть учетная запись?</p>
-            <span
+            <button
+              type="button"
               className="auth-link"
               onClick={() => {
                 setIsSignUp(!isSignUp);
@@ -41,12 +42,13 @@ export default function AuthPage() {
               }}
             >
               Войти
-            </span>
-          </>
+            </button>
+          </div>
         ) : (
-          <>
+          <div className="auth-switch">
             <p>Еще нет учетной записи?</p>
-            <span
+            <button
+              type="button"
               className="auth-link"
               onClick={() => {
                 setIsSignUp(!isSignUp);
@@ -54,8 +56,8 @@ export default function AuthPage() {
               }}
             >
               Создать
-            </span>
-          </>
+            </button>
+          </div>
         )}
       </div>
     </div>

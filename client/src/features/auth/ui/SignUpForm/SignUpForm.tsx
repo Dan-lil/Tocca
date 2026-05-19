@@ -86,6 +86,7 @@ export default function SignUpForm() {
           label="Подтвердите пароль"
         />
         <select
+          className="auth-select"
           name="role"
           value={signUpData.role}
           onChange={inputHandler}

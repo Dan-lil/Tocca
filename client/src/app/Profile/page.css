@@ -38,6 +38,11 @@
   backdrop-filter: blur(18px);
 }
 
+.profile-header > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .profile-header::before {
   position: absolute;
   inset: 0;
@@ -58,9 +63,11 @@
 }
 
 .profile-avatar {
+  order: -1;
   width: 76px;
   height: 76px;
   flex: 0 0 auto;
+  align-self: flex-start;
   border: 1px solid rgba(122, 77, 75, 0.2);
   border-radius: 50%;
   object-fit: cover;
