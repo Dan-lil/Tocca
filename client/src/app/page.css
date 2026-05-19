@@ -202,13 +202,16 @@ button {
 }
 
 .section-heading span {
-  padding: 8px 18px;
+  padding: 10px 22px;
+  border: 1px solid rgba(228, 184, 177, 0.72);
   border-radius: 999px;
-  background: rgba(255, 245, 244, 0.8);
-  color: #bc7f79;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  background: linear-gradient(180deg, rgba(255, 247, 245, 0.92) 0%, rgba(244, 220, 216, 0.88) 100%);
+  box-shadow: 0 12px 24px rgba(198, 145, 139, 0.14);
+  color: #b46f69;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 
 .services-grid {
@@ -400,6 +403,11 @@ button {
     #492c2a7a
   );
   color: #fff5f3;
+}
+
+.promo-copy--panel-open {
+  justify-content: center;
+  align-items: center;
 }
 
 .promo-copy p {

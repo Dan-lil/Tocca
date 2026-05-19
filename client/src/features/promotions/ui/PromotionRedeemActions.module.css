@@ -1,0 +1,50 @@
+.trigger {
+  width: fit-content;
+}
+
+/* Локальные стили для раскрывающегося блока промокода */
+.panel {
+  width: min(100%, 320px);
+  margin: 2px auto 0;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 20px;
+  background: rgba(77, 46, 44, 0.52);
+  box-shadow: 0 20px 36px rgba(88, 50, 47, 0.16);
+  backdrop-filter: blur(10px);
+  color: #fff8f6;
+}
+
+.code {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 249, 247, 0.92);
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #9e5f58;
+}
+
+.description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+  color: rgba(255, 246, 243, 0.84);
+}
+
+.actions {
+  display: grid;
+  gap: 8px;
+}
+
+/* Кнопки оставляем одинаковой ширины, чтобы панель выглядела ровно */
+.actionButton {
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+}
