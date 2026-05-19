@@ -1,6 +1,12 @@
 import { axiosInstance, setAccessToken } from "@/shared/lib/axiosInstance";
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { UserLoginData, UserRegisterData, UserType, UserWithTokenType } from "../model";
+import {
+    UserLoginData,
+    UserProfileUpdateData,
+    UserRegisterData,
+    UserType,
+    UserWithTokenType,
+} from "../model";
 import { ServerResponseType } from "@/shared/types";
 import { AxiosError } from "axios";
 
@@ -11,6 +17,7 @@ const USER_THUNK_NAMES = {
     LOGIN: "user/login",
     REFRESH: "user/refresh",
     LOGOUT: "user/logout",
+    UPDATE_PROFILE: "user/updateProfile",
 } as const;
 
 
@@ -20,6 +27,7 @@ const USER_API_URLS = {
     LOGIN: "/auth/login",
     REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
+    UPDATE_PROFILE: "/auth/profile",
 } as const;
 
 //thunk - выполняет работу асинхронно, генерирует action и передаёт его в reducer
@@ -80,3 +88,24 @@ export const logoutThunk = createAsyncThunk<null, void, { rejectValue: string }>
         return rejectWithValue((error as AxiosError<ServerResponseType<null>>).response?.data?.message ?? 'Ошибка при выходе из приложения')
     }
 });
+
+export const updateUserProfileThunk = createAsyncThunk<UserType, UserProfileUpdateData, { rejectValue: string }>(
+    USER_THUNK_NAMES.UPDATE_PROFILE,
+    async (userData, { rejectWithValue }) => {
+        try {
+            const { data } = await axiosInstance.put<ServerResponseType<UserWithTokenType>>(
+                USER_API_URLS.UPDATE_PROFILE,
+                userData,
+            );
+
+            if (data.statusCode === 200 && data.data?.user) {
+                setAccessToken(data.data.accessToken ?? '');
+                return data.data.user;
+            }
+
+            return rejectWithValue(data.message ?? 'Ошибка при обновлении профиля');
+        } catch (error) {
+            return rejectWithValue((error as AxiosError<ServerResponseType<null>>).response?.data?.message ?? 'Ошибка при обновлении профиля');
+        }
+    },
+);

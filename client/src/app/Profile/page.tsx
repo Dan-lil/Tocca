@@ -17,6 +17,7 @@ import {
   fetchMasterStatsThunk,
   fetchUpcomingBookingsForMasterThunk,
 } from "@/entities/master/api/masterThunk";
+import { updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
 import type { BookingToMaster, PortfolioItem } from "@/entities/master/model/index";
 import type { Sale } from "@/entities/sale/model";
@@ -42,6 +43,14 @@ type UploadedImage = {
   data: string;
 };
 
+type ClientProfileForm = {
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  avatarFile: UploadedImage | null;
+};
+
 const emptyMasterProfile: ProfileMaster = {
   title: "",
   description: "",
@@ -51,6 +60,22 @@ const emptyMasterProfile: ProfileMaster = {
   category: "",
   rating: 0,
 };
+
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+function getMediaUrl(value?: string | null) {
+  if (!value) return "";
+
+  if (value.startsWith("http") || value.startsWith("data:") || value.startsWith("blob:")) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return `${apiBaseUrl}${value}`;
+  }
+
+  return value;
+}
 
 function formatDateTime(value: string | number) {
   const date = new Date(value);
@@ -89,9 +114,17 @@ export default function ProfilePage() {
   const [showAddService, setShowAddService] = useState(false);
   const [showAddPhoto, setShowAddPhoto] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isClientProfileModalOpen, setIsClientProfileModalOpen] = useState(false);
   const [isProfileSaving, setIsProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [masterProfile, setMasterProfile] = useState<ProfileMaster>(emptyMasterProfile);
+  const [clientProfile, setClientProfile] = useState<ClientProfileForm>({
+    name: "",
+    email: "",
+    phone: "",
+    avatar: "",
+    avatarFile: null,
+  });
   const [newService, setNewService] = useState({
     title: "",
     description: "",
@@ -141,6 +174,16 @@ export default function ProfilePage() {
     setProfileError(null);
 
     try {
+      await dispatch(
+        updateUserProfileThunk({
+          name: user.name,
+          email: user.email,
+          phone: user.phone ?? "",
+          avatar: user.avatar ?? "",
+          avatarFile: clientProfile.avatarFile ?? undefined,
+        }),
+      ).unwrap();
+
       const response = await axiosInstance.put<ServerResponseType<ProfileMaster>>(
         "/profile/update",
         masterProfile,
@@ -158,6 +201,52 @@ export default function ProfilePage() {
     }
   }
 
+  function handleOpenClientProfileModal() {
+    if (!user) return;
+
+    setClientProfile({
+      name: user.name ?? "",
+      email: user.email ?? "",
+      phone: user.phone ?? "",
+      avatar: user.avatar ?? "",
+      avatarFile: null,
+    });
+    setIsClientProfileModalOpen(true);
+  }
+
+  function handleOpenMasterProfileModal() {
+    if (!user) return;
+
+    setClientProfile({
+      name: user.name ?? "",
+      email: user.email ?? "",
+      phone: user.phone ?? "",
+      avatar: user.avatar ?? "",
+      avatarFile: null,
+    });
+    setIsProfileModalOpen(true);
+  }
+
+  async function handleSaveClientProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsProfileSaving(true);
+    setProfileError(null);
+
+    try {
+      await dispatch(
+        updateUserProfileThunk({
+          ...clientProfile,
+          avatarFile: clientProfile.avatarFile ?? undefined,
+        }),
+      ).unwrap();
+      setIsClientProfileModalOpen(false);
+    } catch (error) {
+      setProfileError(typeof error === "string" ? error : "Не удалось сохранить профиль");
+    } finally {
+      setIsProfileSaving(false);
+    }
+  }
+
   if (!user) return <div className="profile-page">Загрузка...</div>;
   if (isMaster && loading) return <div className="profile-page">Загрузка данных мастера...</div>;
 
@@ -166,8 +255,34 @@ export default function ProfilePage() {
       <div className="profile-page">
         <div className="profile-container">
           <div className="profile-header">
-            <h1>Личный кабинет</h1>
-            <button type="button">Редактировать</button>
+            <div>
+              <h1>Личный кабинет</h1>
+              <p>{user.name}</p>
+            </div>
+            {user.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img className="profile-avatar" src={getMediaUrl(user.avatar)} alt="Фото профиля" />
+            ) : null}
+            <button type="button" onClick={handleOpenClientProfileModal}>
+              Редактировать
+            </button>
+          </div>
+
+          {profileError && <p className="profile-error">{profileError}</p>}
+
+          <div className="client-profile-summary">
+            <div>
+              <span>Имя</span>
+              <strong>{user.name || "Не указано"}</strong>
+            </div>
+            <div>
+              <span>Email</span>
+              <strong>{user.email || "Не указан"}</strong>
+            </div>
+            <div>
+              <span>Телефон</span>
+              <strong>{user.phone || "Не указан"}</strong>
+            </div>
           </div>
 
           <section className="profile-section">
@@ -195,6 +310,103 @@ export default function ProfilePage() {
               ))
             )}
           </section>
+
+          {isClientProfileModalOpen && (
+            <div className="profile-modal-backdrop" role="presentation">
+              <form className="profile-modal" onSubmit={handleSaveClientProfile}>
+                <div className="modal-header">
+                  <h2>Профиль клиента</h2>
+                  <button
+                    type="button"
+                    onClick={() => setIsClientProfileModalOpen(false)}
+                    aria-label="Закрыть"
+                  >
+                    x
+                  </button>
+                </div>
+
+                <label>
+                  <span>Имя</span>
+                  <input
+                    value={clientProfile.name}
+                    onChange={(event) =>
+                      setClientProfile((profile) => ({ ...profile, name: event.target.value }))
+                    }
+                    placeholder="Ваше имя"
+                  />
+                </label>
+
+                <label>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    value={clientProfile.email}
+                    onChange={(event) =>
+                      setClientProfile((profile) => ({ ...profile, email: event.target.value }))
+                    }
+                    placeholder="email@example.com"
+                  />
+                </label>
+
+                <label>
+                  <span>Телефон</span>
+                  <input
+                    value={clientProfile.phone}
+                    onChange={(event) =>
+                      setClientProfile((profile) => ({ ...profile, phone: event.target.value }))
+                    }
+                    placeholder="+7 999 000-00-00"
+                  />
+                </label>
+
+                <label>
+                  <span>Фото профиля</span>
+                  <input
+                    accept="image/*"
+                    type="file"
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+
+                      if (!file) return;
+
+                      const data = await readFileAsDataUrl(file);
+
+                      setClientProfile((profile) => ({
+                        ...profile,
+                        avatarFile: {
+                          name: file.name,
+                          type: file.type,
+                          data,
+                        },
+                      }));
+                    }}
+                  />
+                  <p className="file-note">
+                    {clientProfile.avatarFile?.name || "Выберите фото с компьютера"}
+                  </p>
+                </label>
+
+                {clientProfile.avatar || clientProfile.avatarFile ? (
+                  <div className="profile-avatar-preview">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={clientProfile.avatarFile?.data || getMediaUrl(clientProfile.avatar)}
+                      alt="Предпросмотр фото профиля"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="modal-actions">
+                  <button type="submit" disabled={isProfileSaving}>
+                    {isProfileSaving ? "Сохранение..." : "Сохранить"}
+                  </button>
+                  <button type="button" onClick={() => setIsClientProfileModalOpen(false)}>
+                    Отмена
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -208,7 +420,11 @@ export default function ProfilePage() {
             <h1>Личный кабинет мастера</h1>
             <p>{masterProfile.title || user.name}</p>
           </div>
-          <button type="button" onClick={() => setIsProfileModalOpen(true)}>
+          {user.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="profile-avatar" src={getMediaUrl(user.avatar)} alt="Фото профиля" />
+          ) : null}
+          <button type="button" onClick={handleOpenMasterProfileModal}>
             Редактировать
           </button>
         </div>
@@ -298,7 +514,7 @@ export default function ProfilePage() {
                 <div key={item.id} className="portfolio-item">
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.imageUrl} alt={item.title || "Фото портфолио"} />
+                    <img src={getMediaUrl(item.imageUrl)} alt={item.title || "Фото портфолио"} />
                   ) : (
                     <div className="portfolio-placeholder">Нет фото</div>
                   )}
@@ -344,6 +560,43 @@ export default function ProfilePage() {
                   rows={4}
                 />
               </label>
+
+              <label>
+                <span>Фото профиля</span>
+                <input
+                  accept="image/*"
+                  type="file"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+
+                    if (!file) return;
+
+                    const data = await readFileAsDataUrl(file);
+
+                    setClientProfile((profile) => ({
+                      ...profile,
+                      avatarFile: {
+                        name: file.name,
+                        type: file.type,
+                        data,
+                      },
+                    }));
+                  }}
+                />
+                <p className="file-note">
+                  {clientProfile.avatarFile?.name || "Выберите фото с компьютера"}
+                </p>
+              </label>
+
+              {clientProfile.avatar || clientProfile.avatarFile ? (
+                <div className="profile-avatar-preview">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={clientProfile.avatarFile?.data || getMediaUrl(clientProfile.avatar)}
+                    alt="Предпросмотр фото профиля"
+                  />
+                </div>
+              ) : null}
 
               <div className="profile-form-row">
                 <label>

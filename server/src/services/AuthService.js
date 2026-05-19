@@ -6,6 +6,19 @@ class AuthService {
     return (await User.findOne({ where: { email: normalizedEmail } }))?.get();
   }
 
+  static async findUserById(id) {
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return null;
+    }
+
+    const plainUser = user.get();
+    delete plainUser.password;
+
+    return plainUser;
+  }
+
   static async createUser(userData) {
     const newUser = await User.create({
       ...userData,
@@ -33,6 +46,26 @@ class AuthService {
     user.role = "client";
     await user.save();
     return user.get();
+  }
+
+  static async updateProfile(id, userData) {
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return null;
+    }
+
+    await user.update({
+      name: userData.name,
+      email: userData.email,
+      phone: userData.phone,
+      avatar: userData.avatar,
+    });
+
+    const plainUser = user.get();
+    delete plainUser.password;
+
+    return plainUser;
   }
 }
 

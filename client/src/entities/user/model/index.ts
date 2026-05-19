@@ -24,6 +24,18 @@ export type UserRegisterData = UserLoginData & {
   name: string
 }
 
+export type UserProfileUpdateData = {
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  avatarFile?: {
+    name: string;
+    type: string;
+    data: string;
+  };
+}
+
 export type UserStateType = {
   user: UserType | null;
   isLoading: boolean;
