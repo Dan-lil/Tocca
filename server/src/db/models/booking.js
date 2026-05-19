@@ -23,6 +23,9 @@ module.exports = (sequelize, DataTypes) => {
       this.hasOne(models.Eco, {
         foreignKey: "bookingId",
       });
+      this.hasOne(models.Chat, {
+        foreignKey: "bookingId",
+      });
       // define association here
     }
   }
