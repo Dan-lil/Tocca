@@ -12,8 +12,8 @@ import { getServices } from "@/shared/api/serviziApi";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
 import type { SaleType, ServiziType } from "@/shared/types";
 
-const SERVICE_IMAGE_FALLBACK = "/фон3.jpeg";
-const PROMOTION_IMAGE_FALLBACK = "/акция_дня.jpeg";
+const SERVICE_IMAGE_FALLBACK = "/С„РѕРЅ3.jpeg";
+const PROMOTION_IMAGE_FALLBACK = "/Р°РєС†РёСЏ_РґРЅСЏ.jpeg";
 
 // Собираем путь до картинки услуги из базы или берем локальную заглушку
 function getServiceImageSrc(service: ServiziType) {
@@ -41,16 +41,28 @@ function mapSalesToPromotions(
     const relatedService =
       services.find((service) => service.id === sale.serviziId) ?? null;
     const serviceTitle = relatedService?.title ?? "Услуга";
-    const masterName = `Мастер #${sale.masterId}`;
+    const masterName =
+      relatedService?.masterName?.trim() || `Мастер #${sale.masterId}`;
+    const masterServices = services.filter(
+      (service) => service.masterId === sale.masterId && service.isActive,
+    );
 
     return {
       id: sale.id,
+      masterId: sale.masterId,
+      categoryId: relatedService?.categoryId ?? 0,
       title: sale.comment || `Акция ${sale.discount}%`,
       comment: sale.comment || `Скидка ${sale.discount}%`,
       image: getPromotionImageSrc(sale.image),
       expiresAt: new Date(sale.date).toLocaleDateString("ru-RU"),
       masterName,
       serviceTitle,
+      services:
+        masterServices.length > 0
+          ? masterServices
+          : relatedService
+            ? [relatedService]
+            : [],
     };
   });
 }
@@ -121,7 +133,6 @@ export default function HomePage() {
 
           <div className="services-grid">
             {visibleServices.map((service, index) => (
-              // На главной показываем услуги из базы вместе с путями до изображений
               <article className="service-card" key={`service-${service.id}-${index}`}>
                 <div className="service-media">
                   <Image src={getServiceImageSrc(service)} alt={service.title} fill />

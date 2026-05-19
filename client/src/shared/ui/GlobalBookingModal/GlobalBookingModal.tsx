@@ -9,7 +9,7 @@ import { createBooking, getBookingsByMaster } from "@/shared/api/bookingApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
 import { getShadulesByMaster } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
-import { BOOKING_MODAL_EVENT } from "@/shared/lib/bookingEvents";
+import { BOOKING_MODAL_EVENT, dispatchBookingModalClose } from "@/shared/lib/bookingEvents";
 import { BookingModalPayload, BookingType, ServiziType, ShaduleType } from "@/shared/types";
 import { getMockOptionsByPrompt, quickPrompts, type MasterItem } from "./booking.data";
 
@@ -239,6 +239,7 @@ export default function GlobalBookingModal() {
   const closeModal = useCallback(() => {
     setIsChatOpen(false);
     resetModalState();
+    dispatchBookingModalClose();
   }, [resetModalState]);
 
   useEffect(() => {
