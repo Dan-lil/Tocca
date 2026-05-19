@@ -157,7 +157,37 @@
   border-radius: 8px;
 }
 
-.master-schedule-day__time input:disabled {
+.master-schedule-day__time button {
+  min-height: 36px;
+  padding: 8px 10px;
+  color: #fff;
+  background: #b86f5d;
+  border: 0;
+  border-radius: 8px;
+}
+
+.master-schedule-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.master-schedule-slots button {
+  min-height: 30px;
+  padding: 6px 8px;
+  color: #6c4d2b;
+  background: #f5d8ad;
+  border: 1px solid #edc98f;
+}
+
+.master-schedule-slots p {
+  margin: 0;
+  color: #92736a;
+  font-size: 12px;
+}
+
+.master-schedule-day__time input:disabled,
+.master-schedule-day__time button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }

@@ -1,4 +1,12 @@
-const { ProfileMaster } = require("../db/models");
+const { MasterPortfolio, MasterSocial, ProfileMaster, User } = require("../db/models");
+
+function mapPortfolioItem(item) {
+  return {
+    id: String(item.id),
+    imageUrl: item.portfolioImages,
+    title: item.text,
+  };
+}
 
 class ProfileMasterService {
   static async create(ProfileData) {
@@ -13,6 +21,35 @@ class ProfileMasterService {
     const profile = await ProfileMaster.findOne({ where: { userId: id } });
 
     return profile ? profile.get() : null;
+  }
+
+  static async findPublicByUserId(id) {
+    const [user, profile, portfolio, socials] = await Promise.all([
+      User.findOne({
+        where: { id, role: "master" },
+        attributes: ["id", "name", "email", "phone", "avatar"],
+      }),
+      ProfileMaster.findOne({ where: { userId: id } }),
+      MasterPortfolio.findAll({
+        where: { userId: id },
+        order: [["id", "DESC"]],
+      }),
+      MasterSocial.findAll({
+        where: { userId: id },
+        order: [["id", "ASC"]],
+      }),
+    ]);
+
+    if (!user) {
+      return null;
+    }
+
+    return {
+      user: user.get(),
+      profile: profile ? profile.get() : null,
+      portfolio: portfolio.map(mapPortfolioItem),
+      socials: socials.map((social) => social.get()),
+    };
   }
 
   static async update(id, ProfileData) {

@@ -7,6 +7,7 @@ import { BookingType, CreateBookingPayload, ServerResponseType } from "@/shared/
 const BOOKING_API_URLS = {
   create: "/booking/bookings",
   findByMaster: (masterId: number | string) => `/booking/bookings/master/${masterId}`,
+  findByClient: (clientId: number | string) => `/booking/bookings/client/${clientId}`,
   update: (id: number | string) => `/booking/bookings/${id}`,
 } as const;
 
@@ -65,6 +66,22 @@ export async function getBookingsByMaster(masterId: number | string) {
     const message =
       (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
       "Не удалось загрузить записи мастера";
+
+    throw new Error(message);
+  }
+}
+
+export async function getBookingsByClient(clientId: number | string) {
+  try {
+    const { data } = await axiosInstance.get<ServerResponseType<BookingType[]>>(
+      BOOKING_API_URLS.findByClient(clientId),
+    );
+
+    return data.data ?? [];
+  } catch (error) {
+    const message =
+      (error as AxiosError<ServerResponseType<null>>).response?.data?.message ??
+      "Не удалось загрузить записи клиента";
 
     throw new Error(message);
   }
