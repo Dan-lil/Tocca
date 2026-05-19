@@ -128,3 +128,52 @@ export type ShaduleType = {
   createdAt?: string;
   updatedAt?: string;
 };
+
+export type ChatUserType = {
+  id: number;
+  name: string;
+  avatar?: string | null;
+  role: "client" | "master" | "admin";
+  ProfileMaster?: {
+    title?: string | null;
+    city?: string | null;
+    category?: string | null;
+    rating?: number | null;
+  } | null;
+};
+
+export type ChatMessageType = {
+  id: number;
+  chatId: number;
+  senderId: number;
+  text: string;
+  sender?: ChatUserType;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type ChatType = {
+  id: number;
+  clientId: number;
+  masterId: number;
+  bookingId: number;
+  client?: ChatUserType;
+  master?: ChatUserType;
+  Booking?: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    Servizi?: Pick<ServiziType, "id" | "title" | "price" | "duration">;
+  };
+  ChatMessages?: ChatMessageType[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateChatPayload = {
+  clientId: number;
+  masterId: number;
+  bookingId: number;
+};

@@ -563,6 +563,16 @@ body {
     color: #5d8e67;
 }
 
+.booking-direct-success-actions {
+    display: grid;
+    gap: 10px;
+}
+
+.booking-direct-success-actions .booking-confirm-button {
+    width: fit-content;
+    font-size: 15px;
+}
+
 .auth-page {
     display: grid;
     place-items: center;
@@ -793,5 +803,4 @@ body {
 
 
 }
-
 

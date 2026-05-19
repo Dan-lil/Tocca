@@ -2,6 +2,7 @@
 
 import "./page.css";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
 import { createBooking, getBookingsByMaster, updateBooking } from "@/shared/api/bookingApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
@@ -11,6 +12,7 @@ import {
   getShadulesByMaster,
 } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { openBookingChat } from "@/shared/lib/openBookingChat";
 import type { BookingType, ServiziType, ShaduleType } from "@/shared/types";
 
 type AppointmentStatus = "confirmed" | "pending" | "done" | "canceled";
@@ -319,6 +321,7 @@ function buildSlotsForDate(
 }
 
 export default function CalendarMasterPage() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { user, isInitialized } = useAppSelector((state) => state.user);
   const masterId = user?.role === "master" ? user.id : undefined;
@@ -334,6 +337,7 @@ export default function CalendarMasterPage() {
   const [scheduleMessage, setScheduleMessage] = useState<string | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [isStatusSaving, setIsStatusSaving] = useState<number | null>(null);
+  const [openingChatBookingId, setOpeningChatBookingId] = useState<number | null>(null);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [isManualBookingSaving, setIsManualBookingSaving] = useState(false);
   const [manualBookingError, setManualBookingError] = useState<string | null>(null);
@@ -456,6 +460,18 @@ export default function CalendarMasterPage() {
       );
     } finally {
       setIsStatusSaving(null);
+    }
+  }
+
+  async function handleOpenAppointmentChat(booking: BookingType) {
+    try {
+      setOpeningChatBookingId(booking.id);
+      setPageError(null);
+      await openBookingChat(router, booking);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Не удалось открыть чат.");
+    } finally {
+      setOpeningChatBookingId(null);
     }
   }
 
@@ -1002,7 +1018,15 @@ export default function CalendarMasterPage() {
                       </p>
                     ) : null}
                     <div className="master-appointment-actions">
-                      <button type="button">Открыть чат</button>
+                      <button
+                        type="button"
+                        disabled={openingChatBookingId === appointment.booking.id}
+                        onClick={() => void handleOpenAppointmentChat(appointment.booking)}
+                      >
+                        {openingChatBookingId === appointment.booking.id
+                          ? "Открываю..."
+                          : "Открыть чат"}
+                      </button>
                       <button
                         className="master-appointment-actions__status"
                         type="button"
