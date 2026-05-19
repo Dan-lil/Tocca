@@ -12,7 +12,7 @@ module.exports = {
         duration: 60.0,
         categoryId: 1,
         isActive: true,
-        image: "/услуги на главной/ногти9.jpg",
+        image: "/home-services/nails9.jpg",
       },
       {
         masterId: 13,
@@ -22,7 +22,7 @@ module.exports = {
         duration: 90.0,
         categoryId: 4,
         isActive: true,
-        image: "/услуги на главной/массаж8.jpg",
+        image: "/home-services/massage8.jpg",
       },
       {
         masterId: 11,
@@ -32,7 +32,7 @@ module.exports = {
         duration: 60.0,
         categoryId: 3,
         isActive: true,
-        image: "/услуги на главной/прическа2.jpg",
+        image: "/home-services/hairstyle2.jpg",
       },
       {
         masterId: 8,
@@ -42,7 +42,7 @@ module.exports = {
         duration: 60.0,
         categoryId: 2,
         isActive: true,
-        image: "/услуги на главной/косметология11.jpg",
+        image: "/home-services/cosmetology11.jpg",
       },
       {
         masterId: 10,
@@ -52,7 +52,7 @@ module.exports = {
         duration: 60.0,
         categoryId: 5,
         isActive: true,
-        image: "/услуги на главной/макияж1.jpg",
+        image: "/home-services/makeup1.jpg",
       },
       {
         masterId: 11,
@@ -62,7 +62,7 @@ module.exports = {
         duration: 60.0,
         categoryId: 3,
         isActive: true,
-        image: "/услуги на главной/укладка3.jpg",
+        image: "/home-services/hairstyle2.jpg",
       },
       {
         masterId: 7,
@@ -72,7 +72,7 @@ module.exports = {
         duration: 60.0,
         categoryId: 1,
         isActive: true,
-        image: "/услуги на главной/педикюр4.jpg",
+        image: "/home-services/nails9.jpg",
       },
       {
         masterId: 9,
@@ -82,7 +82,7 @@ module.exports = {
         duration: 60.0,
         categoryId: 2,
         isActive: true,
-        image: "/услуги на главной/эпиляция5.jpg",
+        image: "/home-services/cosmetology11.jpg",
       },
       {
         masterId: 13,
@@ -92,7 +92,7 @@ module.exports = {
         duration: 60.0,
         categoryId: 4,
         isActive: true,
-        image: "/услуги на главной/массаж лица6.jpg",
+        image: "/home-services/massage8.jpg",
       },
       {
         masterId: 13,
@@ -102,7 +102,7 @@ module.exports = {
         duration: 90.0,
         categoryId: 4,
         isActive: true,
-        image: "/услуги на главной/массаж тела7.jpg",
+        image: "/home-services/massage8.jpg",
       },
     ]);
   },

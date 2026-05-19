@@ -8,23 +8,8 @@ import "./page.css";
 import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
-import { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shared/types";
-
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-function getMediaUrl(value?: string | null) {
-  if (!value) return "";
-
-  if (value.startsWith("http") || value.startsWith("data:") || value.startsWith("blob:")) {
-    return value;
-  }
-
-  if (value.startsWith("/")) {
-    return `${apiBaseUrl}${value}`;
-  }
-
-  return value;
-}
+import { expandPortfolioItems, getMasterAvatarUrl, getMediaUrl } from "@/shared/lib/media";
+import type { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shared/types";
 
 export default function PublicMasterPage() {
   const params = useParams<{ masterId: string }>();
@@ -54,9 +39,7 @@ export default function PublicMasterPage() {
         setServices(servicesData.filter((service) => service.isActive));
         setReviews(reviewsData);
       } catch (loadError) {
-        setError(
-          loadError instanceof Error ? loadError.message : "Не удалось загрузить профиль мастера",
-        );
+        setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить профиль мастера");
       } finally {
         setIsLoading(false);
       }
@@ -70,6 +53,14 @@ export default function PublicMasterPage() {
 
     return master.profile?.title?.trim() || master.user.name || "Мастер";
   }, [master]);
+
+  // На публичной странице мастера сначала пробуем локальный аватар из public/avatar
+  const resolvedMasterId = Number(masterId);
+  const avatarUrl =
+    master && !Number.isNaN(resolvedMasterId)
+      ? getMasterAvatarUrl(resolvedMasterId, master.user.avatar)
+      : "";
+  const portfolioItems = expandPortfolioItems(master?.portfolio ?? []);
 
   if (isLoading) {
     return (
@@ -96,13 +87,9 @@ export default function PublicMasterPage() {
     <main className="public-master-page">
       <div className="public-master-shell">
         <section className="public-master-hero glass-surface">
-          {master.user.avatar ? (
+          {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              className="public-master-avatar"
-              src={getMediaUrl(master.user.avatar)}
-              alt="Фото мастера"
-            />
+            <img className="public-master-avatar" src={avatarUrl} alt="Фото мастера" />
           ) : (
             <div className="public-master-avatar public-master-avatar--empty">
               {masterName.slice(0, 1).toUpperCase()}
@@ -204,11 +191,11 @@ export default function PublicMasterPage() {
 
         <section className="public-master-section glass-surface">
           <h2>Портфолио</h2>
-          {master.portfolio.length === 0 ? (
+          {portfolioItems.length === 0 ? (
             <p>Портфолио пока пусто.</p>
           ) : (
             <div className="public-master-portfolio">
-              {master.portfolio.map((item) => (
+              {portfolioItems.map((item) => (
                 <article className="public-master-work" key={item.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={getMediaUrl(item.imageUrl)} alt={item.title || "Фото работы мастера"} />

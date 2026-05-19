@@ -11,7 +11,7 @@ module.exports = {
         finalPrice: 3750,
         discount: 25,
         comment: "Антицеллюлитный массаж со скидкой 25%",
-        image: "/акции/anticellulite-massage-25.png",
+        image: "/promotions/anticellulite-massage-25.png",
         date: new Date("2026-06-30T21:00:00"),
       },
       {
@@ -21,7 +21,7 @@ module.exports = {
         finalPrice: 3150,
         discount: 10,
         comment: "Скидка 10% на следующий маникюр",
-        image: "/акции/bring-friend-10-v2.png",
+        image: "/promotions/bring-friend-10-v2.png",
         date: new Date("2026-06-15T21:00:00"),
       },
       {
@@ -31,7 +31,7 @@ module.exports = {
         finalPrice: 2975,
         discount: 15,
         comment: "Минус 15% на макияж для нового клиента",
-        image: "/акции/brows-lashes-15.png",
+        image: "/promotions/brows-lashes-15.png",
         date: new Date("2026-06-20T21:00:00"),
       },
       {
@@ -41,7 +41,7 @@ module.exports = {
         finalPrice: 3000,
         discount: 0,
         comment: "Укладка в подарок при записи на образ",
-        image: "/акции/haircut-styling-gift.png",
+        image: "/promotions/haircut-styling-gift.png",
         date: new Date("2026-06-25T21:00:00"),
       },
       {
@@ -51,7 +51,7 @@ module.exports = {
         finalPrice: 2800,
         discount: 20,
         comment: "Скидка 20% на первое посещение ногтевого сервиса",
-        image: "/акции/manicure-discount-20 (1).png",
+        image: "/promotions/manicure-discount-20 (1).png",
         date: new Date("2026-06-10T21:00:00"),
       },
       {
@@ -61,7 +61,7 @@ module.exports = {
         finalPrice: 3000,
         discount: 15,
         comment: "Скидка 15% на чистку лица",
-        image: "/акции/чистка-лица.png",
+        image: "/promotions/face-cleansing.png",
         date: new Date("2026-06-10T21:00:00"),
       },
     ]);

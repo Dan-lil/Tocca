@@ -8,10 +8,17 @@ import "../../page.css";
 import "./page.css";
 import { getCategoryById } from "@/shared/api/categoryApi";
 import { getReviewsByMaster } from "@/shared/api/ecoApi";
+import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByCategory } from "@/shared/api/serviziApi";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
-import { CategoryType, EcoReviewType, ServiziType } from "@/shared/types";
+import { expandPortfolioItems, getMasterAvatarUrl, getMediaUrl } from "@/shared/lib/media";
+import type {
+  CategoryType,
+  EcoReviewType,
+  PublicMasterProfileType,
+  ServiziType,
+} from "@/shared/types";
 
 type ServiceDirectoryCard = {
   id: number;
@@ -19,15 +26,12 @@ type ServiceDirectoryCard = {
   masterName: string;
   masterRating: number;
   meta: string;
-  serviceTitle: string;
-  serviceDescription: string;
   services: ServiziType[];
 };
 
-function buildServiceCards(
-  services: ServiziType[],
-  categoryTitle: string,
-): ServiceDirectoryCard[] {
+const HERO_IMAGE_FALLBACK = "/фон3.jpeg";
+
+function buildServiceCards(services: ServiziType[], categoryTitle: string): ServiceDirectoryCard[] {
   const activeServices = services.filter((service) => service.isActive);
   const visibleServices = activeServices.length > 0 ? activeServices : services;
   const servicesByMaster = new Map<number, ServiziType[]>();
@@ -42,7 +46,6 @@ function buildServiceCards(
     const masterRating = Number(masterServices[0]?.masterRating ?? 0);
     const skillLabel = categoryTitle || "Услуги";
     const priceFrom = Math.min(...masterServices.map((service) => service.price));
-    const primaryService = masterServices[0];
 
     return {
       id: masterId,
@@ -50,8 +53,6 @@ function buildServiceCards(
       masterName,
       masterRating,
       meta: `${skillLabel} · от ${priceFrom.toLocaleString("ru-RU")} ₽`,
-      serviceTitle: primaryService?.title ?? skillLabel,
-      serviceDescription: primaryService?.description ?? "",
       services: masterServices,
     };
   });
@@ -77,6 +78,9 @@ export default function CategoryPage() {
   const [reviewsErrorByMaster, setReviewsErrorByMaster] = useState<Record<number, string | null>>(
     {},
   );
+  const [masterProfilesById, setMasterProfilesById] = useState<Record<number, PublicMasterProfileType>>(
+    {},
+  );
 
   useEffect(() => {
     if (!categoryId) return;
@@ -94,11 +98,7 @@ export default function CategoryPage() {
         setCategory(categoryData);
         setServices(servicesData);
       } catch (loadError) {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Не удалось загрузить страницу",
-        );
+        setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить страницу");
       } finally {
         setIsLoading(false);
       }
@@ -133,6 +133,49 @@ export default function CategoryPage() {
     [pageTitle, visibleServices],
   );
 
+  useEffect(() => {
+    if (serviceCards.length === 0) return;
+
+    // Подгружаем публичные профили только для тех мастеров, которых еще нет в локальном кеше
+    const masterIdsToLoad = serviceCards
+      .map((card) => card.masterId)
+      .filter((masterId, index, list) => list.indexOf(masterId) === index)
+      .filter((masterId) => !masterProfilesById[masterId]);
+
+    if (masterIdsToLoad.length === 0) return;
+
+    let isCancelled = false;
+
+    const loadMasterProfiles = async () => {
+      const results = await Promise.allSettled(
+        masterIdsToLoad.map(async (masterId) => ({
+          masterId,
+          profile: await getPublicMasterProfile(masterId),
+        })),
+      );
+
+      if (isCancelled) return;
+
+      const nextProfiles = results.reduce<Record<number, PublicMasterProfileType>>((acc, result) => {
+        if (result.status === "fulfilled") {
+          acc[result.value.masterId] = result.value.profile;
+        }
+
+        return acc;
+      }, {});
+
+      if (Object.keys(nextProfiles).length > 0) {
+        setMasterProfilesById((prev) => ({ ...prev, ...nextProfiles }));
+      }
+    };
+
+    void loadMasterProfiles();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [masterProfilesById, serviceCards]);
+
   const handleToggleReviews = async (masterId: number) => {
     if (!user) {
       router.push("/auth");
@@ -160,8 +203,7 @@ export default function CategoryPage() {
     } catch (loadError) {
       setReviewsErrorByMaster((prev) => ({
         ...prev,
-        [masterId]:
-          loadError instanceof Error ? loadError.message : "Не удалось загрузить отзывы",
+        [masterId]: loadError instanceof Error ? loadError.message : "Не удалось загрузить отзывы",
       }));
     } finally {
       setReviewsLoadingByMaster((prev) => ({ ...prev, [masterId]: false }));
@@ -171,7 +213,10 @@ export default function CategoryPage() {
   return (
     <main className="services-directory-page">
       <div className="services-directory-shell">
-        <section className="services-directory-hero">
+        <section
+          className="services-directory-hero"
+          style={{ backgroundImage: `linear-gradient(135deg, rgba(255, 252, 251, 0.65), rgba(255, 240, 241, 0.28)), url("${HERO_IMAGE_FALLBACK}")` }}
+        >
           <div className="services-directory-hero-copy glass-surface">
             <span className="services-directory-eyebrow">Категория услуг</span>
             <h1>{pageTitle}</h1>
@@ -206,13 +251,31 @@ export default function CategoryPage() {
               const reviews = reviewsByMaster[card.masterId] ?? [];
               const isReviewsLoading = reviewsLoadingByMaster[card.masterId] ?? false;
               const reviewsError = reviewsErrorByMaster[card.masterId] ?? null;
+              const masterProfile = masterProfilesById[card.masterId];
+              // Аватар и мини-портфолио берутся из публичного профиля мастера, а не из самой услуги
+              const avatarUrl = getMasterAvatarUrl(card.masterId, masterProfile?.user.avatar);
+              const portfolioItems = expandPortfolioItems(masterProfile?.portfolio ?? []).slice(0, 4);
+              const masterInitial = card.masterName.trim().slice(0, 1).toUpperCase();
 
               return (
                 <article className="services-directory-card glass-surface" key={card.id}>
                   <div className="services-directory-card-head">
-                    <div className="services-directory-card-head-copy">
-                      <strong>{card.masterName}</strong>
-                      <span>{card.meta}</span>
+                    <div className="services-directory-card-master">
+                      <div className="services-directory-card-avatar">
+                        {avatarUrl ? (
+                          <img
+                            className="services-directory-card-avatar-image"
+                            src={avatarUrl}
+                            alt={`Аватар мастера ${card.masterName}`}
+                          />
+                        ) : (
+                          <span>{masterInitial}</span>
+                        )}
+                      </div>
+                      <div className="services-directory-card-head-copy">
+                        <strong>{card.masterName}</strong>
+                        <span>{card.meta}</span>
+                      </div>
                     </div>
                     <div className="services-directory-card-rating" aria-label={`Рейтинг ${card.masterRating}`}>
                       <span className="services-directory-card-rating-star">★</span>
@@ -249,7 +312,7 @@ export default function CategoryPage() {
                       ) : null}
 
                       {!isReviewsLoading && !reviewsError && reviews.length === 0 ? (
-                        <p className="services-reviews-state">У мастера пока нет отзывов.</p>
+                        <p className="services-reviews-state">У мастера пока нет отзывов</p>
                       ) : null}
 
                       {!isReviewsLoading && !reviewsError && reviews.length > 0 ? (
@@ -268,6 +331,29 @@ export default function CategoryPage() {
                           ))}
                         </div>
                       ) : null}
+                    </div>
+                  ) : null}
+
+                  {portfolioItems.length > 0 ? (
+                    <div className="services-directory-portfolio">
+                      <div className="services-directory-portfolio-head">
+                        <strong>Портфолио мастера</strong>
+                        <span>{portfolioItems.length} фото</span>
+                      </div>
+                      <div className="services-directory-portfolio-grid">
+                        {portfolioItems.map((item) => (
+                          <Link
+                            className="services-directory-portfolio-item"
+                            key={item.id}
+                            href={`/masters/${card.masterId}`}
+                          >
+                            <img
+                              src={getMediaUrl(item.imageUrl)}
+                              alt={item.title || `Работа мастера ${card.masterName}`}
+                            />
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   ) : null}
 

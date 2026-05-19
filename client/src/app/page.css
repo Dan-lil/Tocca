@@ -670,6 +670,11 @@ button {
   flex: 0 0 24px;
 }
 
+.master-avatar-image {
+  display: block;
+  object-fit: cover;
+}
+
 .master-head {
   display: grid;
   gap: 3px;

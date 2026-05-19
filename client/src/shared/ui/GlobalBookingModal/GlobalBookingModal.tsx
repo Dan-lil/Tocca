@@ -10,6 +10,7 @@ import { getServicesByMaster } from "@/shared/api/serviziApi";
 import { getShadulesByMaster } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { BOOKING_MODAL_EVENT, dispatchBookingModalClose } from "@/shared/lib/bookingEvents";
+import { getMasterAvatarUrl } from "@/shared/lib/media";
 import { BookingModalPayload, BookingType, ServiziType, ShaduleType } from "@/shared/types";
 import { getMockOptionsByPrompt, quickPrompts, type MasterItem } from "./booking.data";
 
@@ -526,6 +527,8 @@ export default function GlobalBookingModal() {
   const topMessages = chatMessages.filter((message) => message.placement === "top");
   const bottomMessages = chatMessages.filter((message) => message.placement === "bottom");
   const isPresetMode = !!presetBooking;
+  // В прямой записи показываем тот же локальный аватар мастера, что и в остальных карточках
+  const presetMasterAvatarUrl = presetBooking ? getMasterAvatarUrl(presetBooking.masterId) : "";
 
   if (!isChatOpen) return null;
 
@@ -541,7 +544,12 @@ export default function GlobalBookingModal() {
             {/* Этот сценарий открывается из карточек услуг, а не из AI поиска */}
             <article className="booking-direct-card glass-surface">
               <div className="booking-direct-card-head">
-                <span className="master-avatar">{presetBooking.masterId}</span>
+                {presetMasterAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="master-avatar master-avatar-image" src={presetMasterAvatarUrl} alt="" />
+                ) : (
+                  <span className="master-avatar">{presetBooking.masterId}</span>
+                )}
                 <div className="master-head">
                   <strong>{presetBooking.masterName ?? `Мастер #${presetBooking.masterId}`}</strong>
                   <span>{presetBooking.categoryTitle}</span>
