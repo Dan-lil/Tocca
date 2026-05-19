@@ -56,17 +56,15 @@ export function buildSlotsByDate(
     const date = new Date(today);
     date.setDate(today.getDate() + dayIndex);
 
-    const shadule = shadules.find(
+    const dayShadules = shadules.filter(
       (item) => item.dayOdWeek === date.getDay() && item.isWorkingDay,
     );
 
-    if (!shadule) {
+    if (dayShadules.length === 0) {
       continue;
     }
 
     const dateKey = toDateKey(date);
-    const startMinutes = getMinutesFromDate(shadule.startTime);
-    const endMinutes = getMinutesFromDate(shadule.endTime);
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
     const duration = service.duration;
@@ -76,11 +74,8 @@ export function buildSlotsByDate(
       return bookingDateKey === dateKey && !isBookingCanceled(booking);
     });
 
-    for (
-      let slotStart = startMinutes;
-      slotStart + duration <= endMinutes;
-      slotStart += duration
-    ) {
+    dayShadules.forEach((shadule) => {
+      const slotStart = getMinutesFromDate(shadule.startTime);
       const slotEnd = slotStart + duration;
       const isPastTodaySlot = dayIndex === 0 && slotStart <= currentMinutes;
       const hasConflict = dayBookings.some((booking) => {
@@ -93,7 +88,7 @@ export function buildSlotsByDate(
       if (!isPastTodaySlot && !hasConflict) {
         slotsByDate[dateKey] = [...(slotsByDate[dateKey] ?? []), formatTime(slotStart)];
       }
-    }
+    });
   }
 
   return slotsByDate;

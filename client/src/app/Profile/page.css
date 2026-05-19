@@ -202,6 +202,7 @@
 .service-card,
 .booking-card,
 .sale-card,
+.client-history-card,
 .portfolio-item {
   padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.52);
@@ -210,6 +211,149 @@
     linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 247, 246, 0.58)),
     rgba(255, 247, 246, 0.72);
   box-shadow: 0 10px 24px rgba(181, 119, 129, 0.1);
+}
+
+.client-history-list {
+  display: grid;
+  gap: 12px;
+}
+
+.master-reviews-list {
+  display: grid;
+  gap: 12px;
+}
+
+.master-social-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.master-social-link {
+  display: grid;
+  gap: 4px;
+  min-width: 180px;
+  padding: 12px 14px;
+  border: 1px solid rgba(233, 188, 185, 0.72);
+  border-radius: 14px;
+  color: #754846;
+  text-decoration: none;
+  background: rgba(255, 251, 250, 0.72);
+}
+
+.master-social-link span {
+  color: rgba(122, 77, 75, 0.68);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+
+.master-social-link strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+
+.client-history-card,
+.master-review-card {
+  display: grid;
+  gap: 14px;
+}
+
+.client-history-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.client-history-card__top div {
+  display: grid;
+  gap: 4px;
+}
+
+.client-history-card__top strong {
+  color: #754846;
+}
+
+.client-history-card__top span {
+  color: rgba(122, 77, 75, 0.7);
+  font-size: 14px;
+}
+
+.client-review-form,
+.client-review-saved {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(233, 188, 185, 0.72);
+  border-radius: 14px;
+  background: rgba(255, 251, 250, 0.72);
+}
+
+.client-review-form label {
+  display: grid;
+  gap: 6px;
+  color: rgba(122, 77, 75, 0.76);
+  font-size: 14px;
+}
+
+.client-review-form select,
+.client-review-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(122, 77, 75, 0.2);
+  border-radius: 8px;
+  color: #5f3837;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.client-review-form textarea {
+  resize: vertical;
+}
+
+.client-review-form button {
+  justify-self: start;
+}
+
+.client-review-saved strong {
+  color: #d68f58;
+  letter-spacing: 0.08em;
+}
+
+.client-review-saved p {
+  margin: 0;
+  color: #80645c;
+}
+
+.master-review-card {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 247, 246, 0.58)),
+    rgba(255, 247, 246, 0.72);
+  box-shadow: 0 10px 24px rgba(181, 119, 129, 0.1);
+}
+
+.master-review-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.master-review-card__head strong {
+  color: #754846;
+}
+
+.master-review-card__head span {
+  color: #d68f58;
+  letter-spacing: 0.08em;
+}
+
+.master-review-card p {
+  margin: 0;
+  color: #80645c;
 }
 
 .services-list {
@@ -328,6 +472,7 @@
 }
 
 .profile-modal input,
+.profile-modal select,
 .profile-modal textarea {
   width: 100%;
   padding: 11px 12px;
@@ -386,7 +531,8 @@
   .section-header,
   .service-card,
   .booking-card,
-  .sale-card {
+  .sale-card,
+  .client-history-card__top {
     align-items: stretch;
     flex-direction: column;
   }

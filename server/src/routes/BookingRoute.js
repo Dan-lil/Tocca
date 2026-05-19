@@ -1,6 +1,6 @@
 const BookingRouter = require("express").Router();
 const BookingController = require("../controllers/BookingController");
-const verifyRefreshToken = require("../middleware/verifyRefreshToken");
+
 const verifyAccessToken = require("../middleware/verifyAccessToken");
 
 BookingRouter.post("/bookings", verifyAccessToken, BookingController.create)

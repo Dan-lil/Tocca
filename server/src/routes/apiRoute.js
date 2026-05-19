@@ -13,6 +13,7 @@ const BookingRouter = require("./BookingRoute");
 const ShaduleRouter = require("./ShaduleRoute");
 const EcoRouter = require("./EcoRoute");
 const ChatRouter = require("./ChatRoute");
+const MessageRouter = require("./MessageRoute");
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/ai", aiRouter);
@@ -27,6 +28,7 @@ apiRouter.use("/sale", SaleRouter);
 apiRouter.use("/shadule", ShaduleRouter);
 apiRouter.use("/eco", EcoRouter);
 apiRouter.use("/chat", ChatRouter);
+apiRouter.use("/message", MessageRouter);
 
 apiRouter.use((req, res) => {
   res.status(404).json(formatResponse(404, "Ресурс не найден"));

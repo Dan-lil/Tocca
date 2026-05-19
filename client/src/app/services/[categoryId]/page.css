@@ -166,6 +166,8 @@
 }
 
 .services-directory-badge {
+  display: inline-flex;
+  align-items: center;
   padding: 7px 12px;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
@@ -175,6 +177,7 @@
   font-weight: 500;
   line-height: 1;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .services-directory-badge:hover {

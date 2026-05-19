@@ -8,6 +8,8 @@ ProfileMasterRouter.get(
   ProfileMasterController.getMyProfile,
 );
 
+ProfileMasterRouter.get("/:masterId", ProfileMasterController.getPublicProfile);
+
 ProfileMasterRouter.put(
   "/update",
   verifyAccessToken,

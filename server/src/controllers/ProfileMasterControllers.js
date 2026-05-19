@@ -16,6 +16,24 @@ class ProfileMasterController {
     }
   }
 
+  static async getPublicProfile(req, res) {
+    const { masterId } = req.params;
+
+    try {
+      const profile = await ProfileMasterService.findPublicByUserId(masterId);
+
+      if (!profile) {
+        return res.status(404).json(formatResponse(404, "Master profile not found"));
+      }
+
+      return res.status(200).json(formatResponse(200, "Master profile loaded", profile));
+    } catch (error) {
+      console.log("======== ProfileMasterController.getPublicProfile =========");
+      console.log(error);
+      return res.status(500).json(formatResponse(500, "Failed to load master profile"));
+    }
+  }
+
   static async updateProfile(req, res) {
     const { user } = res.locals;
     const profileData = req.body;
