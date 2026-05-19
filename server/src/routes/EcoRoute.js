@@ -1,6 +1,6 @@
 const EcoRouter = require("express").Router();
 const EcoController = require("../controllers/EcoController");
-const verifyRefreshToken = require("../middleware/verifyRefreshToken");
+
 const verifyAccessToken = require("../middleware/verifyAccessToken");
 
 EcoRouter.post("/reviews", verifyAccessToken, EcoController.createReview)

@@ -1,6 +1,6 @@
 const ChatRouter = require("express").Router();
 const ChatController = require("../controllers/ChatController");
-const verifyRefreshToken = require("../middleware/verifyRefreshToken");
+
 const verifyAccessToken = require("../middleware/verifyAccessToken");
 
 ChatRouter.post("/chats", verifyAccessToken, ChatController.createChat)
