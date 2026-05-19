@@ -81,6 +81,37 @@ class MasterPortfolioController {
         );
     }
   }
+
+  static async getPortfolioByMasterId(req, res) {
+    const { masterId } = req.params;
+
+    try {
+      const portfolio = await MasterPortfolioService.findByMasterId(masterId);
+      if (!portfolio) {
+        return res
+          .status(404)
+          .json(
+            formatResponse(
+              404,
+              "Портфолио для данного мастера не найдено,проверьте данные или повторите попытку",
+            ),
+          );
+      }
+      return res
+        .status(200)
+        .json(formatResponse(200, "Портфолио успешно получено", portfolio));
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json(
+          formatResponse(
+            500,
+            "Сервис не может передать нужные данные для получения портфолио мастера",
+          ),
+        );
+    }
+  }
 }
 
 module.exports = MasterPortfolioController;
