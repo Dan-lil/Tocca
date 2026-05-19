@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import BookingCalendarModal, {
   type BookingPayload,
   type BookingService,
 } from "@/features/booking/ui/BookingCalendarModal/BookingCalendarModal";
+import { getBookingsByMaster } from "@/shared/api/bookingApi";
+import { getServices } from "@/shared/api/serviziApi";
+import { getShadulesByMaster } from "@/shared/api/shaduleApi";
+import { buildSlotsByDate } from "@/shared/lib/scheduleSlots";
 import "./page.css";
 
 type ClientMaster = {
@@ -17,6 +21,7 @@ type ClientMaster = {
   image: string;
   services: BookingService[];
   slots: Record<string, string[]>;
+  slotsByService?: Record<number, Record<string, string[]>>;
 };
 
 const clientId = 3;
@@ -87,10 +92,83 @@ const masters: ClientMaster[] = [
   },
 ];
 
+function groupServicesByMaster(services: BookingService[]) {
+  return services.reduce<Record<number, BookingService[]>>((acc, service) => {
+    acc[service.masterId] = [...(acc[service.masterId] ?? []), service];
+
+    return acc;
+  }, {});
+}
+
+async function getClientMastersFromApi(): Promise<ClientMaster[]> {
+  const services = (await getServices()).filter((service) => service.isActive);
+  const servicesByMaster = groupServicesByMaster(
+    services.map((service) => ({
+      id: service.id,
+      masterId: service.masterId,
+      title: service.title,
+      duration: service.duration,
+      price: service.price,
+    })),
+  );
+
+  return Promise.all(
+    Object.entries(servicesByMaster).map(async ([masterIdValue, masterServices]) => {
+      const masterId = Number(masterIdValue);
+      const [shadules, bookings] = await Promise.all([
+        getShadulesByMaster(masterId),
+        getBookingsByMaster(masterId),
+      ]);
+      const slotsByService = masterServices.reduce<Record<number, Record<string, string[]>>>(
+        (acc, service) => {
+          acc[service.id] = buildSlotsByDate(service, shadules, bookings);
+
+          return acc;
+        },
+        {},
+      );
+      const firstService = services.find((service) => service.masterId === masterId);
+
+      return {
+        id: masterId,
+        name: firstService?.masterName ?? `Мастер #${masterId}`,
+        title: firstService?.masterName ?? `Мастер #${masterId}`,
+        category: "Услуги",
+        rating: firstService?.masterRating ?? 0,
+        address: "Адрес уточняется",
+        image: "/фон3.jpeg",
+        services: masterServices,
+        slots: slotsByService[masterServices[0]?.id] ?? {},
+        slotsByService,
+      };
+    }),
+  );
+}
+
 export default function CalendarClientPage() {
+  const [mastersList, setMastersList] = useState<ClientMaster[]>(masters);
   const [selectedMaster, setSelectedMaster] = useState<ClientMaster | null>(null);
   const [selectedService, setSelectedService] = useState<BookingService | null>(null);
   const [createdBooking, setCreatedBooking] = useState<BookingPayload | null>(null);
+  const [mastersError, setMastersError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadMasters = async () => {
+      try {
+        const apiMasters = await getClientMastersFromApi();
+
+        if (apiMasters.length > 0) {
+          setMastersList(apiMasters);
+        }
+        setMastersError(null);
+      } catch {
+        setMastersList(masters);
+        setMastersError("Не удалось загрузить расписание с сервера, показаны демо-данные.");
+      }
+    };
+
+    void loadMasters();
+  }, []);
 
   function openBooking(master: ClientMaster, service: BookingService) {
     setSelectedMaster(master);
@@ -131,8 +209,10 @@ export default function CalendarClientPage() {
         </section>
       )}
 
+      {mastersError ? <section className="client-booking-result">{mastersError}</section> : null}
+
       <section className="client-master-list">
-        {masters.map((master) => (
+        {mastersList.map((master) => (
           <article className="client-master-card" key={master.id}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={master.image} alt={master.title} />
@@ -173,7 +253,9 @@ export default function CalendarClientPage() {
           clientId={clientId}
           master={selectedMaster}
           service={selectedService}
-          availableSlotsByDate={selectedMaster.slots}
+          availableSlotsByDate={
+            selectedMaster.slotsByService?.[selectedService.id] ?? selectedMaster.slots
+          }
           isOpen
           onClose={closeBooking}
           onSubmit={handleBookingSubmit}

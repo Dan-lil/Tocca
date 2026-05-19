@@ -2,6 +2,11 @@
   width: min(100%, 1180px);
   margin: 0 auto;
   padding: 32px 20px 56px;
+  color: #754846;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.74), transparent 34%),
+    linear-gradient(135deg, rgba(255, 247, 246, 0.88), rgba(244, 207, 213, 0.58));
+  border-radius: 28px;
 }
 
 .profile-container {
@@ -21,15 +26,30 @@
 }
 
 .profile-header {
+  position: relative;
+  overflow: hidden;
   padding: 24px;
-  border: 1px solid rgba(122, 77, 75, 0.18);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.44);
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 24px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(255, 246, 245, 0.42)),
+    rgba(255, 255, 255, 0.44);
+  box-shadow: 0 24px 60px rgba(181, 119, 129, 0.2);
+  backdrop-filter: blur(18px);
+}
+
+.profile-header::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(110deg, rgba(255, 255, 255, 0.42), transparent 42%);
 }
 
 .profile-header h1 {
   margin: 0;
   font-size: 30px;
+  color: #754846;
 }
 
 .profile-header p {
@@ -50,15 +70,53 @@
 .profile-page button {
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid rgba(122, 77, 75, 0.22);
-  border-radius: 8px;
-  color: #754846;
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: #fffaf8;
+  background:
+    linear-gradient(135deg, rgba(179, 108, 99, 0.92), rgba(220, 151, 141, 0.84)),
+    rgba(255, 255, 255, 0.62);
+  box-shadow: 0 16px 34px rgba(177, 107, 97, 0.28);
   cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.profile-link-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: #fffaf8;
+  background:
+    linear-gradient(135deg, rgba(179, 108, 99, 0.92), rgba(220, 151, 141, 0.84)),
+    rgba(255, 255, 255, 0.62);
+  box-shadow: 0 16px 34px rgba(177, 107, 97, 0.28);
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
 }
 
 .profile-page button:hover {
-  background: rgba(255, 255, 255, 0.92);
+  background:
+    linear-gradient(135deg, rgba(158, 91, 84, 0.96), rgba(220, 151, 141, 0.92)),
+    rgba(255, 255, 255, 0.66);
+  box-shadow: 0 20px 42px rgba(177, 107, 97, 0.34);
+  transform: translateY(-1px);
+}
+
+.profile-link-button:hover {
+  background:
+    linear-gradient(135deg, rgba(158, 91, 84, 0.96), rgba(220, 151, 141, 0.92)),
+    rgba(255, 255, 255, 0.66);
+  box-shadow: 0 20px 42px rgba(177, 107, 97, 0.34);
+  transform: translateY(-1px);
 }
 
 .profile-page button:disabled {
@@ -71,14 +129,22 @@
 .master-profile-summary,
 .stats-grid {
   padding: 22px;
-  border: 1px solid rgba(122, 77, 75, 0.16);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.68), rgba(255, 247, 246, 0.48)),
+    rgba(255, 255, 255, 0.5);
+  box-shadow: 0 18px 44px rgba(181, 119, 129, 0.13);
+  backdrop-filter: blur(14px);
 }
 
 .profile-section {
   display: grid;
   gap: 14px;
+}
+
+.profile-section--services {
+  align-self: start;
 }
 
 .profile-section h2 {
@@ -109,8 +175,10 @@
   gap: 6px;
   min-height: 76px;
   padding: 14px;
-  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  border-radius: 16px;
   background: rgba(255, 247, 246, 0.74);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
 }
 
 .client-profile-summary span,
@@ -129,16 +197,34 @@
 .sale-card,
 .portfolio-item {
   padding: 14px;
-  border-radius: 8px;
-  background: rgba(255, 247, 246, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.64), rgba(255, 247, 246, 0.58)),
+    rgba(255, 247, 246, 0.72);
+  box-shadow: 0 10px 24px rgba(181, 119, 129, 0.1);
 }
 
 .services-list {
   display: grid;
-  gap: 12px;
-  max-height: 360px;
+  gap: 8px;
+  max-height: 220px;
   overflow-y: auto;
   padding-right: 4px;
+}
+
+.services-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.services-list::-webkit-scrollbar-thumb {
+  background: rgba(177, 107, 97, 0.28);
+  border-radius: 999px;
+}
+
+.profile-section--services .service-card {
+  min-height: 0;
+  padding: 10px 12px;
 }
 
 .service-card span {

@@ -1,7 +1,15 @@
 "use client";
 
 import "./page.css";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  createShadule,
+  getShadulesByMaster,
+  updateShadule,
+} from "@/shared/api/shaduleApi";
+import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
+import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
+import type { ShaduleType } from "@/shared/types";
 
 type Appointment = {
   id: number;
@@ -107,6 +115,15 @@ const initialFreeSlots: Record<string, string[]> = {
 
 const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const emptySlots: string[] = [];
+const scheduleDays = [
+  { dayOdWeek: 1, label: "Понедельник" },
+  { dayOdWeek: 2, label: "Вторник" },
+  { dayOdWeek: 3, label: "Среда" },
+  { dayOdWeek: 4, label: "Четверг" },
+  { dayOdWeek: 5, label: "Пятница" },
+  { dayOdWeek: 6, label: "Суббота" },
+  { dayOdWeek: 0, label: "Воскресенье" },
+];
 const statusText = {
   confirmed: "Подтверждена",
   pending: "Ждет ответа",
@@ -149,11 +166,74 @@ function getPhoneHref(phone: string) {
   return `tel:${phone.replace(/[^\d+]/g, "")}`;
 }
 
+type ScheduleDraft = {
+  id?: number;
+  dayOdWeek: number;
+  label: string;
+  startTime: string;
+  endTime: string;
+  isWorkingDay: boolean;
+};
+
+function getTimeValue(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "09:00";
+  }
+
+  return `${date.getHours()}`.padStart(2, "0") + `:${date.getMinutes()}`.padStart(2, "0");
+}
+
+function getInitialScheduleDrafts(shadules: ShaduleType[] = []): ScheduleDraft[] {
+  const latestShadules = [...shadules].sort((a, b) => {
+    const updatedDiff =
+      new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime();
+
+    return updatedDiff || b.id - a.id;
+  });
+
+  return scheduleDays.map((day) => {
+    const shadule = latestShadules.find((item) => item.dayOdWeek === day.dayOdWeek);
+
+    return {
+      id: shadule?.id,
+      dayOdWeek: day.dayOdWeek,
+      label: day.label,
+      startTime: shadule ? getTimeValue(shadule.startTime) : "09:00",
+      endTime: shadule ? getTimeValue(shadule.endTime) : "18:00",
+      isWorkingDay: shadule?.isWorkingDay ?? (day.dayOdWeek !== 0 && day.dayOdWeek !== 6),
+    };
+  });
+}
+
+function getScheduleDate(dayOdWeek: number, time: string) {
+  const monday = new Date(2024, 6, 1);
+  const date = new Date(monday);
+  const dayOffset = dayOdWeek === 0 ? 6 : dayOdWeek - 1;
+  const [hours, minutes] = time.split(":").map(Number);
+
+  date.setDate(monday.getDate() + dayOffset);
+  date.setHours(hours, minutes, 0, 0);
+
+  return date.toISOString();
+}
+
 export default function CalendarMasterPage() {
+  const dispatch = useAppDispatch();
+  const { user, isInitialized } = useAppSelector((state) => state.user);
+  const scheduleMasterId = user?.role === "master" ? user.id : undefined;
   const today = new Date(2026, 4, 15);
   const [selectedDate, setSelectedDate] = useState(today);
   const [appointmentsByDate, setAppointmentsByDate] = useState(initialAppointments);
   const [freeSlotsByDate, setFreeSlotsByDate] = useState(initialFreeSlots);
+  const [scheduleDrafts, setScheduleDrafts] = useState<ScheduleDraft[]>(
+    getInitialScheduleDrafts(),
+  );
+  const [isScheduleLoading, setIsScheduleLoading] = useState(false);
+  const [isScheduleSaving, setIsScheduleSaving] = useState(false);
+  const [scheduleMessage, setScheduleMessage] = useState<string | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [form, setForm] = useState({
     lastName: "",
@@ -179,6 +259,40 @@ export default function CalendarMasterPage() {
     month: "long",
     year: "numeric",
   });
+  const scheduleAccessError =
+    isInitialized && !scheduleMasterId
+      ? "Войдите как мастер, чтобы загрузить и сохранить расписание."
+      : null;
+
+  useEffect(() => {
+    if (!isInitialized) {
+      void dispatch(refreshTokenThunk());
+    }
+  }, [dispatch, isInitialized]);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    if (!scheduleMasterId) {
+      return;
+    }
+
+    const loadSchedule = async () => {
+      try {
+        setIsScheduleLoading(true);
+        setScheduleError(null);
+        const shadules = await getShadulesByMaster(scheduleMasterId);
+        setScheduleDrafts(getInitialScheduleDrafts(shadules));
+      } catch {
+        setScheduleDrafts(getInitialScheduleDrafts());
+        setScheduleError("Расписание пока не найдено, можно сохранить новое.");
+      } finally {
+        setIsScheduleLoading(false);
+      }
+    };
+
+    void loadSchedule();
+  }, [isInitialized, scheduleMasterId]);
 
   function changeMonth(direction: number) {
     setSelectedDate(
@@ -243,6 +357,54 @@ export default function CalendarMasterPage() {
     }));
   }
 
+  function updateScheduleDraft(dayOdWeek: number, patch: Partial<ScheduleDraft>) {
+    setScheduleDrafts((currentDrafts) =>
+      currentDrafts.map((draft) =>
+        draft.dayOdWeek === dayOdWeek ? { ...draft, ...patch } : draft,
+      ),
+    );
+  }
+
+  async function handleSaveSchedule() {
+    if (!scheduleMasterId) {
+      setScheduleError("Войдите как мастер, чтобы сохранить расписание.");
+      return;
+    }
+
+    try {
+      setIsScheduleSaving(true);
+      setScheduleError(null);
+      setScheduleMessage(null);
+
+      await Promise.all(
+        scheduleDrafts.map(async (draft) => {
+          const payload = {
+            masterId: scheduleMasterId,
+            dayOdWeek: draft.dayOdWeek,
+            startTime: getScheduleDate(draft.dayOdWeek, draft.startTime),
+            endTime: getScheduleDate(draft.dayOdWeek, draft.endTime),
+            isWorkingDay: draft.isWorkingDay,
+          };
+          const savedShadule = draft.id
+            ? await updateShadule(draft.id, payload)
+            : await createShadule(payload);
+
+          return { ...draft, id: savedShadule.id };
+        }),
+      );
+
+      const reloadedShadules = await getShadulesByMaster(scheduleMasterId);
+      setScheduleDrafts(getInitialScheduleDrafts(reloadedShadules));
+      setScheduleMessage("Расписание сохранено.");
+    } catch (error) {
+      setScheduleError(
+        error instanceof Error ? error.message : "Не удалось сохранить расписание.",
+      );
+    } finally {
+      setIsScheduleSaving(false);
+    }
+  }
+
   return (
     <main className="master-calendar-page">
       <section className="master-calendar-hero">
@@ -257,6 +419,80 @@ export default function CalendarMasterPage() {
         >
           Добавить запись
         </button>
+      </section>
+
+      <section className="master-schedule-panel">
+        <div className="master-schedule-panel__header">
+          <div>
+            <p className="master-calendar-kicker">Рабочая неделя</p>
+            <h2>Расписание мастера</h2>
+          </div>
+          <button
+            className="master-calendar-primary"
+            type="button"
+            disabled={isScheduleSaving || isScheduleLoading || !scheduleMasterId}
+            onClick={() => void handleSaveSchedule()}
+          >
+            {isScheduleSaving ? "Сохранение..." : "Сохранить график"}
+          </button>
+        </div>
+
+        {scheduleAccessError || scheduleError ? (
+          <p className="master-schedule-message">{scheduleAccessError ?? scheduleError}</p>
+        ) : null}
+        {scheduleMessage ? (
+          <p className="master-schedule-message master-schedule-message--success">
+            {scheduleMessage}
+          </p>
+        ) : null}
+
+        <div className="master-schedule-grid">
+          {scheduleDrafts.map((draft) => (
+            <article className="master-schedule-day" key={draft.dayOdWeek}>
+              <label className="master-schedule-day__toggle">
+                <input
+                  type="checkbox"
+                  checked={draft.isWorkingDay}
+                  onChange={(event) =>
+                    updateScheduleDraft(draft.dayOdWeek, {
+                      isWorkingDay: event.target.checked,
+                    })
+                  }
+                />
+                <span>{draft.label}</span>
+              </label>
+
+              <div className="master-schedule-day__time">
+                <label>
+                  <span>С</span>
+                  <input
+                    type="time"
+                    value={draft.startTime}
+                    disabled={!draft.isWorkingDay}
+                    onChange={(event) =>
+                      updateScheduleDraft(draft.dayOdWeek, {
+                        startTime: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  <span>До</span>
+                  <input
+                    type="time"
+                    value={draft.endTime}
+                    disabled={!draft.isWorkingDay}
+                    onChange={(event) =>
+                      updateScheduleDraft(draft.dayOdWeek, {
+                        endTime: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="master-calendar-layout">
