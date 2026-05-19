@@ -172,7 +172,7 @@ class ShaduleController {
     }
 
     try {
-      await ShaduleService.deleteByMasterId(masterId);
+      await ShaduleService.deleteByMasterId(user.id ?? masterId);
       return res
         .status(200)
         .json(formatResponse(200, "Графики успешно удалены"));

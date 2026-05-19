@@ -7,8 +7,8 @@ import { createBooking, getBookingsByMaster, updateBooking } from "@/shared/api/
 import { getServicesByMaster } from "@/shared/api/serviziApi";
 import {
   createShadule,
+  deleteShadule,
   getShadulesByMaster,
-  updateShadule,
 } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import type { BookingType, ServiziType, ShaduleType } from "@/shared/types";
@@ -28,12 +28,14 @@ type Appointment = {
 };
 
 type ScheduleDraft = {
-  id?: number;
   dayOdWeek: number;
   label: string;
-  startTime: string;
-  endTime: string;
   isWorkingDay: boolean;
+  slots: Array<{
+    id?: number;
+    time: string;
+  }>;
+  newSlotTime: string;
 };
 
 const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -118,12 +120,6 @@ function formatMinutes(totalMinutes: number) {
   return `${hours}:${minutes}`;
 }
 
-function getTimeInputMinutes(time: string) {
-  const [hours, minutes] = time.split(":").map(Number);
-
-  return hours * 60 + minutes;
-}
-
 function getScheduleDate(dayOdWeek: number, time: string) {
   const monday = new Date(2024, 6, 1);
   const date = new Date(monday);
@@ -134,6 +130,17 @@ function getScheduleDate(dayOdWeek: number, time: string) {
   date.setHours(hours, minutes, 0, 0);
 
   return date.toISOString();
+}
+
+function getScheduleEndDate(dayOdWeek: number, time: string) {
+  const date = new Date(getScheduleDate(dayOdWeek, time));
+  date.setMinutes(date.getMinutes() + 30);
+
+  return date.toISOString();
+}
+
+function getScheduleSlotKey(dayOdWeek: number, time: string) {
+  return `${dayOdWeek}-${time}`;
 }
 
 function getBookingDateTimes(dateKey: string, time: string, duration: number) {
@@ -151,23 +158,21 @@ function getBookingDateTimes(dateKey: string, time: string, duration: number) {
 }
 
 function getInitialScheduleDrafts(shadules: ShaduleType[] = []): ScheduleDraft[] {
-  const latestShadules = [...shadules].sort((a, b) => {
-    const updatedDiff =
-      new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime();
-
-    return updatedDiff || b.id - a.id;
-  });
-
   return scheduleDays.map((day) => {
-    const shadule = latestShadules.find((item) => item.dayOdWeek === day.dayOdWeek);
+    const dayShadules = shadules
+      .filter((item) => item.dayOdWeek === day.dayOdWeek && item.isWorkingDay)
+      .map((item) => ({
+        id: item.id,
+        time: getTimeValue(item.startTime),
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
 
     return {
-      id: shadule?.id,
       dayOdWeek: day.dayOdWeek,
       label: day.label,
-      startTime: shadule ? getTimeValue(shadule.startTime) : "09:00",
-      endTime: shadule ? getTimeValue(shadule.endTime) : "18:00",
-      isWorkingDay: shadule?.isWorkingDay ?? (day.dayOdWeek !== 0 && day.dayOdWeek !== 6),
+      isWorkingDay: dayShadules.length > 0,
+      slots: dayShadules,
+      newSlotTime: dayShadules.at(-1)?.time ?? "09:00",
     };
   });
 }
@@ -249,8 +254,6 @@ function buildFreeSlotsByDate(
     if (!schedule) return result;
 
     const dateKey = toDateKey(date);
-    const startMinutes = getMinutesFromDate(getScheduleDate(schedule.dayOdWeek, schedule.startTime));
-    const endMinutes = getMinutesFromDate(getScheduleDate(schedule.dayOdWeek, schedule.endTime));
     const dayBookings = bookings.filter((booking) => {
       const bookingDateKey = toDateKey(new Date(booking.startTime));
 
@@ -258,7 +261,8 @@ function buildFreeSlotsByDate(
     });
     const slots: string[] = [];
 
-    for (let slotStart = startMinutes; slotStart + 30 <= endMinutes; slotStart += 30) {
+    schedule.slots.forEach((scheduleSlot) => {
+      const slotStart = getMinutesFromDate(getScheduleDate(schedule.dayOdWeek, scheduleSlot.time));
       const slotEnd = slotStart + 30;
       const hasConflict = dayBookings.some((booking) => {
         const bookedStart = getMinutesFromDate(booking.startTime);
@@ -270,7 +274,7 @@ function buildFreeSlotsByDate(
       if (!hasConflict) {
         slots.push(formatMinutes(slotStart));
       }
-    }
+    });
 
     return slots.length > 0 ? { ...result, [dateKey]: slots } : result;
   }, {});
@@ -286,11 +290,9 @@ function buildSlotsForDate(
     (draft) => draft.dayOdWeek === date.getDay() && draft.isWorkingDay,
   );
 
-  if (!schedule || !duration) return [];
+  if (!schedule || !duration || schedule.slots.length === 0) return [];
 
   const dateKey = toDateKey(date);
-  const startMinutes = getMinutesFromDate(getScheduleDate(schedule.dayOdWeek, schedule.startTime));
-  const endMinutes = getMinutesFromDate(getScheduleDate(schedule.dayOdWeek, schedule.endTime));
   const dayBookings = bookings.filter((booking) => {
     const bookingDateKey = toDateKey(new Date(booking.startTime));
 
@@ -298,7 +300,8 @@ function buildSlotsForDate(
   });
   const slots: string[] = [];
 
-  for (let slotStart = startMinutes; slotStart + duration <= endMinutes; slotStart += 30) {
+  schedule.slots.forEach((scheduleSlot) => {
+    const slotStart = getMinutesFromDate(getScheduleDate(schedule.dayOdWeek, scheduleSlot.time));
     const slotEnd = slotStart + duration;
     const hasConflict = dayBookings.some((booking) => {
       const bookedStart = getMinutesFromDate(booking.startTime);
@@ -310,7 +313,7 @@ function buildSlotsForDate(
     if (!hasConflict) {
       slots.push(formatMinutes(slotStart));
     }
-  }
+  });
 
   return slots;
 }
@@ -523,20 +526,51 @@ export default function CalendarMasterPage() {
     );
   }
 
+  function addScheduleSlot(dayOdWeek: number) {
+    setScheduleDrafts((currentDrafts) =>
+      currentDrafts.map((draft) => {
+        if (draft.dayOdWeek !== dayOdWeek) return draft;
+
+        if (!draft.newSlotTime || draft.slots.some((slot) => slot.time === draft.newSlotTime)) {
+          return draft;
+        }
+
+        return {
+          ...draft,
+          isWorkingDay: true,
+          slots: [...draft.slots, { time: draft.newSlotTime }].sort((a, b) =>
+            a.time.localeCompare(b.time),
+          ),
+        };
+      }),
+    );
+  }
+
+  function removeScheduleSlot(dayOdWeek: number, time: string) {
+    setScheduleDrafts((currentDrafts) =>
+      currentDrafts.map((draft) =>
+        draft.dayOdWeek === dayOdWeek
+          ? {
+              ...draft,
+              slots: draft.slots.filter((slot) => slot.time !== time),
+            }
+          : draft,
+      ),
+    );
+  }
+
   async function handleSaveSchedule() {
     if (!masterId) {
       setScheduleError("Войдите как мастер, чтобы сохранить расписание.");
       return;
     }
 
-    const invalidDraft = scheduleDrafts.find((draft) => {
-      if (!draft.isWorkingDay) return false;
+    const emptyWorkingDay = scheduleDrafts.find(
+      (draft) => draft.isWorkingDay && draft.slots.length === 0,
+    );
 
-      return getTimeInputMinutes(draft.endTime) <= getTimeInputMinutes(draft.startTime);
-    });
-
-    if (invalidDraft) {
-      setScheduleError(`Проверьте ${invalidDraft.label}: время окончания должно быть позже начала.`);
+    if (emptyWorkingDay) {
+      setScheduleError(`Добавьте хотя бы один слот на ${emptyWorkingDay.label} или выключите день.`);
       return;
     }
 
@@ -545,28 +579,63 @@ export default function CalendarMasterPage() {
       setScheduleError(null);
       setScheduleMessage(null);
 
-      for (const draft of scheduleDrafts) {
-        try {
-          const payload = {
-            masterId,
-            dayOdWeek: draft.dayOdWeek,
-            startTime: getScheduleDate(draft.dayOdWeek, draft.startTime),
-            endTime: getScheduleDate(draft.dayOdWeek, draft.endTime),
-            isWorkingDay: draft.isWorkingDay,
-          };
+      const existingShadules = await getShadulesByMaster(masterId).catch(() => []);
+      const existingByKey = new Map<string, ShaduleType>();
+      const duplicateExistingIds: number[] = [];
 
-          if (draft.id) {
-            await updateShadule(draft.id, payload);
-          } else {
-            await createShadule(payload);
-          }
+      existingShadules.forEach((shadule) => {
+        const key = getScheduleSlotKey(shadule.dayOdWeek, getTimeValue(shadule.startTime));
+
+        if (existingByKey.has(key)) {
+          duplicateExistingIds.push(shadule.id);
+          return;
+        }
+
+        existingByKey.set(key, shadule);
+      });
+
+      const desiredSlots = scheduleDrafts.flatMap((draft) =>
+        draft.isWorkingDay
+          ? draft.slots.map((slot) => ({
+              dayOdWeek: draft.dayOdWeek,
+              label: draft.label,
+              time: slot.time,
+              key: getScheduleSlotKey(draft.dayOdWeek, slot.time),
+            }))
+          : [],
+      );
+      const desiredKeys = new Set(desiredSlots.map((slot) => slot.key));
+
+      for (const slot of desiredSlots) {
+        if (existingByKey.has(slot.key)) continue;
+
+        try {
+          await createShadule({
+            masterId,
+            dayOdWeek: slot.dayOdWeek,
+            startTime: getScheduleDate(slot.dayOdWeek, slot.time),
+            endTime: getScheduleEndDate(slot.dayOdWeek, slot.time),
+            isWorkingDay: true,
+          });
         } catch (error) {
           throw new Error(
-            `Не удалось сохранить ${draft.label}: ${
+            `Не удалось сохранить ${slot.label}, ${slot.time}: ${
               error instanceof Error ? error.message : "ошибка сервера"
             }`,
           );
         }
+      }
+
+      const obsoleteIds = existingShadules
+        .filter((shadule) => {
+          const key = getScheduleSlotKey(shadule.dayOdWeek, getTimeValue(shadule.startTime));
+
+          return !desiredKeys.has(key);
+        })
+        .map((shadule) => shadule.id);
+
+      for (const id of [...new Set([...obsoleteIds, ...duplicateExistingIds])]) {
+        await deleteShadule(id);
       }
 
       const reloadedShadules = await getShadulesByMaster(masterId);
@@ -648,7 +717,7 @@ export default function CalendarMasterPage() {
           {scheduleDrafts.map((draft, index) => (
             <article
               className="master-schedule-day"
-              key={`schedule-${draft.dayOdWeek}-${draft.id ?? index}`}
+              key={`schedule-${draft.dayOdWeek}-${index}`}
             >
               <label className="master-schedule-day__toggle">
                 <input
@@ -665,31 +734,42 @@ export default function CalendarMasterPage() {
 
               <div className="master-schedule-day__time">
                 <label>
-                  <span>С</span>
+                  <span>Новый слот</span>
                   <input
                     type="time"
-                    value={draft.startTime}
+                    value={draft.newSlotTime}
                     disabled={!draft.isWorkingDay}
                     onChange={(event) =>
                       updateScheduleDraft(draft.dayOdWeek, {
-                        startTime: event.target.value,
+                        newSlotTime: event.target.value,
                       })
                     }
                   />
                 </label>
-                <label>
-                  <span>До</span>
-                  <input
-                    type="time"
-                    value={draft.endTime}
-                    disabled={!draft.isWorkingDay}
-                    onChange={(event) =>
-                      updateScheduleDraft(draft.dayOdWeek, {
-                        endTime: event.target.value,
-                      })
-                    }
-                  />
-                </label>
+                <button
+                  type="button"
+                  disabled={!draft.isWorkingDay}
+                  onClick={() => addScheduleSlot(draft.dayOdWeek)}
+                >
+                  Добавить слот
+                </button>
+                <div className="master-schedule-slots">
+                  {draft.slots.length > 0 ? (
+                    draft.slots.map((slot) => (
+                      <button
+                        type="button"
+                        key={`${draft.dayOdWeek}-${slot.time}`}
+                        disabled={!draft.isWorkingDay}
+                        onClick={() => removeScheduleSlot(draft.dayOdWeek, slot.time)}
+                        aria-label={`Удалить слот ${slot.time}`}
+                      >
+                        {slot.time} x
+                      </button>
+                    ))
+                  ) : (
+                    <p>Слоты не добавлены</p>
+                  )}
+                </div>
               </div>
             </article>
           ))}
