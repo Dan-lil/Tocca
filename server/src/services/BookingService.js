@@ -8,11 +8,16 @@ class BookingService {
 
     return plainBooking;
   }
-    static async update(id, BookingData) {  
+    static async update(id, BookingData) {
     const [rows] = await Booking.update(BookingData, {
       where: { id: id },
     });
-    return rows;
+    if (rows === 0) {
+      return null;
+    }
+    const booking = await Booking.findByPk(id);
+
+    return booking.get();
   }
 
     static async findAllByMasterId(masterId) {

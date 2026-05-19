@@ -38,12 +38,47 @@
   border-radius: 8px;
 }
 
+.master-calendar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.master-calendar-secondary {
+  min-width: 150px;
+  padding: 13px 20px;
+  color: #8f594a;
+  background: #f8e2dc;
+  border: 0;
+  border-radius: 8px;
+}
+
+.master-calendar-primary:disabled,
+.master-calendar-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .master-calendar-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.65fr);
   gap: 24px;
   max-width: 1220px;
   margin: 0 auto;
+}
+
+.master-calendar-state {
+  max-width: 1220px;
+  padding: 14px 16px;
+  margin: 0 auto 24px;
+  color: #7a5a15;
+  background: #f7e7bd;
+  border-radius: 8px;
+}
+
+.master-calendar-state p {
+  margin: 0;
 }
 
 .master-schedule-panel {
@@ -311,7 +346,8 @@
 }
 
 .master-add-form input,
-.master-add-form select {
+.master-add-form select,
+.master-add-form textarea {
   width: 100%;
   min-height: 42px;
   padding: 10px 12px;
@@ -323,8 +359,20 @@
 }
 
 .master-add-form input:focus,
-.master-add-form select:focus {
+.master-add-form select:focus,
+.master-add-form textarea:focus {
   border-color: #b86f5d;
+}
+
+.master-add-form textarea {
+  resize: vertical;
+}
+
+.master-form-error {
+  padding: 10px 12px;
+  color: #a35e5b;
+  background: #f8dfdc;
+  border-radius: 8px;
 }
 
 .master-add-form__row {
@@ -394,6 +442,15 @@
   color: #80645c;
 }
 
+.master-appointment-comment {
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  color: #80645c;
+  background: #fff;
+  border: 1px dashed #e7c7bd;
+  border-radius: 8px;
+}
+
 .master-status {
   height: max-content;
   padding: 5px 8px;
@@ -453,6 +510,11 @@
   color: #fff;
   background: #b86f5d;
   border: 0;
+}
+
+.master-appointment-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .master-appointment-actions .master-appointment-actions__status {
