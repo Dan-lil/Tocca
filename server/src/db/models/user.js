@@ -39,10 +39,15 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "clientId",
       });
       this.hasMany(models.Chat, {
+        as: "masterChats",
         foreignKey: "masterId",
       });
       this.hasMany(models.Chat, {
+        as: "clientChats",
         foreignKey: "clientId",
+      });
+      this.hasMany(models.ChatMessage, {
+        foreignKey: "senderId",
       });
       // define association here
 

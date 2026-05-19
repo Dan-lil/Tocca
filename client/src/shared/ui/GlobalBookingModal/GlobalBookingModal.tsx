@@ -10,6 +10,7 @@ import { getServicesByMaster } from "@/shared/api/serviziApi";
 import { getShadulesByMaster } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { BOOKING_MODAL_EVENT, dispatchBookingModalClose } from "@/shared/lib/bookingEvents";
+import { openBookingChat } from "@/shared/lib/openBookingChat";
 import { BookingModalPayload, BookingType, ServiziType, ShaduleType } from "@/shared/types";
 import { getMockOptionsByPrompt, quickPrompts, type MasterItem } from "./booking.data";
 
@@ -169,6 +170,8 @@ export default function GlobalBookingModal() {
   const [isDirectDataLoading, setIsDirectDataLoading] = useState(false);
   const [directBookingError, setDirectBookingError] = useState<string | null>(null);
   const [directBookingSuccess, setDirectBookingSuccess] = useState<string | null>(null);
+  const [directCreatedBooking, setDirectCreatedBooking] = useState<BookingType | null>(null);
+  const [isOpeningDirectChat, setIsOpeningDirectChat] = useState(false);
   const [directBookingStep, setDirectBookingStep] = useState<DirectBookingStep>("service");
   const [directServices, setDirectServices] = useState<ServiziType[]>([]);
   const [directShadules, setDirectShadules] = useState<ShaduleType[]>([]);
@@ -226,6 +229,8 @@ export default function GlobalBookingModal() {
     setIsDirectDataLoading(false);
     setDirectBookingError(null);
     setDirectBookingSuccess(null);
+    setDirectCreatedBooking(null);
+    setIsOpeningDirectChat(false);
     setDirectBookingStep("service");
     setDirectServices([]);
     setDirectShadules([]);
@@ -479,7 +484,7 @@ export default function GlobalBookingModal() {
       setDirectBookingError(null);
       setDirectBookingSuccess(null);
 
-      await createBooking({
+      const createdBooking = await createBooking({
         clientId: user.id,
         masterId: presetBooking.masterId,
         serviziId: selectedDirectService.id,
@@ -490,6 +495,7 @@ export default function GlobalBookingModal() {
         clientComment: directBookingForm.comment.trim() || undefined,
       });
 
+      setDirectCreatedBooking(createdBooking);
       setDirectBookingSuccess("Запись отправлена мастеру");
       setDirectBookings((currentBookings) => [
         ...currentBookings,
@@ -515,6 +521,21 @@ export default function GlobalBookingModal() {
       );
     } finally {
       setIsDirectBookingLoading(false);
+    }
+  };
+
+  const handleOpenDirectChat = async () => {
+    if (!directCreatedBooking) return;
+
+    try {
+      setIsOpeningDirectChat(true);
+      setDirectBookingError(null);
+      await openBookingChat(router, directCreatedBooking);
+      closeModal();
+    } catch (error) {
+      setDirectBookingError(error instanceof Error ? error.message : "Не удалось открыть чат");
+    } finally {
+      setIsOpeningDirectChat(false);
     }
   };
 
@@ -568,9 +589,19 @@ export default function GlobalBookingModal() {
               ) : null}
 
               {directBookingSuccess ? (
-                <p className="booking-direct-feedback booking-direct-feedback--success">
-                  {directBookingSuccess}
-                </p>
+                <div className="booking-direct-success-actions">
+                  <p className="booking-direct-feedback booking-direct-feedback--success">
+                    {directBookingSuccess}
+                  </p>
+                  <button
+                    className="booking-confirm-button"
+                    type="button"
+                    disabled={!directCreatedBooking || isOpeningDirectChat}
+                    onClick={() => void handleOpenDirectChat()}
+                  >
+                    {isOpeningDirectChat ? "Открываю чат..." : "Написать мастеру"}
+                  </button>
+                </div>
               ) : null}
 
               {!isDirectDataLoading && directServices.length === 0 ? (

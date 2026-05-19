@@ -1,9 +1,15 @@
 const ChatRouter = require("express").Router();
 const ChatController = require("../controllers/ChatController");
-const verifyRefreshToken = require("../middleware/verifyRefreshToken");
 const verifyAccessToken = require("../middleware/verifyAccessToken");
 
 ChatRouter.post("/chats", verifyAccessToken, ChatController.createChat)
+  .get("/chats", verifyAccessToken, ChatController.findMyChats)
+  .get(
+    "/chats/:id/messages",
+    verifyAccessToken,
+    ChatController.findChatMessages,
+  )
+  .post("/chats/:id/messages", verifyAccessToken, ChatController.createMessage)
   .get(
     "/chats/:bookingId",
     verifyAccessToken,
