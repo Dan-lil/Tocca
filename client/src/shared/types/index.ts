@@ -16,6 +16,8 @@ export type CategoryType = {
 export type ServiziType = {
   id: number;
   masterId: number;
+  masterName?: string | null;
+  masterRating?: number;
   title: string;
   description: string;
   price: number;

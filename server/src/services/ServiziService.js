@@ -1,4 +1,29 @@
-const { Servizi } = require("../db/models");
+const { ProfileMaster, Servizi, User } = require("../db/models");
+
+// Подтягиваем автора услуги и его профиль, чтобы сразу отдавать имя и рейтинг мастера
+const SERVICE_INCLUDE = [
+  {
+    model: User,
+    attributes: ["id", "name"],
+    include: [
+      {
+        model: ProfileMaster,
+        attributes: ["rating"],
+      },
+    ],
+  },
+];
+
+function mapServizi(servizi) {
+  const plainServizi = servizi.get({ plain: true });
+
+  return {
+    ...plainServizi,
+    // Нормализуем вложенные данные Sequelize, удобную для клиента
+    masterName: plainServizi.User?.name ?? null,
+    masterRating: plainServizi.User?.ProfileMaster?.rating ?? 0,
+  };
+}
 
 class ServiziService {
   static async create(ServiziData) {
@@ -27,41 +52,48 @@ class ServiziService {
   static async findAllByMasterId(masterId) {
     const serviziList = await Servizi.findAll({
       where: { masterId: masterId },
+      include: SERVICE_INCLUDE,
     });
 
-    return serviziList.map((servizi) => servizi.get());
+    return serviziList.map(mapServizi);
   }
 
   static async findAllByCategoryId(categoryId) {
     const serviziList = await Servizi.findAll({
       where: { categoryId: categoryId },
+      include: SERVICE_INCLUDE,
     });
 
-    return serviziList.map((servizi) => servizi.get());
+    return serviziList.map(mapServizi);
   }
 
   static async findAll() {
-    const serviziList = await Servizi.findAll();
+    const serviziList = await Servizi.findAll({
+      include: SERVICE_INCLUDE,
+    });
 
-    return serviziList.map((servizi) => servizi.get());
+    return serviziList.map(mapServizi);
   }
 
   static async findById(id) {
-    const servizi = await Servizi.findByPk(id);
+    const servizi = await Servizi.findByPk(id, {
+      include: SERVICE_INCLUDE,
+    });
 
     if (!servizi) {
       return null;
     }
 
-    return servizi.get();
+    return mapServizi(servizi);
   }
 
   static async findByActive(isActive) {
     const serviziList = await Servizi.findAll({
       where: { isActive: isActive },
+      include: SERVICE_INCLUDE,
     });
 
-    return serviziList.map((servizi) => servizi.get());
+    return serviziList.map(mapServizi);
   }
 
   static async delete(id) {

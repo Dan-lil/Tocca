@@ -116,6 +116,7 @@
 .services-directory-card-head {
   display: flex;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 10px;
 }
 
@@ -125,13 +126,37 @@
 }
 
 .services-directory-card-head-copy strong {
-  font-size: 14px;
+  font-size: 17px;
   font-weight: 700;
 }
 
 .services-directory-card-head-copy span {
-  font-size: 11px;
+  font-size: 13px;
   color: rgba(255, 244, 242, 0.92);
+  line-height: 1.35;
+}
+
+.services-directory-card-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 248, 245, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #fff7f5;
+  white-space: nowrap;
+}
+
+.services-directory-card-rating strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.services-directory-card-rating-star {
+  color: #ffd26f;
+  font-size: 14px;
+  line-height: 1;
 }
 
 .services-directory-badges {
@@ -141,12 +166,13 @@
 }
 
 .services-directory-badge {
-  padding: 6px 10px;
+  padding: 7px 12px;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 247, 245, 0.9);
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 500;
   line-height: 1;
   cursor: pointer;
 }
@@ -155,9 +181,23 @@
   background: rgba(255, 255, 255, 0.18);
 }
 
+.services-directory-badge.is-active {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.42);
+}
+
 .services-directory-badge:focus-visible {
   outline: 1px solid rgba(255, 248, 245, 0.82);
   outline-offset: 2px;
+}
+
+.services-reviews-dropdown {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 20px;
+  background: rgba(255, 247, 245, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 
 .services-directory-card-button {
@@ -174,70 +214,6 @@
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.18);
   box-shadow: 0 18px 30px rgba(177, 107, 97, 0.24);
-}
-
-.services-reviews-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(82, 50, 52, 0.45);
-  backdrop-filter: blur(10px);
-}
-
-.services-reviews-modal {
-  display: grid;
-  gap: 18px;
-  width: min(100%, 640px);
-  max-height: min(80vh, 720px);
-  padding: 24px;
-  border-radius: 28px;
-  overflow: auto;
-  scrollbar-width: none;
-}
-
-.services-reviews-modal::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-}
-
-.services-reviews-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.services-reviews-head-copy {
-  display: grid;
-  gap: 6px;
-}
-
-.services-reviews-head-copy span {
-  color: #bc7f79;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.services-reviews-head-copy h2 {
-  margin: 0;
-  color: #8c5b58;
-  font-size: clamp(24px, 3vw, 32px);
-}
-
-.services-reviews-close {
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(184, 131, 124, 0.24);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.55);
-  color: #9e6d69;
-  font-size: 24px;
-  line-height: 1;
 }
 
 .services-reviews-list {
@@ -317,17 +293,16 @@
     grid-template-columns: 1fr;
   }
 
-  .services-reviews-modal {
-    padding: 18px;
-    border-radius: 24px;
-  }
-
   .services-reviews-card {
     padding: 14px 16px;
   }
 
   .services-reviews-card-head {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .services-directory-card-head {
     flex-direction: column;
   }
 }
