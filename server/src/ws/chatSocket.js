@@ -1,36 +1,12 @@
-const { Server } = require('socket.io');
-const crypto = require('crypto');
-const jwt = require('jsonwebtoken');
-const path = require('path');
+const { Server } = require("socket.io");
+const jwt = require("jsonwebtoken");
 const corsOrigins = require("../config/corsOrigins");
+const ChatService = require("../services/ChatService");
 
-
-const CHANNELS = [
-  { id: 'laugh', emoji: '🤣', label: 'Laugh' },
-  { id: 'trouble', emoji: '😢', label: 'Trouble' },
-  { id: 'rant', emoji: '😡', label: 'Rant' },
-  { id: 'gossip', emoji: '🤭', label: 'Gossip' },
-];
-
-const ALLOWED_CHANNEL_IDS = new Set(CHANNELS.map((channel) => channel.id));
 const MAX_MESSAGE_LENGTH = 1000;
 
-const messagesByChannel = new Map();
-
-for (const id of ALLOWED_CHANNEL_IDS) {
-  messagesByChannel.set(id, []);
-}
-
-function roomName(channelId) {
-  return `channel:${channelId}`;
-}
-
-function pushMessage(channelId, message) {
-  const messages = messagesByChannel.get(channelId);
-  if (!messages) {
-    return;
-  }
-  messages.push(message);
+function roomName(chatId) {
+  return `chat:${chatId}`;
 }
 
 function initChatSocket(httpServer) {
@@ -42,65 +18,90 @@ function initChatSocket(httpServer) {
   });
 
   io.use((socket, next) => {
-    const auth = socket.handshake.auth || {};
-    const token = auth.token;
-    const nickname =
-      typeof auth.nickname === 'string' ? auth.nickname.trim() : '';
-    if (token) {
-      try {
-        const { user } = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        if (user?.name) {
-          socket.data.displayName = String(user.name).slice(0, 50);
-          return next();
-        }
-      } catch (error) {
-        console.log(error);
-      }
+    const token = socket.handshake.auth?.token;
+
+    if (!token) {
+      return next(new Error("Unauthorized"));
     }
-    const name = nickname.slice(0, 50);
-    socket.data.displayName = name || 'Гость';
-    next();
+
+    try {
+      const { user } = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+      if (!user?.id) {
+        return next(new Error("Unauthorized"));
+      }
+
+      socket.data.user = user;
+      return next();
+    } catch (error) {
+      console.log("======== chatSocket.auth =========");
+      console.log(error);
+      return next(new Error("Unauthorized"));
+    }
   });
 
-  io.on('connection', (socket) => {
-    socket.emit('chat:init', { channels: CHANNELS });
+  io.on("connection", (socket) => {
+    socket.on("chat:join", async (payload) => {
+      const chatId = Number(payload?.chatId);
 
-    socket.on('channel:join', (payload) => {
-      const channelId = payload?.channelId;
-      if (!ALLOWED_CHANNEL_IDS.has(channelId)) return;
-      const prev = socket.data.currentChannelId;
-      if (prev && prev !== channelId) {
-        socket.leave(roomName(prev));
+      if (!Number.isInteger(chatId)) {
+        return;
       }
-      socket.join(roomName(channelId));
-      socket.data.currentChannelId = channelId;
-      const messages = messagesByChannel.get(channelId) ?? [];
-      socket.emit('channel:history', { channelId, messages });
+
+      const chat = await ChatService.ensureParticipant(chatId, socket.data.user.id);
+
+      if (!chat) {
+        socket.emit("chat:error", { message: "Чат не найден" });
+        return;
+      }
+
+      const previousChatId = socket.data.currentChatId;
+
+      if (previousChatId && previousChatId !== chatId) {
+        socket.leave(roomName(previousChatId));
+      }
+
+      socket.join(roomName(chatId));
+      socket.data.currentChatId = chatId;
+
+      const messages = await ChatService.findMessages(chatId);
+      socket.emit("chat:history", { chatId, messages });
     });
 
-    socket.on('message:send', (payload) => {
-      const channelId = payload?.channelId;
-      const text = typeof payload?.text === 'string' ? payload.text.trim() : '';
+    socket.on("message:send", async (payload) => {
+      const chatId = Number(payload?.chatId);
+      const text = typeof payload?.text === "string" ? payload.text.trim() : "";
 
-      if (!ALLOWED_CHANNEL_IDS.has(channelId)) return;
-      if (!socket.rooms.has(roomName(channelId))) return;
-      if (!text || text.length > MAX_MESSAGE_LENGTH) return;
+      if (!Number.isInteger(chatId) || !text || text.length > MAX_MESSAGE_LENGTH) {
+        return;
+      }
 
-      const message = {
-        id: crypto.randomUUID(),
-        channelId,
+      if (!socket.rooms.has(roomName(chatId))) {
+        return;
+      }
+
+      const chat = await ChatService.ensureParticipant(chatId, socket.data.user.id);
+
+      if (!chat) {
+        socket.emit("chat:error", { message: "Чат не найден" });
+        return;
+      }
+
+      const message = await ChatService.createMessage(
+        chatId,
+        socket.data.user.id,
         text,
-        author: { name: socket.data.displayName },
-        createdAt: new Date().toISOString(),
-      };
+      );
 
-      pushMessage(channelId, message);
-      io.to(roomName(channelId)).emit('message:new', message);
+      io.to(roomName(chatId)).emit("message:new", { chatId, message });
     });
 
-    socket.on('disconnect', () => {
-      const channelId = socket.data.currentChannelId;
-      if (channelId) socket.leave(roomName(channelId));
+    socket.on("disconnect", () => {
+      const chatId = socket.data.currentChatId;
+
+      if (chatId) {
+        socket.leave(roomName(chatId));
+      }
     });
   });
 

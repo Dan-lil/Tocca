@@ -9,18 +9,19 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       this.belongsTo(models.User, {
-        foreignKey: "masterId",
+        as: "client",
+        foreignKey: "clientId",
       });
       this.belongsTo(models.User, {
-        foreignKey: "clientId",
+        as: "master",
+        foreignKey: "masterId",
       });
       this.belongsTo(models.Booking, {
         foreignKey: "bookingId",
       });
-      this.hasMany(models.Message, {
+      this.hasMany(models.ChatMessage, {
         foreignKey: "chatId",
       });
-      // define association here
     }
   }
   Chat.init(
