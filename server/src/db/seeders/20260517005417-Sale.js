@@ -5,9 +5,9 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert("Sales", [
       {
-        masterId: 2,
+        masterId: 13,
         bookingId: 1,
-        serviziId: 2,
+        serviziId: 10,
         finalPrice: 3750,
         discount: 25,
         comment: "Антицеллюлитный массаж со скидкой 25%",
@@ -25,7 +25,7 @@ module.exports = {
         date: new Date("2026-06-15T21:00:00"),
       },
       {
-        masterId: 2,
+        masterId: 10,
         bookingId: 1,
         serviziId: 5,
         finalPrice: 2975,
@@ -35,9 +35,9 @@ module.exports = {
         date: new Date("2026-06-20T21:00:00"),
       },
       {
-        masterId: 2,
+        masterId: 11,
         bookingId: 1,
-        serviziId: 3,
+        serviziId: 6,
         finalPrice: 3000,
         discount: 0,
         comment: "Укладка в подарок при записи на образ",
@@ -45,13 +45,23 @@ module.exports = {
         date: new Date("2026-06-25T21:00:00"),
       },
       {
-        masterId: 2,
+        masterId: 7,
         bookingId: 1,
-        serviziId: 1,
+        serviziId: 7,
         finalPrice: 2800,
         discount: 20,
         comment: "Скидка 20% на первое посещение ногтевого сервиса",
         image: "/акции/manicure-discount-20 (1).png",
+        date: new Date("2026-06-10T21:00:00"),
+      },
+      {
+        masterId: 8,
+        bookingId: 1,
+        serviziId: 4,
+        finalPrice: 3000,
+        discount: 15,
+        comment: "Скидка 15% на чистку лица",
+        image: "/акции/чистка-лица.png",
         date: new Date("2026-06-10T21:00:00"),
       },
     ]);

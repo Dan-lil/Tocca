@@ -15,7 +15,7 @@ module.exports = {
         image: "/услуги на главной/ногти9.jpg",
       },
       {
-        masterId: 2,
+        masterId: 13,
         title: "Массаж",
         description: "Расслабляющий массаж для лица и тела",
         price: 5000.0,
@@ -25,7 +25,7 @@ module.exports = {
         image: "/услуги на главной/массаж8.jpg",
       },
       {
-        masterId: 2,
+        masterId: 11,
         title: "Волосы",
         description: "Укладка и образ для любого события",
         price: 3000.0,
@@ -35,7 +35,7 @@ module.exports = {
         image: "/услуги на главной/прическа2.jpg",
       },
       {
-        masterId: 2,
+        masterId: 8,
         title: "Косметология",
         description: "Уход за кожей лица и свежий тон",
         price: 4000.0,
@@ -55,7 +55,7 @@ module.exports = {
         image: "/услуги на главной/макияж1.jpg",
       },
       {
-        masterId: 2,
+        masterId: 11,
         title: "Укладка",
         description: "Профессиональная укладка волос",
         price: 2500.0,
@@ -65,7 +65,7 @@ module.exports = {
         image: "/услуги на главной/укладка3.jpg",
       },
       {
-        masterId: 11,
+        masterId: 7,
         title: "Педикюр",
         description: "Уход за ногами и ногтями",
         price: 1500.0,
@@ -75,7 +75,7 @@ module.exports = {
         image: "/услуги на главной/педикюр4.jpg",
       },
       {
-        masterId: 6,
+        masterId: 9,
         title: "Эпиляция",
         description: "Классическая эпиляция бикини и депиляция",
         price: 2000.0,
@@ -85,7 +85,7 @@ module.exports = {
         image: "/услуги на главной/эпиляция5.jpg",
       },
       {
-        masterId: 2,
+        masterId: 13,
         title: "Массаж лица",
         description: "Расслабляющий массаж для лица и шеи",
         price: 3000.0,
@@ -95,7 +95,7 @@ module.exports = {
         image: "/услуги на главной/массаж лица6.jpg",
       },
       {
-        masterId: 2,
+        masterId: 13,
         title: "Массаж тела",
         description: "Расслабляющий массаж для всего тела",
         price: 5000.0,
