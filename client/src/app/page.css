@@ -361,7 +361,7 @@ button {
   position: absolute;
   top: 0;
   left: 50%;
-  width: min(36vw, 410px);
+  width: min(42vw, 480px);
   min-width: 320px;
   height: 100%;
   overflow: hidden;
@@ -505,6 +505,15 @@ button {
   border-radius: 34px;
     
   box-shadow: 0 32px 90px rgba(126, 74, 85, 0.28);
+}
+
+.booking-modal::-webkit-scrollbar {
+  display: none;
+}
+
+.booking-modal {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .booking-intro,
@@ -778,7 +787,7 @@ button {
   }
 
   .promo-card {
-    width: min(48vw, 380px);
+    width: min(54vw, 430px);
   }
 
 }
@@ -818,7 +827,7 @@ button {
   }
 
   .promo-card {
-    width: 82vw;
+    width: 88vw;
     min-width: 0;
   }
 

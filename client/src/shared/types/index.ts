@@ -16,6 +16,8 @@ export type CategoryType = {
 export type ServiziType = {
   id: number;
   masterId: number;
+  masterName?: string | null;
+  masterRating?: number;
   title: string;
   description: string;
   price: number;
@@ -45,6 +47,17 @@ export type SaleType = {
   comment?: string | null;
   image?: string | null;
   date: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type EcoReviewType = {
+  id: number;
+  masterId: number;
+  clientId: number;
+  bookingId: number;
+  rating: number;
+  text: string;
   createdAt?: string;
   updatedAt?: string;
 };

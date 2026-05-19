@@ -1,20 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import "../../page.css";
 import "./page.css";
 import { getCategoryById } from "@/shared/api/categoryApi";
+import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getServicesByCategory } from "@/shared/api/serviziApi";
+import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
-import { CategoryType, ServiziType } from "@/shared/types";
+import { CategoryType, EcoReviewType, ServiziType } from "@/shared/types";
 
 type ServiceDirectoryCard = {
   id: number;
   masterId: number;
   masterName: string;
+  masterRating: number;
   meta: string;
   serviceTitle: string;
   serviceDescription: string;
@@ -26,7 +29,6 @@ function buildServiceCards(
   services: ServiziType[],
   categoryTitle: string,
 ): ServiceDirectoryCard[] {
-  // В карточки пускаем активные услуги, а если их нет, то весь список категории
   const activeServices = services.filter((service) => service.isActive);
   const visibleServices = activeServices.length > 0 ? activeServices : services;
   const servicesByMaster = new Map<number, ServiziType[]>();
@@ -37,7 +39,8 @@ function buildServiceCards(
   });
 
   return Array.from(servicesByMaster.entries()).map(([masterId, masterServices]) => {
-    const masterName = `Мастер #${masterId}`;
+    const masterName = masterServices[0]?.masterName?.trim() || `Мастер #${masterId}`;
+    const masterRating = Number(masterServices[0]?.masterRating ?? 0);
     const skillLabel = categoryTitle || "Услуги";
     const priceFrom = Math.min(...masterServices.map((service) => service.price));
     const primaryService = masterServices[0];
@@ -46,8 +49,8 @@ function buildServiceCards(
       id: masterId,
       masterId,
       masterName,
+      masterRating,
       meta: `${skillLabel} · от ${priceFrom.toLocaleString("ru-RU")} ₽`,
-      // Для карточки мастера берем первую услугу как основную
       serviceTitle: primaryService?.title ?? skillLabel,
       serviceDescription: primaryService?.description ?? "",
       detailBadges: ["Профиль мастера", "Отзывы"],
@@ -57,21 +60,29 @@ function buildServiceCards(
 }
 
 export default function CategoryPage() {
-  // Берем categoryId из клиентского маршрута services/[categoryId]
+  const router = useRouter();
   const params = useParams<{ categoryId: string }>();
   const searchParams = useSearchParams();
   const categoryId = params?.categoryId;
   const selectedServiceId = searchParams.get("serviceId");
+  const user = useAppSelector((state) => state.user.user);
 
   const [category, setCategory] = useState<CategoryType | null>(null);
   const [services, setServices] = useState<ServiziType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedReviewsMasterId, setExpandedReviewsMasterId] = useState<number | null>(null);
+  const [reviewsByMaster, setReviewsByMaster] = useState<Record<number, EcoReviewType[]>>({});
+  const [reviewsLoadingByMaster, setReviewsLoadingByMaster] = useState<Record<number, boolean>>(
+    {},
+  );
+  const [reviewsErrorByMaster, setReviewsErrorByMaster] = useState<Record<number, string | null>>(
+    {},
+  );
 
   useEffect(() => {
     if (!categoryId) return;
 
-    // Собираем страницу из текущих сущностей Category и Servizi
     const loadCategoryPage = async () => {
       try {
         setIsLoading(true);
@@ -99,7 +110,6 @@ export default function CategoryPage() {
   }, [categoryId]);
 
   const visibleServices = useMemo(() => {
-    // Если в маршруте передана конкретная услуга, показываем только ее карточку
     if (!selectedServiceId) return services;
 
     const serviceId = Number(selectedServiceId);
@@ -121,10 +131,44 @@ export default function CategoryPage() {
   const pageTitle = selectedService?.title ?? category?.title ?? "Услуги";
 
   const serviceCards = useMemo(
-    // Если выбрана конкретная услуга, используем ее название вместо общего имени категории
     () => buildServiceCards(visibleServices, pageTitle),
     [pageTitle, visibleServices],
   );
+
+  const handleToggleReviews = async (masterId: number) => {
+    if (!user) {
+      router.push("/auth");
+      return;
+    }
+
+    if (expandedReviewsMasterId === masterId) {
+      setExpandedReviewsMasterId(null);
+      return;
+    }
+
+    setExpandedReviewsMasterId(masterId);
+
+    if (reviewsByMaster[masterId] || reviewsLoadingByMaster[masterId]) {
+      return;
+    }
+
+    try {
+      setReviewsLoadingByMaster((prev) => ({ ...prev, [masterId]: true }));
+      setReviewsErrorByMaster((prev) => ({ ...prev, [masterId]: null }));
+
+      const reviewsData = await getReviewsByMaster(masterId);
+
+      setReviewsByMaster((prev) => ({ ...prev, [masterId]: reviewsData }));
+    } catch (loadError) {
+      setReviewsErrorByMaster((prev) => ({
+        ...prev,
+        [masterId]:
+          loadError instanceof Error ? loadError.message : "Не удалось загрузить отзывы",
+      }));
+    } finally {
+      setReviewsLoadingByMaster((prev) => ({ ...prev, [masterId]: false }));
+    }
+  };
 
   return (
     <main className="services-directory-page">
@@ -159,41 +203,95 @@ export default function CategoryPage() {
 
         {!isLoading && !error && serviceCards.length > 0 ? (
           <section className="services-directory-grid">
-            {/* ПЕРЕИСПОЛЬЗУЕМАЯ СТРУКТУРА КАРТОЧКИ УСЛУГИ */}
-            {serviceCards.map((card) => (
-              <article className="services-directory-card glass-surface" key={card.id}>
-                <div className="services-directory-card-head">
-                  <div className="services-directory-card-head-copy">
-                    <strong>{card.masterName}</strong>
-                    <span>{card.meta}</span>
+            {serviceCards.map((card) => {
+              const isReviewsOpen = expandedReviewsMasterId === card.masterId;
+              const reviews = reviewsByMaster[card.masterId] ?? [];
+              const isReviewsLoading = reviewsLoadingByMaster[card.masterId] ?? false;
+              const reviewsError = reviewsErrorByMaster[card.masterId] ?? null;
+
+              return (
+                <article className="services-directory-card glass-surface" key={card.id}>
+                  <div className="services-directory-card-head">
+                    <div className="services-directory-card-head-copy">
+                      <strong>{card.masterName}</strong>
+                      <span>{card.meta}</span>
+                    </div>
+                    <div className="services-directory-card-rating" aria-label={`Рейтинг ${card.masterRating}`}>
+                      <span className="services-directory-card-rating-star">★</span>
+                      <strong>{card.masterRating.toFixed(1)}</strong>
+                    </div>
                   </div>
-                </div>
 
-                <div className="services-directory-badges">
-                  {card.detailBadges.map((badge) => (
-                    <button className="services-directory-badge" key={badge} type="button">
-                      {badge}
-                    </button>
-                  ))}
-                </div>
+                  <div className="services-directory-badges">
+                    {card.detailBadges.map((badge) => (
+                      <button
+                        className={`services-directory-badge${
+                          badge === "Отзывы" && isReviewsOpen ? " is-active" : ""
+                        }`}
+                        key={badge}
+                        type="button"
+                        onClick={() => {
+                          if (badge === "Отзывы") {
+                            void handleToggleReviews(card.masterId);
+                          }
+                        }}
+                      >
+                        {badge}
+                      </button>
+                    ))}
+                  </div>
 
-                <button
-                  className="services-directory-card-button"
-                  type="button"
-                  onClick={() =>
-                    dispatchBookingModalOpen({
-                      categoryId: Number(categoryId),
-                      categoryTitle: category?.title ?? "Услуги",
-                      masterId: card.masterId,
-                      masterName: card.masterName,
-                      services: card.services,
-                    })
-                  }
-                >
-                  Записаться
-                </button>
-              </article>
-            ))}
+                  {isReviewsOpen ? (
+                    <div className="services-reviews-dropdown">
+                      {isReviewsLoading ? (
+                        <p className="services-reviews-state">Загружаю отзывы мастера...</p>
+                      ) : null}
+
+                      {!isReviewsLoading && reviewsError ? (
+                        <p className="services-reviews-state">{reviewsError}</p>
+                      ) : null}
+
+                      {!isReviewsLoading && !reviewsError && reviews.length === 0 ? (
+                        <p className="services-reviews-state">У мастера пока нет отзывов.</p>
+                      ) : null}
+
+                      {!isReviewsLoading && !reviewsError && reviews.length > 0 ? (
+                        <div className="services-reviews-list">
+                          {reviews.map((review) => (
+                            <article className="services-reviews-card" key={review.id}>
+                              <div className="services-reviews-card-head">
+                                <strong>Клиент #{review.clientId}</strong>
+                                <span className="services-reviews-rating">
+                                  {"★".repeat(review.rating)}
+                                  {"☆".repeat(Math.max(0, 5 - review.rating))}
+                                </span>
+                              </div>
+                              <p>{review.text}</p>
+                            </article>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <button
+                    className="services-directory-card-button"
+                    type="button"
+                    onClick={() =>
+                      dispatchBookingModalOpen({
+                        categoryId: Number(categoryId),
+                        categoryTitle: category?.title ?? "Услуги",
+                        masterId: card.masterId,
+                        masterName: card.masterName,
+                        services: card.services,
+                      })
+                    }
+                  >
+                    Записаться
+                  </button>
+                </article>
+              );
+            })}
           </section>
         ) : null}
       </div>

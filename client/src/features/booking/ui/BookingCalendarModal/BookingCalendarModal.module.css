@@ -19,6 +19,15 @@
   box-shadow: 0 24px 70px rgb(37 27 24 / 22%);
 }
 
+.booking-modal::-webkit-scrollbar {
+  display: none;
+}
+
+.booking-modal {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .booking-modal-header {
   display: flex;
   gap: 20px;
