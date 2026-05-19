@@ -183,9 +183,13 @@ export default function AppHeader() {
               <div className="site-header-offer"></div>
 
               <div className="site-header-actions">
-                <Link className="glass-button site-header-button" href="#">
+                <button
+                  className="glass-button site-header-button"
+                  type="button"
+                  onClick={handleOpenChat}
+                >
                   Записаться
-                </Link>
+                </button>
               </div>
             </div>
           ) : null}

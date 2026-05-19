@@ -48,6 +48,7 @@ export function usePromotionsCarousel({
       gsap.registerPlugin(Draggable);
 
       const wrapIndex = gsap.utils.wrap(0, cards.length);
+      const normalizeProgress = gsap.utils.wrap(0, cards.length);
       const snapIndex = gsap.utils.snap(1);
       let activeIndex = 0;
       let currentProgress = 0;
@@ -68,11 +69,13 @@ export function usePromotionsCarousel({
       const renderCards = (progress: number, animate = true) => {
         const cardWidth = cards[0]?.offsetWidth ?? 320;
         const gap = Math.max(cardWidth * (window.innerWidth < 768 ? 0.5 : 0.68), 150);
+        const normalizedProgress = normalizeProgress(progress);
 
         currentProgress = progress;
+        activeIndex = wrapIndex(Math.round(normalizedProgress));
 
         cards.forEach((card, index) => {
-          const delta = getLoopDelta(index, progress);
+          const delta = getLoopDelta(index, normalizedProgress);
           const distance = Math.abs(delta);
 
           gsap.to(card, {
@@ -92,20 +95,14 @@ export function usePromotionsCarousel({
         tween?.kill();
 
         const proxy = { value: currentProgress };
-        const target = wrapIndex(value);
-        let delta = target - currentProgress;
-
-        if (delta > cards.length / 2) delta -= cards.length;
-        if (delta < -cards.length / 2) delta += cards.length;
 
         tween = gsap.to(proxy, {
-          value: currentProgress + delta,
+          value,
           duration: 0.7,
           ease: "power3.inOut",
           onUpdate: () => renderCards(proxy.value),
           onComplete: () => {
-            activeIndex = wrapIndex(proxy.value);
-            renderCards(activeIndex, false);
+            renderCards(proxy.value, false);
           },
         });
       };

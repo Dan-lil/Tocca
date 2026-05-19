@@ -187,6 +187,15 @@
   box-shadow: 0 24px 70px rgba(72, 43, 42, 0.24);
 }
 
+.profile-modal::-webkit-scrollbar {
+  display: none;
+}
+
+.profile-modal {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 .modal-header {
   display: flex;
   align-items: center;
