@@ -49,6 +49,17 @@ export type SaleType = {
   updatedAt?: string;
 };
 
+export type EcoReviewType = {
+  id: number;
+  masterId: number;
+  clientId: number;
+  bookingId: number;
+  rating: number;
+  text: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type CreateBookingPayload = {
   clientId: number;
   masterId: number;

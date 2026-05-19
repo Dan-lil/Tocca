@@ -1,15 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import "../../page.css";
 import "./page.css";
 import { getCategoryById } from "@/shared/api/categoryApi";
+import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getServicesByCategory } from "@/shared/api/serviziApi";
+import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
-import { CategoryType, ServiziType } from "@/shared/types";
+import { CategoryType, EcoReviewType, ServiziType } from "@/shared/types";
 
 type ServiceDirectoryCard = {
   id: number;
@@ -57,16 +59,23 @@ function buildServiceCards(
 }
 
 export default function CategoryPage() {
+  const router = useRouter();
   // Берем categoryId из клиентского маршрута services/[categoryId]
   const params = useParams<{ categoryId: string }>();
   const searchParams = useSearchParams();
   const categoryId = params?.categoryId;
   const selectedServiceId = searchParams.get("serviceId");
+  const user = useAppSelector((state) => state.user.user);
 
   const [category, setCategory] = useState<CategoryType | null>(null);
   const [services, setServices] = useState<ServiziType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isReviewsModalOpen, setIsReviewsModalOpen] = useState(false);
+  const [reviewsMasterName, setReviewsMasterName] = useState("");
+  const [reviews, setReviews] = useState<EcoReviewType[]>([]);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!categoryId) return;
@@ -126,6 +135,37 @@ export default function CategoryPage() {
     [pageTitle, visibleServices],
   );
 
+  const handleCloseReviewsModal = () => {
+    setIsReviewsModalOpen(false);
+    setReviews([]);
+    setReviewsError(null);
+    setReviewsMasterName("");
+  };
+
+  const handleOpenReviews = async (masterId: number, masterName: string) => {
+    if (!user) {
+      router.push("/auth");
+      return;
+    }
+
+    try {
+      setIsReviewsModalOpen(true);
+      setReviewsMasterName(masterName);
+      setIsReviewsLoading(true);
+      setReviewsError(null);
+      setReviews([]);
+
+      const reviewsData = await getReviewsByMaster(masterId);
+      setReviews(reviewsData);
+    } catch (loadError) {
+      setReviewsError(
+        loadError instanceof Error ? loadError.message : "Не удалось загрузить отзывы",
+      );
+    } finally {
+      setIsReviewsLoading(false);
+    }
+  };
+
   return (
     <main className="services-directory-page">
       <div className="services-directory-shell">
@@ -171,7 +211,16 @@ export default function CategoryPage() {
 
                 <div className="services-directory-badges">
                   {card.detailBadges.map((badge) => (
-                    <button className="services-directory-badge" key={badge} type="button">
+                    <button
+                      className="services-directory-badge"
+                      key={badge}
+                      type="button"
+                      onClick={() => {
+                        if (badge === "Отзывы") {
+                          void handleOpenReviews(card.masterId, card.masterName);
+                        }
+                      }}
+                    >
                       {badge}
                     </button>
                   ))}
@@ -195,6 +244,67 @@ export default function CategoryPage() {
               </article>
             ))}
           </section>
+        ) : null}
+
+        {isReviewsModalOpen ? (
+          <div
+            className="services-reviews-backdrop"
+            role="presentation"
+            onClick={handleCloseReviewsModal}
+          >
+            <section
+              className="services-reviews-modal glass-surface"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Отзывы о мастере ${reviewsMasterName}`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="services-reviews-head">
+                <div className="services-reviews-head-copy">
+                  <span>Отзывы</span>
+                  <h2>{reviewsMasterName}</h2>
+                </div>
+
+                <button
+                  className="services-reviews-close"
+                  type="button"
+                  onClick={handleCloseReviewsModal}
+                  aria-label="Закрыть отзывы"
+                >
+                  ×
+                </button>
+              </div>
+
+              {isReviewsLoading ? (
+                <p className="services-reviews-state">Загружаю отзывы мастера...</p>
+              ) : null}
+
+              {!isReviewsLoading && reviewsError ? (
+                <p className="services-reviews-state">{reviewsError}</p>
+              ) : null}
+
+              {!isReviewsLoading && !reviewsError && reviews.length === 0 ? (
+                <p className="services-reviews-state">У мастера пока нет отзывов.</p>
+              ) : null}
+
+              {!isReviewsLoading && !reviewsError && reviews.length > 0 ? (
+                <div className="services-reviews-list">
+                  {reviews.map((review) => (
+                    <article className="services-reviews-card" key={review.id}>
+                      <div className="services-reviews-card-head">
+                        <strong>Клиент #{review.clientId}</strong>
+                        <span className="services-reviews-rating">
+                          {"★".repeat(review.rating)}
+                          {"☆".repeat(Math.max(0, 5 - review.rating))}
+                        </span>
+                      </div>
+                      <p>{review.text}</p>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          </div>
         ) : null}
       </div>
     </main>
