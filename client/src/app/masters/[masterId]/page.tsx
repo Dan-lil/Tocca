@@ -143,10 +143,24 @@ export default function PublicMasterPage() {
             <p>{master.profile?.description || "Мастер пока не добавил описание профиля."}</p>
           </div>
 
-          <Link className="glass-button public-master-back" href="/">
-            На главную
-          </Link>
+          <div className="public-master-actions">
+            <button
+              className="glass-button public-master-back"
+              disabled={isOpeningChat}
+              type="button"
+              onClick={() => {
+                void handleOpenDirectChat();
+              }}
+            >
+              {isOpeningChat ? "Открываю..." : "Написать"}
+            </button>
+            <Link className="glass-button public-master-back" href="/">
+              На главную
+            </Link>
+          </div>
         </section>
+
+        {chatError ? <p className="public-master-error">{chatError}</p> : null}
 
         <section className="public-master-summary">
           <div>
