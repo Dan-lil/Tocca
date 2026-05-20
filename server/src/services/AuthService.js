@@ -56,6 +56,7 @@ class AuthService {
     const telegramUsername = telegramData.username
       ? telegramData.username.toLowerCase().trim()
       : null;
+    const selectedRole = telegramData.role === "master" ? "master" : "client";
     const defaultName =
       [telegramData.first_name, telegramData.last_name]
         .filter(Boolean)
@@ -76,6 +77,7 @@ class AuthService {
         avatar: avatarUrl || targetUser.avatar || "",
         telegramId,
         telegramUsername,
+        role: targetUser.role || selectedRole,
         authProvider: "telegram",
       });
 
@@ -88,7 +90,7 @@ class AuthService {
       name: defaultName,
       email: defaultEmail,
       password: telegramData.passwordHash,
-      role: "client",
+      role: selectedRole,
       avatar: avatarUrl,
       telegramId,
       telegramUsername,

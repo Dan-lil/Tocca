@@ -9,14 +9,26 @@ function verifyTelegramAuth(payload, botToken, maxAgeSeconds = 86400) {
     return { isValid: false, error: "Пустые данные Telegram" };
   }
 
-  const { hash, auth_date: authDate } = payload;
+  const { hash, auth_date: authDate, id } = payload;
 
-  if (!hash || !authDate) {
+  if (!hash || !authDate || !id) {
     return { isValid: false, error: "Некорректные данные Telegram" };
   }
 
+  const telegramFields = new Set([
+    "id",
+    "first_name",
+    "last_name",
+    "username",
+    "photo_url",
+    "auth_date",
+  ]);
+
   const entries = Object.entries(payload)
-    .filter(([key, value]) => key !== "hash" && value !== undefined && value !== null)
+    .filter(
+      ([key, value]) =>
+        telegramFields.has(key) && value !== undefined && value !== null,
+    )
     .map(([key, value]) => [key, String(value)])
     .sort(([a], [b]) => a.localeCompare(b));
 

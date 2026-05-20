@@ -903,6 +903,12 @@ body {
     text-align: center;
 }
 
+.auth-telegram-role {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+}
+
 .auth-telegram-steps {
     display: grid;
     gap: 8px;

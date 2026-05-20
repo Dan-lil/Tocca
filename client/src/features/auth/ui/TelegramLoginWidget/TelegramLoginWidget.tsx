@@ -4,7 +4,7 @@ import { telegramLoginThunk } from "@/entities/user/api/UserApiThunk";
 import { TelegramAuthData } from "@/entities/user/model";
 import { useAppDispatch } from "@/shared/hooks/useReduxHooks";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 declare global {
   interface Window {
@@ -28,8 +28,10 @@ export default function TelegramLoginWidget({
   botUsername,
 }: TelegramLoginWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const selectedRoleRef = useRef<"client" | "master">("client");
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<"client" | "master">("client");
   const isLocalhost =
     typeof window !== "undefined" && isLocalDevHost(window.location.hostname);
 
@@ -41,7 +43,12 @@ export default function TelegramLoginWidget({
     }
 
     window.onTelegramAuth = async (user: TelegramAuthData) => {
-      const action = await dispatch(telegramLoginThunk(user));
+      const action = await dispatch(
+        telegramLoginThunk({
+          ...user,
+          role: selectedRoleRef.current,
+        }),
+      );
       if (telegramLoginThunk.fulfilled.match(action)) {
         router.push("/");
       }
@@ -74,9 +81,31 @@ export default function TelegramLoginWidget({
     );
   }
 
+  const roleSelector = (
+    <div className="auth-telegram-role">
+      <label htmlFor="telegram-role" className="auth-telegram-hint">
+        Войти через Telegram как
+      </label>
+      <select
+        id="telegram-role"
+        className="auth-select"
+        value={selectedRole}
+        onChange={(event) => {
+          const role = event.target.value as "client" | "master";
+          setSelectedRole(role);
+          selectedRoleRef.current = role;
+        }}
+      >
+        <option value="client">Клиент</option>
+        <option value="master">Мастер</option>
+      </select>
+    </div>
+  );
+
   if (isLocalhost) {
     return (
       <div className="auth-telegram auth-telegram--blocked">
+        {roleSelector}
         <p className="auth-telegram-label">или</p>
         <p className="auth-telegram-hint">
           Telegram не работает на <strong>localhost</strong>. Для локального теста:
@@ -107,6 +136,7 @@ export default function TelegramLoginWidget({
 
   return (
     <div className="auth-telegram">
+      {roleSelector}
       <p className="auth-telegram-label">или</p>
       <div ref={containerRef} className="auth-telegram-widget" />
     </div>
