@@ -14,9 +14,29 @@ const ShaduleRouter = require("./ShaduleRoute");
 const EcoRouter = require("./EcoRoute");
 const ChatRouter = require("./ChatRoute");
 const MessageRouter = require("./MessageRoute");
+const BookingController = require("../controllers/BookingController");
+const SaleController = require("../controllers/SaleController");
+const verifyAccessToken = require("../middleware/verifyAccessToken");
 
 apiRouter.use("/auth", authRouter);
 apiRouter.use("/ai", aiRouter);
+apiRouter.get(
+  "/bookings/client/upcoming",
+  verifyAccessToken,
+  BookingController.findUpcomingByCurrentClient,
+);
+apiRouter.get(
+  "/bookings/client/past",
+  verifyAccessToken,
+  BookingController.findPastByCurrentClient,
+);
+apiRouter.patch(
+  "/bookings/:id/cancel",
+  verifyAccessToken,
+  BookingController.cancelCurrentClientBooking,
+);
+apiRouter.post("/bookings", verifyAccessToken, BookingController.create);
+apiRouter.get("/sales/for-client", verifyAccessToken, SaleController.findForClient);
 apiRouter.use("/master", masterRouter);
 apiRouter.use("/profile", profileMasterRouter);
 apiRouter.use("/portfolio", MasterPortfolioRouter);
