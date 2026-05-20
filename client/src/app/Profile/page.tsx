@@ -25,6 +25,7 @@ import type { Sale } from "@/entities/sale/model";
 import type { Booking } from "@/entities/booking/model";
 import { getBookingsByClient } from "@/shared/api/bookingApi";
 import { getCategories } from "@/shared/api/categoryApi";
+import { getMyMasterRecommendations } from "@/shared/api/aiApi";
 import { createReview, getReviewsByClient, getReviewsByMaster } from "@/shared/api/ecoApi";
 import {
   createMasterSocial,
@@ -37,6 +38,7 @@ import type {
   CategoryType,
   EcoReviewType,
   MasterSocialType,
+  RecommendedMasterType,
   ServerResponseType,
 } from "@/shared/types";
 
@@ -182,6 +184,9 @@ export default function ProfilePage() {
   });
   const [clientPastBookings, setClientPastBookings] = useState<BookingType[]>([]);
   const [clientReviews, setClientReviews] = useState<EcoReviewType[]>([]);
+  const [recommendedMasters, setRecommendedMasters] = useState<RecommendedMasterType[]>([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>({});
   const [reviewSavingId, setReviewSavingId] = useState<number | null>(null);
   const [clientHistoryError, setClientHistoryError] = useState<string | null>(null);
@@ -252,6 +257,29 @@ export default function ProfilePage() {
     };
 
     void loadClientHistory();
+  }, [isMaster, user]);
+
+  useEffect(() => {
+    if (!user || isMaster) return;
+
+    const loadRecommendations = async () => {
+      try {
+        setRecommendationsLoading(true);
+        setRecommendationsError(null);
+
+        const recommendations = await getMyMasterRecommendations(6);
+
+        setRecommendedMasters(recommendations);
+      } catch (error) {
+        setRecommendationsError(
+          error instanceof Error ? error.message : "Не удалось загрузить рекомендации",
+        );
+      } finally {
+        setRecommendationsLoading(false);
+      }
+    };
+
+    void loadRecommendations();
   }, [isMaster, user]);
 
   useEffect(() => {
@@ -599,6 +627,78 @@ export default function ProfilePage() {
                   Скидка {sale.discount}% {sale.comment}
                 </div>
               ))
+            )}
+          </section>
+
+          <section className="profile-section">
+            <h2>Рекомендованные мастера</h2>
+            {recommendationsError ? <p className="profile-error">{recommendationsError}</p> : null}
+            {recommendationsLoading ? (
+              <p>Подбираем мастеров для вас...</p>
+            ) : recommendedMasters.length === 0 ? (
+              <p>Пока не удалось подобрать рекомендации</p>
+            ) : (
+              <div className="recommended-masters-list">
+                {recommendedMasters.map((master) => (
+                  <article className="recommended-master-card" key={master.id}>
+                    <div className="recommended-master-card__head">
+                      <div className="recommended-master-card__identity">
+                        {master.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={getMediaUrl(master.avatar)}
+                            alt={master.title || master.name}
+                          />
+                        ) : (
+                          <div className="recommended-master-card__avatar-fallback">
+                            {(master.title || master.name).slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+
+                        <div>
+                          <strong>{master.title || master.name}</strong>
+                          <span>{master.city || "Город не указан"}</span>
+                        </div>
+                      </div>
+
+                      <div className="recommended-master-card__rating">
+                        <strong>{master.rating.toFixed(1)}</strong>
+                        <span>{master.reviewCount} отзывов</span>
+                      </div>
+                    </div>
+
+                    <p className="recommended-master-card__reason">{master.reason}</p>
+                    <p className="recommended-master-card__description">
+                      {master.description || "Мастер пока не добавил описание, но уже подходит вам по профилю услуг."}
+                    </p>
+
+                    {master.categoryTitles.length > 0 ? (
+                      <div className="recommended-master-card__tags">
+                        {master.categoryTitles.map((categoryTitle) => (
+                          <span key={`${master.id}-${categoryTitle}`}>{categoryTitle}</span>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {master.services.length > 0 ? (
+                      <div className="recommended-master-card__services">
+                        {master.services.map((service) => (
+                          <div key={service.id}>
+                            <strong>{service.title}</strong>
+                            <span>
+                              {service.price.toLocaleString("ru-RU")} руб. • {service.duration} мин
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <Link className="profile-link-button" href={`/masters/${master.id}`}>
+                      Открыть профиль мастера
+                    </Link>
+                  </article>
+                ))}
+              </div>
             )}
           </section>
 

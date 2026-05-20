@@ -218,6 +218,105 @@
   gap: 12px;
 }
 
+.recommended-masters-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.recommended-master-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 18px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.76), rgba(255, 247, 246, 0.6)),
+    rgba(255, 247, 246, 0.72);
+  box-shadow: 0 14px 30px rgba(181, 119, 129, 0.12);
+}
+
+.recommended-master-card__head,
+.recommended-master-card__identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recommended-master-card__identity {
+  justify-content: flex-start;
+}
+
+.recommended-master-card__identity img,
+.recommended-master-card__avatar-fallback {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.recommended-master-card__identity img {
+  object-fit: cover;
+}
+
+.recommended-master-card__avatar-fallback {
+  display: grid;
+  place-items: center;
+  color: #fffaf8;
+  font-weight: 700;
+  background: linear-gradient(135deg, rgba(179, 108, 99, 0.92), rgba(220, 151, 141, 0.84));
+}
+
+.recommended-master-card__identity div,
+.recommended-master-card__rating,
+.recommended-master-card__services div {
+  display: grid;
+  gap: 4px;
+}
+
+.recommended-master-card__identity span,
+.recommended-master-card__rating span,
+.recommended-master-card__description,
+.recommended-master-card__reason,
+.recommended-master-card__services span {
+  color: rgba(122, 77, 75, 0.72);
+}
+
+.recommended-master-card__rating {
+  min-width: 82px;
+  text-align: right;
+}
+
+.recommended-master-card__reason {
+  margin: 0;
+  color: #b06b61;
+  font-weight: 600;
+}
+
+.recommended-master-card__description {
+  margin: 0;
+}
+
+.recommended-master-card__tags,
+.recommended-master-card__services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recommended-master-card__tags span,
+.recommended-master-card__services div {
+  padding: 8px 10px;
+  border: 1px solid rgba(233, 188, 185, 0.72);
+  border-radius: 12px;
+  background: rgba(255, 251, 250, 0.78);
+}
+
+.recommended-master-card .profile-link-button {
+  justify-self: start;
+}
+
 .master-reviews-list {
   display: grid;
   gap: 12px;
@@ -532,6 +631,8 @@
   .service-card,
   .booking-card,
   .sale-card,
+  .recommended-master-card__head,
+  .recommended-master-card__identity,
   .client-history-card__top {
     align-items: stretch;
     flex-direction: column;

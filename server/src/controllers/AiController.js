@@ -135,6 +135,59 @@ class AiController {
         );
     }
   }
+
+  static async getMyMasterRecommendations(req, res) {
+    const { user } = res.locals;
+    const limit = req.query.limit;
+
+    if (!user?.id) {
+      return res
+        .status(401)
+        .json(formatResponse(401, "Пользователь не авторизован"));
+    }
+
+    if (user.role !== "client") {
+      return res
+        .status(403)
+        .json(
+          formatResponse(
+            403,
+            "Рекомендации в профиле доступны только для клиента",
+          ),
+        );
+    }
+
+    try {
+      const recommendations = await AiService.getRecommendedMastersForClient(
+        user.id,
+        { limit },
+      );
+
+      return res
+        .status(200)
+        .json(
+          formatResponse(
+            200,
+            "Персональные рекомендации мастеров получены",
+            recommendations,
+            null,
+          ),
+        );
+    } catch (error) {
+      console.log("==== AiController.getMyMasterRecommendations ==== ");
+      console.log(error);
+      return res
+        .status(500)
+        .json(
+          formatResponse(
+            500,
+            "Ошибка при получении персональных рекомендаций",
+            null,
+            error.message,
+          ),
+        );
+    }
+  }
 }
 
 module.exports = AiController;
