@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector, useAppDispatch } from "@/shared/hooks/useReduxHooks";
 import { setError } from "@/entities/user/slice/userSlice";
+import TelegramLoginWidget from "@/features/auth/ui/TelegramLoginWidget/TelegramLoginWidget";
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -14,6 +15,7 @@ export default function AuthPage() {
   const router = useRouter();
 
   const { user, isInitialized, error } = useAppSelector((state) => state.user);
+  const telegramBotUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "";
   // строкой путь на домашнюю
   useEffect(() => {
     if (isInitialized && user) {
@@ -29,6 +31,7 @@ export default function AuthPage() {
     <div className="app-container auth-page">
       <div className="form-container">
         {isSignUp ? <SignUpForm /> : <SignInForm />}
+        {!isSignUp && <TelegramLoginWidget botUsername={telegramBotUsername} />}
         {error && <p className="auth-error">{error}</p>}
         {isSignUp ? (
           <div className="auth-switch">

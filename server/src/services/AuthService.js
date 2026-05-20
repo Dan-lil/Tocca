@@ -31,6 +31,75 @@ class AuthService {
     return plainUser;
   }
 
+  static async findUserByTelegramId(telegramId) {
+    if (!telegramId) {
+      return null;
+    }
+
+    return (await User.findOne({ where: { telegramId: String(telegramId) } }))?.get();
+  }
+
+  static async findUserByTelegramUsername(telegramUsername) {
+    if (!telegramUsername) {
+      return null;
+    }
+
+    return (
+      await User.findOne({
+        where: { telegramUsername: telegramUsername.toLowerCase().trim() },
+      })
+    )?.get();
+  }
+
+  static async upsertTelegramUser(telegramData) {
+    const telegramId = String(telegramData.id);
+    const telegramUsername = telegramData.username
+      ? telegramData.username.toLowerCase().trim()
+      : null;
+    const defaultName =
+      [telegramData.first_name, telegramData.last_name]
+        .filter(Boolean)
+        .join(" ")
+        .trim() || `Telegram User ${telegramId}`;
+    const avatarUrl = telegramData.photo_url || "";
+    const defaultEmail = `telegram_${telegramId}@telegram.local`;
+
+    const userById = await User.findOne({ where: { telegramId } });
+    const userByUsername = telegramUsername
+      ? await User.findOne({ where: { telegramUsername } })
+      : null;
+    const targetUser = userById || userByUsername;
+
+    if (targetUser) {
+      await targetUser.update({
+        name: defaultName,
+        avatar: avatarUrl || targetUser.avatar || "",
+        telegramId,
+        telegramUsername,
+        authProvider: "telegram",
+      });
+
+      const plainUser = targetUser.get();
+      delete plainUser.password;
+      return plainUser;
+    }
+
+    const newUser = await User.create({
+      name: defaultName,
+      email: defaultEmail,
+      password: telegramData.passwordHash,
+      role: "client",
+      avatar: avatarUrl,
+      telegramId,
+      telegramUsername,
+      authProvider: "telegram",
+    });
+
+    const plainUser = newUser.get();
+    delete plainUser.password;
+    return plainUser;
+  }
+
   static async delite(id) {
     await User.destroy({ where: { id: id } });
   }
