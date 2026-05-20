@@ -871,7 +871,7 @@ button {
   background: rgba(255, 244, 242, 0.9);
 }
 
-/* Адаптация домашней страницы для планшетов */
+/* Адаптация домашней страницы */
 @media (max-width: 1199px) {
   .services-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -883,7 +883,7 @@ button {
 
 }
 
-/* Адаптация домашней страницы для мобильных экранов */
+/* Адаптация домашней страницы для планшетов */
 @media (max-width: 767px) {
   .home-page {
     padding: 12px 12px 88px;
