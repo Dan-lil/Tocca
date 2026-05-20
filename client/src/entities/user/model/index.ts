@@ -30,6 +30,10 @@ export type TelegramAuthData = {
   hash: string;
 }
 
+export type TelegramLoginPayload = TelegramAuthData & {
+  role: "client" | "master";
+}
+
 export type UserRegisterData = UserLoginData & {
   name: string
 }

@@ -1,7 +1,7 @@
 import { axiosInstance, setAccessToken } from "@/shared/lib/axiosInstance";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import {
-    TelegramAuthData,
+    TelegramLoginPayload,
     UserLoginData,
     UserProfileUpdateData,
     UserRegisterData,
@@ -92,7 +92,7 @@ export const logoutThunk = createAsyncThunk<null, void, { rejectValue: string }>
     }
 });
 
-export const telegramLoginThunk = createAsyncThunk<UserType, TelegramAuthData, { rejectValue: string }>(
+export const telegramLoginThunk = createAsyncThunk<UserType, TelegramLoginPayload, { rejectValue: string }>(
     USER_THUNK_NAMES.TELEGRAM_LOGIN,
     async (telegramData, { rejectWithValue }) => {
         try {

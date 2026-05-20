@@ -183,7 +183,7 @@ class AuthController {
   }
 
   static async telegramLogin(req, res) {
-    const telegramData = req.body || {};
+    const { role, ...telegramData } = req.body || {};
 
     try {
       const parsedMaxAge = Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS);
@@ -202,6 +202,7 @@ class AuthController {
       const passwordHash = await bcrypt.hash(crypto.randomUUID(), 10);
       const user = await AuthService.upsertTelegramUser({
         ...telegramData,
+        role,
         passwordHash,
       });
 
