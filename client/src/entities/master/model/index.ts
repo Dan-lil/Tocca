@@ -30,9 +30,15 @@ export type CreatePortfolio = {
 
 // Запись к мастеру (для отображения в списке)
 export type BookingToMaster = {
-  id: string;
+  id: number;
+  clientId: number;
+  masterId: number;
+  serviziId: number;
   date: string;
-  startTime: number;
+  startTime: string;
+  endTime: string;
+  status: string;
+  clientComment?: string;
   client: {
     name: string;
     phone: string;

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { io } from "socket.io-client";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { fetchUpcomingBookingsThunk } from "@/entities/booking/api/BookingApiThunk";
 import {
@@ -32,7 +33,7 @@ import {
 } from "@/shared/api/masterSocialApi";
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServices } from "@/shared/api/serviziApi";
-import { axiosInstance } from "@/shared/lib/axiosInstance";
+import { axiosInstance, getAccessToken } from "@/shared/lib/axiosInstance";
 import { openBookingChat } from "@/shared/lib/openBookingChat";
 import { expandPortfolioItems, getMediaUrl } from "@/shared/lib/media";
 import type {
@@ -121,6 +122,7 @@ const emptyMasterProfile: ProfileMaster = {
   category: "",
   rating: 0,
 };
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 function formatDateTime(value: string | number) {
   const date = new Date(value);
@@ -142,6 +144,12 @@ function isClientBookingCanceled(booking: BookingType) {
   const status = booking.status.toLowerCase();
 
   return status.includes("отмен") || status.includes("cancel");
+}
+
+function sortBookingsDesc(bookings: BookingType[]) {
+  return [...bookings].sort(
+    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+  );
 }
 
 function readFileAsDataUrl(file: File) {
@@ -189,7 +197,7 @@ export default function ProfilePage() {
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>({});
   const [reviewSavingId, setReviewSavingId] = useState<number | null>(null);
-  const [openingChatBookingId, setOpeningChatBookingId] = useState<number | null>(null);
+  const [openingChatBookingId, setOpeningChatBookingId] = useState<number | string | null>(null);
   const [cancelingBookingId, setCancelingBookingId] = useState<number | null>(null);
   const [clientHistoryError, setClientHistoryError] = useState<string | null>(null);
   const [masterReviews, setMasterReviews] = useState<EcoReviewType[]>([]);
@@ -298,6 +306,43 @@ export default function ProfilePage() {
 
     void loadClientBookings();
   }, [isMaster, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = io(API_ORIGIN, {
+      auth: { token: getAccessToken() },
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+    });
+
+    socket.on("booking:updated", (updatedBooking: BookingType) => {
+      if (isMaster) {
+        void dispatch(fetchUpcomingBookingsForMasterThunk());
+        return;
+      }
+
+      setClientBookings((currentBookings) =>
+        currentBookings.map((booking) =>
+          booking.id === updatedBooking.id ? updatedBooking : booking,
+        ),
+      );
+      setClientPastBookings((currentBookings) => {
+        const nextBookings = currentBookings.filter(
+          (booking) => booking.id !== updatedBooking.id,
+        );
+        const isPastOrCanceled =
+          new Date(updatedBooking.endTime).getTime() < clientNowTimestamp ||
+          isClientBookingCanceled(updatedBooking);
+
+        return isPastOrCanceled ? sortBookingsDesc([updatedBooking, ...nextBookings]) : nextBookings;
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [clientNowTimestamp, dispatch, isMaster, user]);
 
   useEffect(() => {
     if (!user || isMaster) return;
@@ -545,6 +590,28 @@ export default function ProfilePage() {
       await openBookingChat(router, booking);
     } catch (error) {
       setClientHistoryError(error instanceof Error ? error.message : "Не удалось открыть чат");
+    } finally {
+      setOpeningChatBookingId(null);
+    }
+  }
+
+  async function handleOpenMasterBookingChat(booking: BookingToMaster) {
+    try {
+      setOpeningChatBookingId(booking.id);
+      setProfileError(null);
+      await openBookingChat(router, {
+        id: booking.id,
+        clientId: booking.clientId,
+        masterId: booking.masterId,
+        serviziId: booking.serviziId,
+        date: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        status: booking.status,
+        clientComment: booking.clientComment,
+      });
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "Не удалось открыть чат");
     } finally {
       setOpeningChatBookingId(null);
     }
@@ -1007,12 +1074,30 @@ export default function ProfilePage() {
           {masterBookings.length === 0 ? (
             <p>Пока нет записей</p>
           ) : (
-            masterBookings.map((booking: BookingToMaster) => (
-              <div key={booking.id} className="booking-card">
-                {formatDateTime(booking.startTime)} - {booking.client.name} -{" "}
-                {booking.service?.title ?? "Услуга"} ({booking.totalPrice} руб.)
-              </div>
-            ))
+            <div className="client-history-list">
+              {masterBookings.map((booking: BookingToMaster) => (
+                <article key={booking.id} className="booking-card booking-card--detailed">
+                  <div className="booking-card__info">
+                    <strong>{booking.service?.title ?? "Услуга"}</strong>
+                    <span>{booking.client.name || `Клиент #${booking.clientId}`}</span>
+                    <time>{formatDateTime(booking.startTime)}</time>
+                    <small>
+                      {booking.client.phone ? `Телефон: ${booking.client.phone}` : "Телефон не указан"}
+                    </small>
+                    <small>{booking.status}</small>
+                  </div>
+                  <div className="booking-card__actions">
+                    <button
+                      type="button"
+                      disabled={openingChatBookingId === booking.id}
+                      onClick={() => void handleOpenMasterBookingChat(booking)}
+                    >
+                      {openingChatBookingId === booking.id ? "Открываю..." : "Перейти в чат"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
           )}
         </section>
 

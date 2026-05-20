@@ -1,5 +1,6 @@
 const BookingService = require("../services/BookingService");
 const formatResponse = require("../utils/formatResponse");
+const { userRoomName } = require("../ws/chatSocket");
 
 class BookingController {
   static async create(req, res) {
@@ -23,9 +24,6 @@ class BookingController {
   static async update(req, res) {
     const { id } = req.params;
     const bookingData = req.body;
-    const { user } = res.locals;
-
-   
 
     try {
       const updatedBooking = await BookingService.update(id, bookingData);
@@ -39,6 +37,13 @@ class BookingController {
             ),
           );
       }
+      const io = req.app.get("io");
+
+      if (io) {
+        io.to(userRoomName(updatedBooking.clientId)).emit("booking:updated", updatedBooking);
+        io.to(userRoomName(updatedBooking.masterId)).emit("booking:updated", updatedBooking);
+      }
+
       return res
         .status(200)
         .json(
