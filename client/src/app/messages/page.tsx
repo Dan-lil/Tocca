@@ -222,10 +222,10 @@ function MessagesPageContent() {
             </span>
           </header>
 
-          {activeChat ? (
+          {activeChat?.Booking ? (
             <div className="messenger-booking">
-              <span>{activeChat.Booking?.Servizi?.title ?? "Запись"}</span>
-              <strong>{formatBookingDate(activeChat.Booking?.startTime)}</strong>
+              <span>{activeChat.Booking.Servizi?.title ?? "Запись"}</span>
+              <strong>{formatBookingDate(activeChat.Booking.startTime)}</strong>
             </div>
           ) : null}
 
@@ -279,7 +279,7 @@ function MessagesPageContent() {
           {isLoading ? <p className="messenger-state">Загружаю чаты...</p> : null}
 
           {!isLoading && chats.length === 0 ? (
-            <p className="messenger-state">Чаты появятся после создания записи.</p>
+            <p className="messenger-state">Чаты появятся после записи или сообщения мастеру.</p>
           ) : null}
 
           <div className="messenger-chat-list">
@@ -305,7 +305,7 @@ function MessagesPageContent() {
                   </div>
                   <div>
                     <strong>{companion?.name ?? "Пользователь"}</strong>
-                    <span>{chat.Booking?.Servizi?.title ?? "Запись"}</span>
+                    <span>{chat.Booking?.Servizi?.title ?? "Личный чат"}</span>
                     <p>{lastMessage?.text ?? "Сообщений пока нет"}</p>
                   </div>
                 </button>

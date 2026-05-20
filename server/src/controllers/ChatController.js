@@ -3,7 +3,28 @@ const formatResponse = require("../utils/formatResponse");
 
 class ChatController {
   static async createChat(req, res) {
-    const chatData = req.body;
+    const { user } = res.locals;
+    const bookingId = Number(req.body?.bookingId);
+    const masterId = Number(req.body?.masterId);
+    const clientId = Number(req.body?.clientId ?? user.id);
+
+    if (!Number.isInteger(masterId) || masterId <= 0) {
+      return res.status(400).json(formatResponse(400, "Invalid master id"));
+    }
+
+    if (user.role === "client" && clientId !== user.id) {
+      return res.status(403).json(formatResponse(403, "Forbidden"));
+    }
+
+    if (user.role === "master" && masterId !== user.id) {
+      return res.status(403).json(formatResponse(403, "Forbidden"));
+    }
+
+    const chatData = {
+      clientId,
+      masterId,
+      bookingId: Number.isInteger(bookingId) && bookingId > 0 ? bookingId : null,
+    };
 
     try {
       const newChat = await ChatService.create(chatData);

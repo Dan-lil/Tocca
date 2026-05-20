@@ -63,10 +63,18 @@ const toPlain = (item) => (item ? item.get({ plain: true }) : null);
 
 class ChatService {
   static async create(ChatData) {
-    const [chat] = await Chat.findOrCreate({
-      where: { bookingId: ChatData.bookingId },
-      defaults: ChatData,
-    });
+    const bookingId = Number(ChatData.bookingId);
+    const hasBooking = Number.isInteger(bookingId) && bookingId > 0;
+
+    const where = hasBooking
+      ? { bookingId }
+      : {
+          bookingId: null,
+          clientId: ChatData.clientId,
+          masterId: ChatData.masterId,
+        };
+
+    const [chat] = await Chat.findOrCreate({ where, defaults: ChatData });
 
     return this.findById(chat.id);
   }
