@@ -156,7 +156,7 @@ export type ChatType = {
   id: number;
   clientId: number;
   masterId: number;
-  bookingId: number;
+  bookingId?: number | null;
   client?: ChatUserType;
   master?: ChatUserType;
   Booking?: {
@@ -173,7 +173,7 @@ export type ChatType = {
 };
 
 export type CreateChatPayload = {
-  clientId: number;
+  clientId?: number;
   masterId: number;
-  bookingId: number;
+  bookingId?: number | null;
 };

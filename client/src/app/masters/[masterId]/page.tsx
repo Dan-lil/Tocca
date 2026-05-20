@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import "./page.css";
 import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
+import { useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { openDirectChat } from "@/shared/lib/openDirectChat";
 import { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shared/types";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -27,14 +29,18 @@ function getMediaUrl(value?: string | null) {
 }
 
 export default function PublicMasterPage() {
+  const router = useRouter();
   const params = useParams<{ masterId: string }>();
   const masterId = params?.masterId;
+  const user = useAppSelector((state) => state.user.user);
 
   const [master, setMaster] = useState<PublicMasterProfileType | null>(null);
   const [services, setServices] = useState<ServiziType[]>([]);
   const [reviews, setReviews] = useState<EcoReviewType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOpeningChat, setIsOpeningChat] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!masterId) return;
@@ -71,6 +77,27 @@ export default function PublicMasterPage() {
     return master.profile?.title?.trim() || master.user.name || "Мастер";
   }, [master]);
 
+  const handleOpenDirectChat = async () => {
+    const numericMasterId = Number(masterId);
+
+    if (!user) {
+      router.push("/auth");
+      return;
+    }
+
+    if (!Number.isInteger(numericMasterId)) return;
+
+    try {
+      setIsOpeningChat(true);
+      setChatError(null);
+      await openDirectChat(router, numericMasterId);
+    } catch (openError) {
+      setChatError(openError instanceof Error ? openError.message : "Не удалось открыть чат");
+    } finally {
+      setIsOpeningChat(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="public-master-page">
@@ -84,10 +111,24 @@ export default function PublicMasterPage() {
       <main className="public-master-page">
         <section className="public-master-state glass-surface">
           <p>{error ?? "Профиль мастера не найден"}</p>
-          <Link className="glass-button public-master-back" href="/">
-            На главную
-          </Link>
+          <div className="public-master-actions">
+            <button
+              className="glass-button public-master-back"
+              disabled={isOpeningChat}
+              type="button"
+              onClick={() => {
+                void handleOpenDirectChat();
+              }}
+            >
+              {isOpeningChat ? "Открываю..." : "Написать"}
+            </button>
+            <Link className="glass-button public-master-back" href="/">
+              На главную
+            </Link>
+          </div>
         </section>
+
+        {chatError ? <p className="public-master-error">{chatError}</p> : null}
       </main>
     );
   }
