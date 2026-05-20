@@ -1,4 +1,5 @@
-const {Booking} = require("../db/models");
+const { Op } = require("sequelize");
+const { Booking } = require("../db/models");
 
 class BookingService {
   static async create(BookingData) {
@@ -30,6 +31,32 @@ class BookingService {
     static async findAllByClientId(clientId) {
         const bookings = await Booking.findAll({
             where: { clientId: clientId },
+        });
+        return bookings;
+    }
+
+    static async findUpcomingByClientId(clientId) {
+        const bookings = await Booking.findAll({
+            where: {
+                clientId: clientId,
+                endTime: {
+                    [Op.gte]: new Date(),
+                },
+            },
+            order: [["startTime", "ASC"]],
+        });
+        return bookings;
+    }
+
+    static async findPastByClientId(clientId) {
+        const bookings = await Booking.findAll({
+            where: {
+                clientId: clientId,
+                endTime: {
+                    [Op.lt]: new Date(),
+                },
+            },
+            order: [["startTime", "DESC"]],
         });
         return bookings;
     }

@@ -134,6 +134,71 @@ class BookingController {
     }
   }
 
+  static async findUpcomingByCurrentClient(req, res) {
+    const { user } = res.locals;
+
+    try {
+      const bookings = await BookingService.findUpcomingByClientId(user.id);
+      return res
+        .status(200)
+        .json(formatResponse(200, "Р‘Р»РёР¶Р°Р№С€РёРµ Р·Р°РїРёСЃРё СѓСЃРїРµС€РЅРѕ РїРѕР»СѓС‡РµРЅС‹!", bookings));
+    } catch (error) {
+      console.log("======== BookingController.findUpcomingByCurrentClient =========");
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, "РћС€РёР±РєР° СЃРµСЂРІРµСЂР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё Р±Р»РёР¶Р°Р№С€РёС… Р·Р°РїРёСЃРµР№"));
+    }
+  }
+
+  static async findPastByCurrentClient(req, res) {
+    const { user } = res.locals;
+
+    try {
+      const bookings = await BookingService.findPastByClientId(user.id);
+      return res
+        .status(200)
+        .json(formatResponse(200, "РџСЂРѕС€РµРґС€РёРµ Р·Р°РїРёСЃРё СѓСЃРїРµС€РЅРѕ РїРѕР»СѓС‡РµРЅС‹!", bookings));
+    } catch (error) {
+      console.log("======== BookingController.findPastByCurrentClient =========");
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, "РћС€РёР±РєР° СЃРµСЂРІРµСЂР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё РїСЂРѕС€РµРґС€РёС… Р·Р°РїРёСЃРµР№"));
+    }
+  }
+
+  static async cancelCurrentClientBooking(req, res) {
+    const { id } = req.params;
+    const cancelReason =
+      req.body?.cancelReason?.defaultValue ||
+      req.body?.cancelReason ||
+      "РћС‚РјРµРЅРµРЅРѕ РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј";
+
+    try {
+      const updatedBooking = await BookingService.update(id, {
+        status: "cancelled",
+        cancelReason,
+      });
+
+      if (!updatedBooking) {
+        return res
+          .status(404)
+          .json(formatResponse(404, "Р—Р°РїРёСЃСЊ РґР»СЏ РѕС‚РјРµРЅС‹ РЅРµ РЅР°Р№РґРµРЅР°"));
+      }
+
+      return res
+        .status(200)
+        .json(formatResponse(200, "Р—Р°РїРёСЃСЊ СѓСЃРїРµС€РЅРѕ РѕС‚РјРµРЅРµРЅР°", updatedBooking));
+    } catch (error) {
+      console.log("======== BookingController.cancelCurrentClientBooking =========");
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, "РћС€РёР±РєР° СЃРµСЂРІРµСЂР° РїСЂРё РѕС‚РјРµРЅРµ Р·Р°РїРёСЃРё"));
+    }
+  }
+
   static async deleteByMasterId(req, res) {
     const { masterId } = req.params;
 

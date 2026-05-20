@@ -67,6 +67,28 @@ export type PublicMasterProfileType = {
   socials?: MasterSocialType[];
 };
 
+export type RecommendedMasterType = {
+  id: number;
+  name: string;
+  title: string;
+  avatar?: string | null;
+  description?: string;
+  city?: string;
+  address?: string;
+  rating: number;
+  reviewCount: number;
+  categoryIds: number[];
+  categoryTitles: string[];
+  services: Array<{
+    id: number;
+    title: string;
+    price: number;
+    duration: number;
+    categoryId: number;
+  }>;
+  reason: string;
+};
+
 export type BookingModalPayload = {
   categoryId: number;
   categoryTitle: string;
