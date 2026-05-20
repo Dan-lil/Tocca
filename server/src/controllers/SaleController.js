@@ -66,6 +66,21 @@ class SaleController {
     }
   }
 
+  static async findForClient(req, res) {
+    try {
+      const sales = await SaleService.findForClient();
+      return res
+        .status(200)
+        .json(formatResponse(200, "РђРєС†РёРё РґР»СЏ РєР»РёРµРЅС‚Р° СѓСЃРїРµС€РЅРѕ РЅР°Р№РґРµРЅС‹!", sales));
+    } catch (error) {
+      console.log("======== SaleController.findForClient =========");
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, "РћС€РёР±РєР° СЃРµСЂРІРµСЂР° РїСЂРё РїРѕРёСЃРєРµ Р°РєС†РёР№ РґР»СЏ РєР»РёРµРЅС‚Р°"));
+    }
+  }
+
   static async findByMasterId(req, res) {
     const { masterId } = req.params;
 

@@ -301,6 +301,14 @@ class AiService {
       );
     }
 
+    if (!recommendedIds.length) {
+      recommendedIds = getTopMastersByRating(
+        payload.candidateMasters,
+        [],
+        limit,
+      );
+    }
+
     const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
 
     return recommendedIds

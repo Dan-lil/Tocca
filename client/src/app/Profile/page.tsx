@@ -6,7 +6,6 @@ import { type FormEvent, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { fetchUpcomingBookingsThunk } from "@/entities/booking/api/BookingApiThunk";
-import { fetchSalesForClientThunk } from "@/entities/sale/api/SaleApiThunk";
 import {
   addPortfolioItemThunk,
   addServiceThunk,
@@ -21,7 +20,6 @@ import {
 import { updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
 import type { BookingToMaster } from "@/entities/master/model/index";
-import type { Sale } from "@/entities/sale/model";
 import type { Booking } from "@/entities/booking/model";
 import { getBookingsByClient } from "@/shared/api/bookingApi";
 import { getCategories } from "@/shared/api/categoryApi";
@@ -149,7 +147,6 @@ export default function ProfilePage() {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.user);
   const { upcomingBookings } = useSelector((state: RootState) => state.booking);
-  const { salesForClient } = useSelector((state: RootState) => state.sale);
   const { stats, earnings, services, portfolio, upcomingBookings: masterBookings, loading } =
     useSelector((state: RootState) => state.master);
   const expandedPortfolio = expandPortfolioItems(portfolio);
@@ -209,7 +206,6 @@ export default function ProfilePage() {
       dispatch(fetchUpcomingBookingsForMasterThunk());
     } else {
       dispatch(fetchUpcomingBookingsThunk());
-      dispatch(fetchSalesForClientThunk());
     }
   }, [dispatch, isMaster, user]);
 
@@ -603,19 +599,6 @@ export default function ProfilePage() {
                   );
                 })}
               </div>
-            )}
-          </section>
-
-          <section className="profile-section">
-            <h2>Акции для вас</h2>
-            {salesForClient.length === 0 ? (
-              <p>Нет активных акций</p>
-            ) : (
-              salesForClient.map((sale: Sale) => (
-                <div key={sale.id} className="sale-card">
-                  Скидка {sale.discount}% {sale.comment}
-                </div>
-              ))
             )}
           </section>
 

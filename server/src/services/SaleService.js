@@ -10,6 +10,15 @@ class SaleService {
     return await Sale.findAll();
   }
 
+  static async findForClient() {
+    return await Sale.findAll({
+      order: [
+        ["date", "ASC"],
+        ["discount", "DESC"],
+      ],
+    });
+  }
+
   static async findByMasterId(masterId) {
     return await Sale.findAll({ where: { masterId } });
   }

@@ -3,6 +3,7 @@ const SaleController = require("../controllers/SaleController");
 const verifyAccessToken = require("../middleware/verifyAccessToken");
 
 SaleRouter.post("/create", verifyAccessToken, SaleController.create)
+  .get("/for-client", verifyAccessToken, SaleController.findForClient)
   .get("/findAll", SaleController.findAll)
   .get("/findByDateRange", SaleController.findByDateRange)
   .get("/findByDiscountRange", SaleController.findByDiscountRange)

@@ -17,8 +17,7 @@
 .profile-header,
 .section-header,
 .service-card,
-.booking-card,
-.sale-card {
+.booking-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -201,7 +200,6 @@
 
 .service-card,
 .booking-card,
-.sale-card,
 .client-history-card,
 .portfolio-item {
   padding: 14px;
@@ -630,7 +628,6 @@
   .section-header,
   .service-card,
   .booking-card,
-  .sale-card,
   .recommended-master-card__head,
   .recommended-master-card__identity,
   .client-history-card__top {
