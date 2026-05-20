@@ -2,7 +2,8 @@
 
 import "./page.css";
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { fetchUpcomingBookingsThunk } from "@/entities/booking/api/BookingApiThunk";
@@ -20,8 +21,7 @@ import {
 import { updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
 import type { BookingToMaster } from "@/entities/master/model/index";
-import type { Booking } from "@/entities/booking/model";
-import { getBookingsByClient } from "@/shared/api/bookingApi";
+import { getBookingsByClient, updateBooking } from "@/shared/api/bookingApi";
 import { getCategories } from "@/shared/api/categoryApi";
 import { getMyMasterRecommendations } from "@/shared/api/aiApi";
 import { createReview, getReviewsByClient, getReviewsByMaster } from "@/shared/api/ecoApi";
@@ -30,15 +30,20 @@ import {
   deleteMasterSocial,
   getMyMasterSocials,
 } from "@/shared/api/masterSocialApi";
+import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
+import { getServices } from "@/shared/api/serviziApi";
 import { axiosInstance } from "@/shared/lib/axiosInstance";
+import { openBookingChat } from "@/shared/lib/openBookingChat";
 import { expandPortfolioItems, getMediaUrl } from "@/shared/lib/media";
 import type {
   BookingType,
   CategoryType,
   EcoReviewType,
   MasterSocialType,
+  PublicMasterProfileType,
   RecommendedMasterType,
   ServerResponseType,
+  ServiziType,
 } from "@/shared/types";
 
 type ProfileMaster = {
@@ -133,6 +138,12 @@ function formatDateTime(value: string | number) {
   });
 }
 
+function isClientBookingCanceled(booking: BookingType) {
+  const status = booking.status.toLowerCase();
+
+  return status.includes("отмен") || status.includes("cancel");
+}
+
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -145,8 +156,8 @@ function readFileAsDataUrl(file: File) {
 
 export default function ProfilePage() {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { user } = useSelector((state: RootState) => state.user);
-  const { upcomingBookings } = useSelector((state: RootState) => state.booking);
   const { stats, earnings, services, portfolio, upcomingBookings: masterBookings, loading } =
     useSelector((state: RootState) => state.master);
   const expandedPortfolio = expandPortfolioItems(portfolio);
@@ -166,12 +177,20 @@ export default function ProfilePage() {
     avatarFile: null,
   });
   const [clientPastBookings, setClientPastBookings] = useState<BookingType[]>([]);
+  const [clientBookings, setClientBookings] = useState<BookingType[]>([]);
+  const [clientNowTimestamp, setClientNowTimestamp] = useState(0);
+  const [clientServices, setClientServices] = useState<ServiziType[]>([]);
+  const [clientMasterProfiles, setClientMasterProfiles] = useState<
+    Record<number, PublicMasterProfileType>
+  >({});
   const [clientReviews, setClientReviews] = useState<EcoReviewType[]>([]);
   const [recommendedMasters, setRecommendedMasters] = useState<RecommendedMasterType[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>({});
   const [reviewSavingId, setReviewSavingId] = useState<number | null>(null);
+  const [openingChatBookingId, setOpeningChatBookingId] = useState<number | null>(null);
+  const [cancelingBookingId, setCancelingBookingId] = useState<number | null>(null);
   const [clientHistoryError, setClientHistoryError] = useState<string | null>(null);
   const [masterReviews, setMasterReviews] = useState<EcoReviewType[]>([]);
   const [masterReviewsError, setMasterReviewsError] = useState<string | null>(null);
@@ -195,6 +214,16 @@ export default function ProfilePage() {
 
   const isMaster = user?.role === "master";
 
+  const clientUpcomingBookings = useMemo(() => {
+    return clientBookings
+      .filter(
+        (booking) =>
+          new Date(booking.endTime).getTime() >= clientNowTimestamp &&
+          !isClientBookingCanceled(booking),
+      )
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  }, [clientBookings, clientNowTimestamp]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -212,19 +241,48 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user || isMaster) return;
 
-    const loadClientHistory = async () => {
+    const loadClientBookings = async () => {
       try {
         setClientHistoryError(null);
 
-        const [bookingsData, reviewsData] = await Promise.all([
+        const [bookingsData, reviewsData, servicesData] = await Promise.all([
           getBookingsByClient(user.id),
           getReviewsByClient(user.id),
+          getServices(),
         ]);
         const now = Date.now();
+        const uniqueMasterIds = Array.from(
+          new Set(bookingsData.map((booking) => booking.masterId)),
+        );
+        const masterProfilesEntries = await Promise.all(
+          uniqueMasterIds.map(async (masterId) => {
+            try {
+              const profile = await getPublicMasterProfile(masterId);
 
+              return [masterId, profile] as const;
+            } catch {
+              return null;
+            }
+          }),
+        );
+
+        setClientBookings(bookingsData);
+        setClientNowTimestamp(now);
+        setClientServices(servicesData);
+        setClientMasterProfiles(
+          Object.fromEntries(
+            masterProfilesEntries.filter(
+              (entry): entry is readonly [number, PublicMasterProfileType] => entry !== null,
+            ),
+          ),
+        );
         setClientPastBookings(
           bookingsData
-            .filter((booking) => new Date(booking.endTime).getTime() < now)
+            .filter(
+              (booking) =>
+                new Date(booking.endTime).getTime() < now ||
+                isClientBookingCanceled(booking),
+            )
             .sort(
               (a, b) =>
                 new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
@@ -238,7 +296,7 @@ export default function ProfilePage() {
       }
     };
 
-    void loadClientHistory();
+    void loadClientBookings();
   }, [isMaster, user]);
 
   useEffect(() => {
@@ -464,6 +522,69 @@ export default function ProfilePage() {
     }
   }
 
+  function getBookingService(booking: BookingType) {
+    return clientServices.find((service) => service.id === booking.serviziId) ?? null;
+  }
+
+  function getBookingMasterName(booking: BookingType) {
+    const profile = clientMasterProfiles[booking.masterId];
+    const service = getBookingService(booking);
+
+    return (
+      profile?.profile?.title?.trim() ||
+      profile?.user.name ||
+      service?.masterName?.trim() ||
+      `Мастер #${booking.masterId}`
+    );
+  }
+
+  async function handleOpenBookingChat(booking: BookingType) {
+    try {
+      setOpeningChatBookingId(booking.id);
+      setClientHistoryError(null);
+      await openBookingChat(router, booking);
+    } catch (error) {
+      setClientHistoryError(error instanceof Error ? error.message : "Не удалось открыть чат");
+    } finally {
+      setOpeningChatBookingId(null);
+    }
+  }
+
+  async function handleCancelClientBooking(booking: BookingType) {
+    const shouldCancel = window.confirm("Отменить эту запись?");
+
+    if (!shouldCancel) return;
+
+    try {
+      setCancelingBookingId(booking.id);
+      setClientHistoryError(null);
+
+      const updatedBooking = await updateBooking(booking.id, {
+        status: "Отменена клиентом",
+        cancelReason: "Отменено клиентом",
+      });
+
+      setClientBookings((currentBookings) =>
+        currentBookings.map((currentBooking) =>
+          currentBooking.id === updatedBooking.id ? updatedBooking : currentBooking,
+        ),
+      );
+      setClientPastBookings((currentBookings) => {
+        const nextBookings = currentBookings.filter(
+          (currentBooking) => currentBooking.id !== updatedBooking.id,
+        );
+
+        return [updatedBooking, ...nextBookings].sort(
+          (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+        );
+      });
+    } catch (error) {
+      setClientHistoryError(error instanceof Error ? error.message : "Не удалось отменить запись");
+    } finally {
+      setCancelingBookingId(null);
+    }
+  }
+
   if (!user) return <div className="profile-page">Загрузка...</div>;
   if (isMaster && loading) return <div className="profile-page">Загрузка данных мастера...</div>;
 
@@ -507,14 +628,43 @@ export default function ProfilePage() {
 
           <section className="profile-section">
             <h2>Ближайшие записи</h2>
-            {upcomingBookings.length === 0 ? (
+            {clientHistoryError ? <p className="profile-error">{clientHistoryError}</p> : null}
+            {clientUpcomingBookings.length === 0 ? (
               <p>Вы еще не записаны</p>
             ) : (
-              upcomingBookings.map((booking: Booking) => (
-                <div key={booking.id} className="booking-card">
-                  {formatDateTime(booking.startTime)}
-                </div>
-              ))
+              <div className="client-history-list">
+                {clientUpcomingBookings.map((booking) => {
+                  const service = getBookingService(booking);
+                  const masterName = getBookingMasterName(booking);
+
+                  return (
+                    <article key={booking.id} className="booking-card booking-card--detailed">
+                      <div className="booking-card__info">
+                        <strong>{service?.title ?? `Услуга #${booking.serviziId}`}</strong>
+                        <span>{masterName}</span>
+                        <time>{formatDateTime(booking.startTime)}</time>
+                        <small>{booking.status}</small>
+                      </div>
+                      <div className="booking-card__actions">
+                        <button
+                          type="button"
+                          disabled={openingChatBookingId === booking.id}
+                          onClick={() => void handleOpenBookingChat(booking)}
+                        >
+                          {openingChatBookingId === booking.id ? "Открываю..." : "Перейти в чат"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={cancelingBookingId === booking.id}
+                          onClick={() => void handleCancelClientBooking(booking)}
+                        >
+                          {cancelingBookingId === booking.id ? "Отменяю..." : "Отменить запись"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
             )}
           </section>
 
@@ -535,10 +685,13 @@ export default function ProfilePage() {
                     <article className="client-history-card" key={booking.id}>
                       <div className="client-history-card__top">
                         <div>
-                          <strong>Мастер #{booking.masterId}</strong>
+                          <strong>
+                            {getBookingService(booking)?.title ?? `Услуга #${booking.serviziId}`}
+                          </strong>
+                          <span>{getBookingMasterName(booking)}</span>
                           <span>{formatDateTime(booking.startTime)}</span>
                         </div>
-                        <span>Услуга #{booking.serviziId}</span>
+                        <span>{booking.status}</span>
                       </div>
 
                       {existingReview ? (
