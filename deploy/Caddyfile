@@ -11,6 +11,11 @@ tocca-beauty.ru, www.tocca-beauty.ru {
   reverse_proxy api:3000
  }
 
+ @media path /avatar/* /home-services/* /img/* /portfolio/* /promotions/* /uploads/*
+ handle @media {
+  reverse_proxy api:3000
+ }
+
  handle {
   reverse_proxy web:3000
  }
