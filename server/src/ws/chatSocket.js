@@ -9,6 +9,10 @@ function roomName(chatId) {
   return `chat:${chatId}`;
 }
 
+function userRoomName(userId) {
+  return `user:${userId}`;
+}
+
 function initChatSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
@@ -41,6 +45,8 @@ function initChatSocket(httpServer) {
   });
 
   io.on("connection", (socket) => {
+    socket.join(userRoomName(socket.data.user.id));
+
     socket.on("chat:join", async (payload) => {
       const chatId = Number(payload?.chatId);
 
@@ -109,3 +115,4 @@ function initChatSocket(httpServer) {
 }
 
 module.exports = initChatSocket;
+module.exports.userRoomName = userRoomName;
