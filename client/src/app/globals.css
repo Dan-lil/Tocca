@@ -1,26 +1,797 @@
+/* Глобальный сброс базовых отступов и расчёта размеров */
 * {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
 }
 
+/* Общие CSS-переменные для стеклянных поверхностей и кнопок по всему приложению */
+:root {
+    --glass-border: 1px solid rgba(255, 255, 255, 0.28);
+    --glass-text: rgba(255, 248, 246, 0.96);
+    --glass-text-shadow: 0 1px 8px rgba(118, 73, 71, 0.18);
+    --glass-bg:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.22),
+            rgba(255, 255, 255, 0.06)
+        ),
+        rgba(173, 113, 106, 0.18);
+    --glass-bg-hover:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.28),
+            rgba(255, 255, 255, 0.08)
+        ),
+        rgba(181, 120, 112, 0.2);
+    --glass-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+        0 14px 30px rgba(108, 61, 62, 0.12);
+    --glass-shadow-hover:
+        inset 0 1px 0 rgba(255, 255, 255, 0.38),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+        0 18px 36px rgba(115, 69, 68, 0.12);
+    --glass-backdrop: blur(16px) saturate(135%);
+}
+
+/* Базовая стеклянная поверхность для карточек и контейнеров */
+.glass-surface {
+    background: var(--glass-bg);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+}
+
+/* Универсальная стеклянная кнопка, которая используется в разных частях интерфейса */
+.glass-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 132px;
+    padding: 10px 16px;
+    border: var(--glass-border);
+    border-radius: 999px;
+    color: var(--glass-text);
+    text-decoration: none;
+    text-align: center;
+    text-shadow: var(--glass-text-shadow);
+    background: var(--glass-bg);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease,
+        color 0.2s ease,
+        opacity 0.2s ease;
+}
+
+/* Состояния наведения и фокуса для общей кнопки */
+.glass-button:hover {
+    background: var(--glass-bg-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+.glass-button:focus-visible {
+    outline: 1px solid rgba(255, 248, 245, 0.78);
+    outline-offset: 2px;
+}
+
+/* Компактный вариант общей кнопки */
+.glass-button--compact {
+    min-width: auto;
+    padding: 10px 16px;
+    font-size: 13px;
+    line-height: 1;
+}
+
+html,
 body {
-  min-height: 100vh;
-  font-family: Arial, Helvetica, sans-serif;
-  color: #3d3430;
-  background: #fff5f2;
+    min-height: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+    background:
+        radial-gradient(
+            circle at top center,
+            rgba(255, 255, 255, 0.35),
+            transparent 34%
+        ),
+        linear-gradient(180deg, #b97b79 0%, #f7dddd 24%, #fff7f6 64%, #f0c3c9 100%);
+    color: #7a4d4b;
 }
 
-button,
-a {
-  font: inherit;
+/* Общий каркас страницы: header сверху, content растягивается, footer снизу */
+.site-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-button {
-  cursor: pointer;
+.site-content {
+    flex: 1;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Внешние отступы для общих header/footer */
+.site-footer {
+    position: relative;
+    z-index: 10;
+    padding-inline: 20px;
 }
+
+/* Глобальный фон и декоративная подложка шапки сайта */
+.site-header {
+    padding-top: 24px;
+    background:
+        linear-gradient(180deg, rgba(93, 48, 38, 0.12), rgba(93, 48, 38, 0.3)),
+        url("/фон2.jpg") center top / cover no-repeat;
+}
+
+/* Плавный переход от фона шапки к основному фону страницы */
+.site-header::after {
+    content: "";
+    display: block;
+    width: min(100%, 1397px);
+    height: 100px;
+    margin: 0 auto;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 240, 241, 0) 0%,
+        rgba(255, 240, 241, 0.32) 38%,
+        rgba(247, 221, 221, 0.82) 72%,
+        rgba(255, 247, 246, 0.98) 100%
+    );
+    pointer-events: none;
+}
+
+.site-footer {
+    padding-bottom: 24px;
+}
+
+/* Ограничение ширины и центрирование общих контейнеров layout */
+.site-header-shell,
+.site-footer-shell {
+    width: min(100%, 1397px);
+    margin: 0 auto 20px;
+}
+
+.site-header-shell {
+    min-height: 182px;
+}
+
+/* Внутренняя сетка контента в шапке */
+.site-header-content {
+    display: grid;
+    gap: 36px;
+}
+
+/* Верхняя навигация сайта */
+.top-nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 40px 70px;
+    width: fit-content;
+    margin: 0 auto;
+    padding: 15px;
+    border-radius: 999px;
+}
+
+.top-nav-link {
+    padding: 6px 10px;
+    border: 1px solid transparent;
+    color: rgba(255, 248, 246, 0.94);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    box-shadow: none;
+    background: transparent;
+    text-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.top-nav-link:hover,
+.top-nav-link:focus-visible {
+    border: var(--glass-border);
+    text-shadow: var(--glass-text-shadow);
+    background: var(--glass-bg-hover);
+    box-shadow: var(--glass-shadow-hover);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+}
+
+/* Контейнер dropdown для услуг в header */
+.top-nav-dropdown {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.top-nav-button {
+    min-width: 132px;
+}
+
+/* Выпадающий список услуг в визуале главной страницы */
+.top-nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 14px);
+    left: 50%;
+    z-index: 30;
+    display: grid;
+    gap: 8px;
+    min-width: 220px;
+    padding: 12px;
+    border-radius: 24px;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.26),
+            rgba(255, 255, 255, 0.08)
+        ),
+        rgba(173, 113, 106, 0.2);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.34),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+        0 18px 36px rgba(115, 69, 68, 0.16);
+    transform: translateX(-50%);
+}
+
+.top-nav-dropdown-link,
+.top-nav-dropdown-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    color: rgba(255, 248, 246, 0.96);
+    text-align: center;
+}
+
+.top-nav-dropdown-link {
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.08);
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.top-nav-dropdown-link:hover,
+.top-nav-dropdown-link:focus-visible {
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 14px 28px rgba(108, 61, 62, 0.12);
+}
+
+.top-nav-dropdown-state {
+    background: rgba(255, 255, 255, 0.06);
+    font-size: 13px;
+}
+
+/* зона в шапке с акцией дня и кнопкой заказать */
+.site-header-promo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    margin-top: 12px;
+}
+
+/* Карточка акции дня в шапке */
+.site-header-offer {
+    width: min(100%, 360px);
+    min-height: 300px;
+    padding: 22px 22px 26px;
+    margin-left: 40px;
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: rgba(255, 250, 249, 0.98);
+    background:
+        linear-gradient(180deg, rgba(123, 75, 68, 0.16), rgba(123, 75, 68, 0.34)),
+        url("/акция_дня.jpeg") center/cover no-repeat;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 18px 44px rgba(93, 48, 38, 0.18);
+}
+
+.site-header-actions {
+    display: flex;
+    align-items: center;
+    padding-top: 150px;
+    padding-right: 50px;
+}
+
+.site-header-button {
+    min-width: 188px;
+    padding: 14px 28px;
+    font-size: 18px;
+}
+
+/* Глобальный контейнер и текст футера. */
+.site-footer-shell {
+    padding: 18px 24px;
+    border-radius: 28px;
+    text-align: center;
+}
+
+.site-footer-copy {
+    color: rgba(122, 77, 75, 0.88);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.booking-direct-mode {
+    display: grid;
+    gap: 14px;
+}
+
+.booking-direct-card,
+.booking-direct-form {
+    display: grid;
+    gap: 14px;
+    padding: 18px;
+    border-radius: 24px;
+    background: rgba(255, 241, 242, 0.58);
+}
+
+.booking-direct-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.booking-direct-service,
+.booking-direct-description,
+.booking-direct-feedback {
+    margin: 0;
+}
+
+.booking-direct-service {
+    color: #8d605f;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.booking-direct-description {
+    color: #9f7370;
+    line-height: 1.5;
+}
+
+.booking-direct-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    color: #a47471;
+    font-weight: 700;
+}
+
+.booking-direct-services {
+    display: grid;
+    gap: 10px;
+}
+
+.booking-direct-service-card {
+    display: grid;
+    gap: 6px;
+    padding: 14px 16px;
+    border: 1px solid rgba(233, 188, 185, 0.72);
+    border-radius: 20px;
+    background: rgba(255, 251, 250, 0.72);
+    color: #8d605f;
+    text-align: left;
+}
+
+.booking-direct-service-card strong {
+    font-size: 15px;
+}
+
+.booking-direct-service-card span {
+    color: #a47471;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.booking-direct-service-card-active {
+    border-color: rgba(196, 135, 119, 0.9);
+    background: rgba(255, 235, 232, 0.86);
+    box-shadow: 0 12px 26px rgba(177, 107, 97, 0.16);
+}
+
+.booking-direct-calendar {
+    display: grid;
+    gap: 14px;
+}
+
+.booking-direct-calendar-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.booking-direct-calendar-toolbar h3 {
+    color: #8d605f;
+    font-size: 18px;
+    text-transform: capitalize;
+}
+
+.booking-direct-calendar-toolbar button {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(233, 188, 185, 0.72);
+    border-radius: 12px;
+    background: rgba(255, 251, 250, 0.78);
+    color: #8d605f;
+    font-size: 24px;
+}
+
+.booking-direct-weekdays,
+.booking-direct-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.booking-direct-weekdays span {
+    color: #a47471;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.booking-direct-day,
+.booking-direct-day-empty {
+    min-height: 62px;
+}
+
+.booking-direct-day {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid rgba(233, 188, 185, 0.72);
+    border-radius: 14px;
+    background: rgba(255, 251, 250, 0.76);
+    color: #8d605f;
+    text-align: left;
+}
+
+.booking-direct-day span {
+    font-weight: 700;
+}
+
+.booking-direct-day small {
+    margin-top: auto;
+    padding: 3px 6px;
+    border-radius: 999px;
+    background: rgba(245, 216, 173, 0.86);
+    color: #7e5b31;
+    font-size: 10px;
+}
+
+.booking-direct-day-active {
+    border-color: rgba(196, 135, 119, 0.92);
+    background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+    color: #fff7f5;
+}
+
+.booking-direct-day-active small {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff7f5;
+}
+
+.booking-direct-slots {
+    display: grid;
+    gap: 10px;
+}
+
+.booking-direct-slots h3 {
+    color: #8d605f;
+    font-size: 16px;
+    text-transform: capitalize;
+}
+
+.booking-direct-slot-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.booking-direct-slot-list button {
+    padding: 8px 12px;
+    border: 1px solid rgba(237, 201, 143, 0.9);
+    border-radius: 999px;
+    background: rgba(245, 216, 173, 0.86);
+    color: #7e5b31;
+}
+
+.booking-direct-slot-list p {
+    margin: 0;
+    color: #9f7370;
+    font-size: 14px;
+}
+
+.booking-direct-slot-list .booking-direct-slot-active {
+    border-color: rgba(196, 135, 119, 0.92);
+    background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+    color: #fff7f5;
+}
+
+.booking-direct-field {
+    display: grid;
+    gap: 8px;
+    color: #8f6765;
+    font-size: 14px;
+}
+
+.booking-direct-textarea {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1px solid rgba(233, 188, 185, 0.72);
+    border-radius: 18px;
+    background: rgba(255, 251, 250, 0.78);
+    color: #8d605f;
+}
+
+.booking-direct-textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.booking-direct-feedback {
+    padding: 12px 14px;
+    border-radius: 18px;
+    font-size: 14px;
+}
+
+.booking-direct-feedback--error {
+    background: rgba(201, 83, 83, 0.12);
+    color: #a35e5b;
+}
+
+.booking-direct-feedback--success {
+    background: rgba(91, 170, 118, 0.14);
+    color: #5d8e67;
+}
+
+.auth-page {
+    display: grid;
+    place-items: center;
+    min-height: 62vh;
+    padding: 26px 16px 70px;
+}
+
+.form-container {
+    display: grid;
+    gap: 18px;
+    width: min(100%, 430px);
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    border-radius: 28px;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.62),
+            rgba(255, 244, 243, 0.52)
+        ),
+        rgba(255, 248, 247, 0.72);
+    box-shadow: 0 24px 60px rgba(181, 119, 129, 0.18);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.form-container .form {
+    display: grid;
+    gap: 24px;
+}
+
+.auth-page .group {
+    min-height: 48px;
+}
+
+.auth-page .group .form-input {
+    height: 48px;
+    padding: 14px 15px 10px;
+    border: 1px solid rgba(226, 179, 176, 0.82);
+    border-radius: 16px;
+    background: rgba(255, 252, 251, 0.82);
+    color: #7a4d4b;
+    font-size: 15px;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.auth-page .group .form-input:focus {
+    border-color: rgba(196, 135, 119, 0.95);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 0 0 4px rgba(196, 135, 119, 0.14);
+}
+
+.auth-page .group .form-input-label {
+    top: 15px;
+    left: 15px;
+    color: #a77774;
+    font-size: 15px;
+}
+
+.auth-page .group .form-input-label.shrink,
+.auth-page .group .form-input:focus ~ .form-input-label,
+.auth-page .group .form-input:not(:placeholder-shown) ~ .form-input-label {
+    top: -9px;
+    left: 12px;
+    padding: 0 7px;
+    border-radius: 999px;
+    background: #fffafa;
+    color: #986764;
+    font-size: 12px;
+}
+
+.auth-select {
+    width: 100%;
+    height: 48px;
+    padding: 0 44px 0 15px;
+    border: 1px solid rgba(226, 179, 176, 0.82);
+    border-radius: 16px;
+    color: #7a4d4b;
+    background:
+        linear-gradient(45deg, transparent 50%, #986764 50%) calc(100% - 22px) 20px / 7px 7px no-repeat,
+        linear-gradient(135deg, #986764 50%, transparent 50%) calc(100% - 16px) 20px / 7px 7px no-repeat,
+        rgba(255, 252, 251, 0.82);
+    font: inherit;
+    font-size: 15px;
+    appearance: none;
+}
+
+.auth-select:focus {
+    outline: none;
+    border-color: rgba(196, 135, 119, 0.95);
+    background-color: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 0 0 4px rgba(196, 135, 119, 0.14);
+}
+
+.form-action-button {
+    min-height: 50px;
+    padding: 13px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    color: #fff8f6;
+    background: linear-gradient(180deg, #ddb0a3 0%, #c48777 100%);
+    box-shadow: 0 14px 30px rgba(177, 107, 97, 0.24);
+    font: inherit;
+    font-weight: 700;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.form-action-button:hover:not(:disabled),
+.form-action-button:focus-visible:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 36px rgba(177, 107, 97, 0.3);
+}
+
+.form-action-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.58;
+}
+
+.auth-switch {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #9f7370;
+    font-size: 14px;
+}
+
+.auth-switch p {
+    margin: 0;
+}
+
+.auth-link {
+    padding: 0;
+    border: none;
+    color: #a35e5b;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-link:hover,
+.auth-link:focus-visible {
+    color: #7a4d4b;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.auth-error {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: rgba(201, 83, 83, 0.12);
+    color: #a35e5b;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Адаптация глобального layout и шапки для мобильных экранов */
+@media (max-width: 767px) {
+    .site-header,
+    .site-footer {
+        padding-inline: 12px;
+    }
+
+    .site-header {
+        padding-top: 12px;
+    }
+
+    .site-header::after {
+        height: 49px;
+    }
+
+    .site-footer {
+        padding-bottom: 12px;
+    }
+
+    .site-header-shell {
+        min-height: 0;
+    }
+
+   
+
+    .top-nav {
+        justify-content: flex-start;
+        width: 100%;
+        padding: 8px 10px;
+    }
+
+    .top-nav-link {
+        font-size: 12px;
+        padding: 6px 8px;
+    }
+
+    .top-nav-dropdown {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .top-nav-dropdown-menu {
+        left: 0;
+        right: 0;
+        min-width: 0;
+        transform: none;
+    }
+
+    .auth-page {
+        min-height: 56vh;
+        padding: 18px 12px 54px;
+    }
+
+    .form-container {
+        padding: 22px 16px;
+        border-radius: 22px;
+    }
+
+    .form-container .form {
+        gap: 22px;
+    }
+
+
+
+}
+
+

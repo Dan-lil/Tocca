@@ -16,7 +16,7 @@ module.exports = {
         allowNull: false,
       },
       portfolioImages: {
-        type: Sequelize.STRING,
+        type: Sequelize.STRING(5000),
       },
       text: {
         type: Sequelize.STRING,

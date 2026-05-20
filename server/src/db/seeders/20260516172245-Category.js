@@ -5,19 +5,23 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.bulkInsert("Categories", [
       {
-        title: "Nails & NailsArt",
+        title: "Ногти",
         photo: "haircut.jpg",
       },
       {
-        title: "Cosmetology",
+        title: "Косметология",
         photo: "beard_trim.jpg",
       },
       {
-        title: "Heaircut & HairColor",
+        title: "Волосы",
         photo: "beard_trim.jpg",
       },
       {
-        title: "Massage & SPA",
+        title: "Массаж",
+        photo: "beard_trim.jpg",
+      },
+      {
+        title: "Макияж",
         photo: "beard_trim.jpg",
       },
     ]);

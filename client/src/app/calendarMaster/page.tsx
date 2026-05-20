@@ -1,128 +1,80 @@
 "use client";
 
 import "./page.css";
-import { type FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
+import { createBooking, getBookingsByMaster, updateBooking } from "@/shared/api/bookingApi";
+import { getServicesByMaster } from "@/shared/api/serviziApi";
+import {
+  createShadule,
+  deleteShadule,
+  getShadulesByMaster,
+} from "@/shared/api/shaduleApi";
+import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
+import type { BookingType, ServiziType, ShaduleType } from "@/shared/types";
+
+type AppointmentStatus = "confirmed" | "pending" | "done" | "canceled";
 
 type Appointment = {
   id: number;
+  booking: BookingType;
   clientName: string;
+  clientComment?: string;
   service: string;
   time: string;
   duration: string;
   price: string;
-  status: "confirmed" | "pending" | "done";
-  phone: string;
+  status: AppointmentStatus;
 };
 
-type MasterService = {
-  id: string;
-  name: string;
-  duration: string;
-  price: string;
-};
-
-const masterServices: MasterService[] = [
-  {
-    id: "manicure-gel",
-    name: "Маникюр + покрытие",
-    duration: "1 ч 40 мин",
-    price: "3 200 ₽",
-  },
-  {
-    id: "brows",
-    name: "Коррекция бровей",
-    duration: "45 мин",
-    price: "1 400 ₽",
-  },
-  {
-    id: "styling",
-    name: "Укладка",
-    duration: "1 ч",
-    price: "2 500 ₽",
-  },
-  {
-    id: "face-massage",
-    name: "Массаж лица",
-    duration: "1 ч 20 мин",
-    price: "4 000 ₽",
-  },
-];
-
-const initialAppointments: Record<string, Appointment[]> = {
-  "2026-05-15": [
-    {
-      id: 1,
-      clientName: "Анна Смирнова",
-      service: "Маникюр + покрытие",
-      time: "10:00",
-      duration: "1 ч 40 мин",
-      price: "3 200 ₽",
-      status: "confirmed",
-      phone: "+7 999 123-45-67",
-    },
-    {
-      id: 2,
-      clientName: "Мария Волкова",
-      service: "Коррекция бровей",
-      time: "14:30",
-      duration: "45 мин",
-      price: "1 400 ₽",
-      status: "pending",
-      phone: "+7 999 555-22-11",
-    },
-  ],
-  "2026-05-17": [
-    {
-      id: 3,
-      clientName: "Екатерина Орлова",
-      service: "Укладка",
-      time: "12:00",
-      duration: "1 ч",
-      price: "2 500 ₽",
-      status: "confirmed",
-      phone: "+7 999 700-80-90",
-    },
-  ],
-  "2026-05-21": [
-    {
-      id: 4,
-      clientName: "София Белова",
-      service: "Массаж лица",
-      time: "16:00",
-      duration: "1 ч 20 мин",
-      price: "4 000 ₽",
-      status: "done",
-      phone: "+7 999 444-10-10",
-    },
-  ],
-};
-
-const initialFreeSlots: Record<string, string[]> = {
-  "2026-05-15": ["12:00", "13:00", "16:00", "17:30"],
-  "2026-05-16": ["09:00", "10:30", "12:00", "15:00", "18:00"],
-  "2026-05-17": ["09:30", "10:30", "15:00", "17:00"],
-  "2026-05-18": ["11:00", "12:30", "14:00", "16:30"],
-  "2026-05-21": ["10:00", "11:30", "13:00"],
+type ScheduleDraft = {
+  dayOdWeek: number;
+  label: string;
+  isWorkingDay: boolean;
+  slots: Array<{
+    id?: number;
+    time: string;
+  }>;
+  newSlotTime: string;
 };
 
 const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-const emptySlots: string[] = [];
-const statusText = {
+const scheduleDays = [
+  { dayOdWeek: 1, label: "Понедельник" },
+  { dayOdWeek: 2, label: "Вторник" },
+  { dayOdWeek: 3, label: "Среда" },
+  { dayOdWeek: 4, label: "Четверг" },
+  { dayOdWeek: 5, label: "Пятница" },
+  { dayOdWeek: 6, label: "Суббота" },
+  { dayOdWeek: 0, label: "Воскресенье" },
+];
+
+const statusText: Record<AppointmentStatus, string> = {
   confirmed: "Подтверждена",
   pending: "Ждет ответа",
   done: "Завершена",
+  canceled: "Отменена",
 };
 
-const nextStatus: Record<Appointment["status"], Appointment["status"]> = {
+const nextStatus: Record<AppointmentStatus, AppointmentStatus> = {
   pending: "confirmed",
   confirmed: "done",
   done: "pending",
+  canceled: "pending",
 };
 
-const nextStatusButtonText: Record<Appointment["status"], string> = {
+const nextStatusButtonText: Record<AppointmentStatus, string> = {
   pending: "Подтвердить",
   confirmed: "Завершить",
   done: "Вернуть в ожидание",
+  canceled: "Вернуть в ожидание",
+};
+
+const backendStatusByUiStatus: Record<AppointmentStatus, string> = {
+  pending: "Ожидает подтверждения",
+  confirmed: "Подтверждено",
+  done: "Завершена",
+  canceled: "Отменено",
 };
 
 function toDateKey(date: Date) {
@@ -145,102 +97,551 @@ function getMonthDays(year: number, month: number) {
   return [...emptyDays, ...days];
 }
 
-function getPhoneHref(phone: string) {
-  return `tel:${phone.replace(/[^\d+]/g, "")}`;
+function getTimeValue(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "09:00";
+  }
+
+  return `${date.getHours()}`.padStart(2, "0") + `:${date.getMinutes()}`.padStart(2, "0");
+}
+
+function getMinutesFromDate(value: string) {
+  const date = new Date(value);
+
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function formatMinutes(totalMinutes: number) {
+  const hours = `${Math.floor(totalMinutes / 60)}`.padStart(2, "0");
+  const minutes = `${totalMinutes % 60}`.padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+}
+
+function getScheduleDate(dayOdWeek: number, time: string) {
+  const monday = new Date(2024, 6, 1);
+  const date = new Date(monday);
+  const dayOffset = dayOdWeek === 0 ? 6 : dayOdWeek - 1;
+  const [hours, minutes] = time.split(":").map(Number);
+
+  date.setDate(monday.getDate() + dayOffset);
+  date.setHours(hours, minutes, 0, 0);
+
+  return date.toISOString();
+}
+
+function getScheduleEndDate(dayOdWeek: number, time: string) {
+  const date = new Date(getScheduleDate(dayOdWeek, time));
+  date.setMinutes(date.getMinutes() + 30);
+
+  return date.toISOString();
+}
+
+function getScheduleSlotKey(dayOdWeek: number, time: string) {
+  return `${dayOdWeek}-${time}`;
+}
+
+function getBookingDateTimes(dateKey: string, time: string, duration: number) {
+  const [hours, minutes] = time.split(":").map(Number);
+  const startTime = new Date(`${dateKey}T00:00:00`);
+  startTime.setHours(hours, minutes, 0, 0);
+
+  const endTime = new Date(startTime);
+  endTime.setMinutes(endTime.getMinutes() + duration);
+
+  return {
+    startTime,
+    endTime,
+  };
+}
+
+function getInitialScheduleDrafts(shadules: ShaduleType[] = []): ScheduleDraft[] {
+  return scheduleDays.map((day) => {
+    const dayShadules = shadules
+      .filter((item) => item.dayOdWeek === day.dayOdWeek && item.isWorkingDay)
+      .map((item) => ({
+        id: item.id,
+        time: getTimeValue(item.startTime),
+      }))
+      .sort((a, b) => a.time.localeCompare(b.time));
+
+    return {
+      dayOdWeek: day.dayOdWeek,
+      label: day.label,
+      isWorkingDay: dayShadules.length > 0,
+      slots: dayShadules,
+      newSlotTime: dayShadules.at(-1)?.time ?? "09:00",
+    };
+  });
+}
+
+function getAppointmentStatus(status: string): AppointmentStatus {
+  const normalizedStatus = status.toLowerCase();
+
+  if (normalizedStatus.includes("отмен")) return "canceled";
+  if (normalizedStatus.includes("заверш") || normalizedStatus.includes("done")) return "done";
+  if (normalizedStatus.includes("подтверж") || normalizedStatus.includes("confirm")) {
+    return "confirmed";
+  }
+
+  return "pending";
+}
+
+function getDurationLabel(booking: BookingType, service?: ServiziType) {
+  if (service?.duration) {
+    return `${service.duration} мин`;
+  }
+
+  const diffMs = new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime();
+  const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
+
+  return diffMinutes > 0 ? `${diffMinutes} мин` : "—";
+}
+
+function getPriceLabel(service?: ServiziType) {
+  return service ? `${service.price.toLocaleString("ru-RU")} ₽` : "—";
+}
+
+function isBookingCanceled(booking: BookingType) {
+  return getAppointmentStatus(booking.status) === "canceled";
+}
+
+function buildAppointmentsByDate(bookings: BookingType[], services: ServiziType[]) {
+  const servicesById = new Map(services.map((service) => [service.id, service]));
+
+  return bookings.reduce<Record<string, Appointment[]>>((result, booking) => {
+    const service = servicesById.get(booking.serviziId);
+    const startDate = new Date(booking.startTime);
+    const dateKey = toDateKey(startDate);
+    const appointment: Appointment = {
+      id: booking.id,
+      booking,
+      clientName: `Клиент #${booking.clientId}`,
+      clientComment: booking.clientComment,
+      service: service?.title ?? `Услуга #${booking.serviziId}`,
+      time: startDate.toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      duration: getDurationLabel(booking, service),
+      price: getPriceLabel(service),
+      status: getAppointmentStatus(booking.status),
+    };
+
+    return {
+      ...result,
+      [dateKey]: [...(result[dateKey] ?? []), appointment].sort((a, b) =>
+        a.time.localeCompare(b.time),
+      ),
+    };
+  }, {});
+}
+
+function buildFreeSlotsByDate(
+  monthDays: Array<Date | null>,
+  scheduleDrafts: ScheduleDraft[],
+  bookings: BookingType[],
+) {
+  return monthDays.reduce<Record<string, string[]>>((result, date) => {
+    if (!date) return result;
+
+    const schedule = scheduleDrafts.find(
+      (draft) => draft.dayOdWeek === date.getDay() && draft.isWorkingDay,
+    );
+
+    if (!schedule) return result;
+
+    const dateKey = toDateKey(date);
+    const dayBookings = bookings.filter((booking) => {
+      const bookingDateKey = toDateKey(new Date(booking.startTime));
+
+      return bookingDateKey === dateKey && !isBookingCanceled(booking);
+    });
+    const slots: string[] = [];
+
+    schedule.slots.forEach((scheduleSlot) => {
+      const slotStart = getMinutesFromDate(getScheduleDate(schedule.dayOdWeek, scheduleSlot.time));
+      const slotEnd = slotStart + 30;
+      const hasConflict = dayBookings.some((booking) => {
+        const bookedStart = getMinutesFromDate(booking.startTime);
+        const bookedEnd = getMinutesFromDate(booking.endTime);
+
+        return slotStart < bookedEnd && slotEnd > bookedStart;
+      });
+
+      if (!hasConflict) {
+        slots.push(formatMinutes(slotStart));
+      }
+    });
+
+    return slots.length > 0 ? { ...result, [dateKey]: slots } : result;
+  }, {});
+}
+
+function buildSlotsForDate(
+  date: Date,
+  scheduleDrafts: ScheduleDraft[],
+  bookings: BookingType[],
+  duration: number,
+) {
+  const schedule = scheduleDrafts.find(
+    (draft) => draft.dayOdWeek === date.getDay() && draft.isWorkingDay,
+  );
+
+  if (!schedule || !duration || schedule.slots.length === 0) return [];
+
+  const dateKey = toDateKey(date);
+  const dayBookings = bookings.filter((booking) => {
+    const bookingDateKey = toDateKey(new Date(booking.startTime));
+
+    return bookingDateKey === dateKey && !isBookingCanceled(booking);
+  });
+  const slots: string[] = [];
+
+  schedule.slots.forEach((scheduleSlot) => {
+    const slotStart = getMinutesFromDate(getScheduleDate(schedule.dayOdWeek, scheduleSlot.time));
+    const slotEnd = slotStart + duration;
+    const hasConflict = dayBookings.some((booking) => {
+      const bookedStart = getMinutesFromDate(booking.startTime);
+      const bookedEnd = getMinutesFromDate(booking.endTime);
+
+      return slotStart < bookedEnd && slotEnd > bookedStart;
+    });
+
+    if (!hasConflict) {
+      slots.push(formatMinutes(slotStart));
+    }
+  });
+
+  return slots;
 }
 
 export default function CalendarMasterPage() {
-  const today = new Date(2026, 4, 15);
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [appointmentsByDate, setAppointmentsByDate] = useState(initialAppointments);
-  const [freeSlotsByDate, setFreeSlotsByDate] = useState(initialFreeSlots);
+  const dispatch = useAppDispatch();
+  const { user, isInitialized } = useAppSelector((state) => state.user);
+  const masterId = user?.role === "master" ? user.id : undefined;
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [bookings, setBookings] = useState<BookingType[]>([]);
+  const [services, setServices] = useState<ServiziType[]>([]);
+  const [scheduleDrafts, setScheduleDrafts] = useState<ScheduleDraft[]>(
+    getInitialScheduleDrafts(),
+  );
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [isScheduleSaving, setIsScheduleSaving] = useState(false);
+  const [scheduleMessage, setScheduleMessage] = useState<string | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [isStatusSaving, setIsStatusSaving] = useState<number | null>(null);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
-  const [form, setForm] = useState({
-    lastName: "",
-    firstName: "",
-    phone: "",
-    serviceId: masterServices[0].id,
-    time: initialFreeSlots[toDateKey(today)]?.[0] ?? "",
-    status: "pending" as Appointment["status"],
+  const [isManualBookingSaving, setIsManualBookingSaving] = useState(false);
+  const [manualBookingError, setManualBookingError] = useState<string | null>(null);
+  const [manualForm, setManualForm] = useState({
+    clientId: "",
+    serviceId: "",
+    time: "",
+    status: "Ожидает подтверждения",
+    clientComment: "",
   });
+
   const selectedKey = toDateKey(selectedDate);
-  const selectedAppointments = appointmentsByDate[selectedKey] ?? [];
-  const selectedFreeSlots = freeSlotsByDate[selectedKey] ?? emptySlots;
-  const selectedTime = selectedFreeSlots.includes(form.time)
-    ? form.time
-    : selectedFreeSlots[0] ?? "";
-  const selectedService =
-    masterServices.find((service) => service.id === form.serviceId) ?? masterServices[0];
   const monthDays = useMemo(
     () => getMonthDays(selectedDate.getFullYear(), selectedDate.getMonth()),
-    [selectedDate]
+    [selectedDate],
   );
   const monthTitle = selectedDate.toLocaleDateString("ru-RU", {
     month: "long",
     year: "numeric",
   });
+  const appointmentsByDate = useMemo(
+    () => buildAppointmentsByDate(bookings, services),
+    [bookings, services],
+  );
+  const freeSlotsByDate = useMemo(
+    () => buildFreeSlotsByDate(monthDays, scheduleDrafts, bookings),
+    [bookings, monthDays, scheduleDrafts],
+  );
+  const selectedAppointments = appointmentsByDate[selectedKey] ?? [];
+  const selectedFreeSlots = freeSlotsByDate[selectedKey] ?? [];
+  const selectedManualService =
+    services.find((service) => service.id === Number(manualForm.serviceId)) ?? services[0];
+  const manualBookingSlots = useMemo(
+    () =>
+      selectedManualService
+        ? buildSlotsForDate(
+            selectedDate,
+            scheduleDrafts,
+            bookings,
+            selectedManualService.duration,
+          )
+        : [],
+    [bookings, scheduleDrafts, selectedDate, selectedManualService],
+  );
+  const selectedManualTime = manualBookingSlots.includes(manualForm.time)
+    ? manualForm.time
+    : manualBookingSlots[0] ?? "";
+  const scheduleAccessError =
+    isInitialized && !masterId
+      ? "Войдите как мастер, чтобы загрузить календарь и сохранить расписание."
+      : null;
+
+  useEffect(() => {
+    if (!isInitialized) {
+      void dispatch(refreshTokenThunk());
+    }
+  }, [dispatch, isInitialized]);
+
+  async function loadMasterCalendarData(currentMasterId: number) {
+    try {
+      setIsPageLoading(true);
+      setPageError(null);
+      setScheduleError(null);
+
+      const [servicesResult, bookingsResult, shadulesResult] = await Promise.allSettled([
+        getServicesByMaster(currentMasterId),
+        getBookingsByMaster(currentMasterId),
+        getShadulesByMaster(currentMasterId),
+      ]);
+
+      if (servicesResult.status === "fulfilled") {
+        setServices(servicesResult.value);
+      } else {
+        setServices([]);
+        setPageError(servicesResult.reason.message);
+      }
+
+      if (bookingsResult.status === "fulfilled") {
+        setBookings(bookingsResult.value);
+      } else {
+        setBookings([]);
+        setPageError(bookingsResult.reason.message);
+      }
+
+      if (shadulesResult.status === "fulfilled") {
+        setScheduleDrafts(getInitialScheduleDrafts(shadulesResult.value));
+      } else {
+        setScheduleDrafts(getInitialScheduleDrafts());
+        setScheduleError("Расписание пока не найдено, можно сохранить новое.");
+      }
+    } finally {
+      setIsPageLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!isInitialized || !masterId) return;
+
+    void loadMasterCalendarData(masterId);
+  }, [isInitialized, masterId]);
 
   function changeMonth(direction: number) {
     setSelectedDate(
-      new Date(selectedDate.getFullYear(), selectedDate.getMonth() + direction, 1)
+      new Date(selectedDate.getFullYear(), selectedDate.getMonth() + direction, 1),
     );
   }
 
-  function handleAddAppointment(event: FormEvent<HTMLFormElement>) {
+  async function handleChangeAppointmentStatus(appointment: Appointment) {
+    const nextUiStatus = nextStatus[appointment.status];
+
+    try {
+      setIsStatusSaving(appointment.id);
+      const updatedBooking = await updateBooking(appointment.id, {
+        status: backendStatusByUiStatus[nextUiStatus],
+      });
+      setBookings((currentBookings) =>
+        currentBookings.map((booking) =>
+          booking.id === appointment.id ? { ...booking, ...updatedBooking } : booking,
+        ),
+      );
+    } finally {
+      setIsStatusSaving(null);
+    }
+  }
+
+  async function handleCreateManualBooking(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!form.lastName.trim() || !form.firstName.trim() || !form.phone.trim() || !selectedTime) {
+    if (!masterId || !selectedManualService || !selectedManualTime) {
+      setManualBookingError("Выберите услугу и свободное время.");
       return;
     }
 
-    const newAppointment: Appointment = {
-      id: Date.now(),
-      clientName: `${form.lastName.trim()} ${form.firstName.trim()}`,
-      service: selectedService.name,
-      time: selectedTime,
-      duration: selectedService.duration,
-      price: selectedService.price,
-      status: form.status,
-      phone: form.phone.trim(),
-    };
+    const clientId = Number(manualForm.clientId);
 
-    setAppointmentsByDate((currentAppointments) => ({
-      ...currentAppointments,
-      [selectedKey]: [...(currentAppointments[selectedKey] ?? []), newAppointment].sort((a, b) =>
-        a.time.localeCompare(b.time)
-      ),
-    }));
+    if (!Number.isInteger(clientId) || clientId <= 0) {
+      setManualBookingError("Укажите корректный ID клиента.");
+      return;
+    }
 
-    setFreeSlotsByDate((currentSlots) => ({
-      ...currentSlots,
-      [selectedKey]: (currentSlots[selectedKey] ?? []).filter((slot) => slot !== selectedTime),
-    }));
+    const { startTime, endTime } = getBookingDateTimes(
+      selectedKey,
+      selectedManualTime,
+      selectedManualService.duration,
+    );
 
-    setForm((currentForm) => ({
-      ...currentForm,
-      lastName: "",
-      firstName: "",
-      phone: "",
-      time: selectedFreeSlots.filter((slot) => slot !== selectedTime)[0] ?? "",
-      status: "pending",
-    }));
-    setIsAddFormOpen(false);
+    try {
+      setIsManualBookingSaving(true);
+      setManualBookingError(null);
+      const createdBooking = await createBooking({
+        clientId,
+        masterId,
+        serviziId: selectedManualService.id,
+        date: new Date(`${selectedKey}T00:00:00`).toISOString(),
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        status: manualForm.status,
+        clientComment: manualForm.clientComment.trim() || undefined,
+      });
+
+      setBookings((currentBookings) => [...currentBookings, createdBooking]);
+      setManualForm({
+        clientId: "",
+        serviceId: `${selectedManualService.id}`,
+        time: "",
+        status: "Ожидает подтверждения",
+        clientComment: "",
+      });
+      setIsAddFormOpen(false);
+    } catch (error) {
+      setManualBookingError(
+        error instanceof Error ? error.message : "Не удалось создать запись.",
+      );
+    } finally {
+      setIsManualBookingSaving(false);
+    }
   }
 
-  function handleChangeAppointmentStatus(appointmentId: number) {
-    setAppointmentsByDate((currentAppointments) => ({
-      ...currentAppointments,
-      [selectedKey]: (currentAppointments[selectedKey] ?? []).map((appointment) => {
-        if (appointment.id !== appointmentId) {
-          return appointment;
+  function updateScheduleDraft(dayOdWeek: number, patch: Partial<ScheduleDraft>) {
+    setScheduleDrafts((currentDrafts) =>
+      currentDrafts.map((draft) =>
+        draft.dayOdWeek === dayOdWeek ? { ...draft, ...patch } : draft,
+      ),
+    );
+  }
+
+  function addScheduleSlot(dayOdWeek: number) {
+    setScheduleDrafts((currentDrafts) =>
+      currentDrafts.map((draft) => {
+        if (draft.dayOdWeek !== dayOdWeek) return draft;
+
+        if (!draft.newSlotTime || draft.slots.some((slot) => slot.time === draft.newSlotTime)) {
+          return draft;
         }
 
         return {
-          ...appointment,
-          status: nextStatus[appointment.status],
+          ...draft,
+          isWorkingDay: true,
+          slots: [...draft.slots, { time: draft.newSlotTime }].sort((a, b) =>
+            a.time.localeCompare(b.time),
+          ),
         };
       }),
-    }));
+    );
+  }
+
+  function removeScheduleSlot(dayOdWeek: number, time: string) {
+    setScheduleDrafts((currentDrafts) =>
+      currentDrafts.map((draft) =>
+        draft.dayOdWeek === dayOdWeek
+          ? {
+              ...draft,
+              slots: draft.slots.filter((slot) => slot.time !== time),
+            }
+          : draft,
+      ),
+    );
+  }
+
+  async function handleSaveSchedule() {
+    if (!masterId) {
+      setScheduleError("Войдите как мастер, чтобы сохранить расписание.");
+      return;
+    }
+
+    const emptyWorkingDay = scheduleDrafts.find(
+      (draft) => draft.isWorkingDay && draft.slots.length === 0,
+    );
+
+    if (emptyWorkingDay) {
+      setScheduleError(`Добавьте хотя бы один слот на ${emptyWorkingDay.label} или выключите день.`);
+      return;
+    }
+
+    try {
+      setIsScheduleSaving(true);
+      setScheduleError(null);
+      setScheduleMessage(null);
+
+      const existingShadules = await getShadulesByMaster(masterId).catch(() => []);
+      const existingByKey = new Map<string, ShaduleType>();
+      const duplicateExistingIds: number[] = [];
+
+      existingShadules.forEach((shadule) => {
+        const key = getScheduleSlotKey(shadule.dayOdWeek, getTimeValue(shadule.startTime));
+
+        if (existingByKey.has(key)) {
+          duplicateExistingIds.push(shadule.id);
+          return;
+        }
+
+        existingByKey.set(key, shadule);
+      });
+
+      const desiredSlots = scheduleDrafts.flatMap((draft) =>
+        draft.isWorkingDay
+          ? draft.slots.map((slot) => ({
+              dayOdWeek: draft.dayOdWeek,
+              label: draft.label,
+              time: slot.time,
+              key: getScheduleSlotKey(draft.dayOdWeek, slot.time),
+            }))
+          : [],
+      );
+      const desiredKeys = new Set(desiredSlots.map((slot) => slot.key));
+
+      for (const slot of desiredSlots) {
+        if (existingByKey.has(slot.key)) continue;
+
+        try {
+          await createShadule({
+            masterId,
+            dayOdWeek: slot.dayOdWeek,
+            startTime: getScheduleDate(slot.dayOdWeek, slot.time),
+            endTime: getScheduleEndDate(slot.dayOdWeek, slot.time),
+            isWorkingDay: true,
+          });
+        } catch (error) {
+          throw new Error(
+            `Не удалось сохранить ${slot.label}, ${slot.time}: ${
+              error instanceof Error ? error.message : "ошибка сервера"
+            }`,
+          );
+        }
+      }
+
+      const obsoleteIds = existingShadules
+        .filter((shadule) => {
+          const key = getScheduleSlotKey(shadule.dayOdWeek, getTimeValue(shadule.startTime));
+
+          return !desiredKeys.has(key);
+        })
+        .map((shadule) => shadule.id);
+
+      for (const id of [...new Set([...obsoleteIds, ...duplicateExistingIds])]) {
+        await deleteShadule(id);
+      }
+
+      const reloadedShadules = await getShadulesByMaster(masterId);
+      setScheduleDrafts(getInitialScheduleDrafts(reloadedShadules));
+      setScheduleMessage("Расписание сохранено.");
+    } catch (error) {
+      setScheduleError(
+        error instanceof Error ? error.message : "Не удалось сохранить расписание.",
+      );
+    } finally {
+      setIsScheduleSaving(false);
+    }
   }
 
   return (
@@ -250,13 +651,115 @@ export default function CalendarMasterPage() {
           <p className="master-calendar-kicker">Календарь мастера</p>
           <h1>Записи, свободные окна и клиенты на день</h1>
         </div>
-        <button
-          className="master-calendar-primary"
-          type="button"
-          onClick={() => setIsAddFormOpen((isOpen) => !isOpen)}
-        >
-          Добавить запись
-        </button>
+        <div className="master-calendar-actions">
+          <button
+            className="master-calendar-secondary"
+            type="button"
+            disabled={!masterId}
+            onClick={() => {
+              setIsAddFormOpen((isOpen) => !isOpen);
+              setManualBookingError(null);
+              setManualForm((currentForm) => ({
+                ...currentForm,
+                serviceId: currentForm.serviceId || `${services[0]?.id ?? ""}`,
+              }));
+            }}
+          >
+            Добавить запись
+          </button>
+        </div>
+      </section>
+
+      {scheduleAccessError || pageError ? (
+        <section className="master-calendar-state">
+          <p>{scheduleAccessError ?? pageError}</p>
+        </section>
+      ) : null}
+
+      <section className="master-schedule-panel">
+        <div className="master-schedule-panel__header">
+          <div>
+            <p className="master-calendar-kicker">Рабочая неделя</p>
+            <h2>Расписание мастера</h2>
+          </div>
+          <button
+            className="master-calendar-primary"
+            type="button"
+            disabled={isScheduleSaving || isPageLoading || !masterId}
+            onClick={() => void handleSaveSchedule()}
+          >
+            {isScheduleSaving ? "Сохранение..." : "Сохранить график"}
+          </button>
+        </div>
+
+        {scheduleError ? <p className="master-schedule-message">{scheduleError}</p> : null}
+        {scheduleMessage ? (
+          <p className="master-schedule-message master-schedule-message--success">
+            {scheduleMessage}
+          </p>
+        ) : null}
+
+        <div className="master-schedule-grid">
+          {scheduleDrafts.map((draft, index) => (
+            <article
+              className="master-schedule-day"
+              key={`schedule-${draft.dayOdWeek}-${index}`}
+            >
+              <label className="master-schedule-day__toggle">
+                <input
+                  type="checkbox"
+                  checked={draft.isWorkingDay}
+                  onChange={(event) =>
+                    updateScheduleDraft(draft.dayOdWeek, {
+                      isWorkingDay: event.target.checked,
+                    })
+                  }
+                />
+                <span>{draft.label}</span>
+              </label>
+
+              <div className="master-schedule-day__time">
+                <label>
+                  <span>Новый слот</span>
+                  <input
+                    type="time"
+                    value={draft.newSlotTime}
+                    disabled={!draft.isWorkingDay}
+                    onChange={(event) =>
+                      updateScheduleDraft(draft.dayOdWeek, {
+                        newSlotTime: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={!draft.isWorkingDay}
+                  onClick={() => addScheduleSlot(draft.dayOdWeek)}
+                >
+                  Добавить слот
+                </button>
+                <div className="master-schedule-slots">
+                  {draft.slots.length > 0 ? (
+                    draft.slots.map((slot) => (
+                      <button
+                        type="button"
+                        key={`${draft.dayOdWeek}-${slot.time}`}
+                        disabled={!draft.isWorkingDay}
+                        onClick={() => removeScheduleSlot(draft.dayOdWeek, slot.time)}
+                        aria-label={`Удалить слот ${slot.time}`}
+                      >
+                        {slot.time} x
+                      </button>
+                    ))
+                  ) : (
+                    <p>Слоты не добавлены</p>
+                  )}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="master-calendar-layout">
@@ -273,14 +776,19 @@ export default function CalendarMasterPage() {
 
           <div className="master-calendar-weekdays">
             {weekDays.map((day) => (
-              <span key={day}>{day}</span>
+              <span key={`weekday-${day}`}>{day}</span>
             ))}
           </div>
 
           <div className="master-calendar-grid">
             {monthDays.map((date, index) => {
               if (!date) {
-                return <div className="master-calendar-day master-calendar-day--empty" key={index} />;
+                return (
+                  <div
+                    className="master-calendar-day master-calendar-day--empty"
+                    key={`empty-${index}`}
+                  />
+                );
               }
 
               const dateKey = toDateKey(date);
@@ -324,89 +832,78 @@ export default function CalendarMasterPage() {
             <span>{selectedAppointments.length} записи</span>
           </div>
 
-          {isAddFormOpen && (
-            <form className="master-add-form" onSubmit={handleAddAppointment}>
+          {isAddFormOpen ? (
+            <form className="master-add-form" onSubmit={handleCreateManualBooking}>
               <h3>Добавить запись</h3>
+
+              {manualBookingError ? (
+                <p className="master-form-error">{manualBookingError}</p>
+              ) : null}
+
+              {services.length === 0 ? (
+                <p className="master-empty-state">
+                  У мастера пока нет услуг. Сначала добавьте услуги в профиле мастера,
+                  потом можно будет создать запись вручную.
+                </p>
+              ) : null}
+
+              <label>
+                <span>ID клиента</span>
+                <input
+                  value={manualForm.clientId}
+                  onChange={(event) =>
+                    setManualForm((currentForm) => ({
+                      ...currentForm,
+                      clientId: event.target.value,
+                    }))
+                  }
+                  placeholder="Например, 3"
+                  inputMode="numeric"
+                />
+              </label>
 
               <label>
                 <span>Услуга</span>
                 <select
-                  value={form.serviceId}
+                  value={selectedManualService?.id ?? ""}
                   onChange={(event) =>
-                    setForm((currentForm) => ({
+                    setManualForm((currentForm) => ({
                       ...currentForm,
                       serviceId: event.target.value,
+                      time: "",
                     }))
                   }
+                  disabled={services.length === 0}
                 >
-                  {masterServices.map((service) => (
-                    <option key={service.id} value={service.id}>
-                      {service.name} · {service.duration} · {service.price}
-                    </option>
-                  ))}
+                  {services.length > 0 ? (
+                    services.map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.title} · {service.duration} мин ·{" "}
+                        {service.price.toLocaleString("ru-RU")} ₽
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">Нет услуг</option>
+                  )}
                 </select>
-              </label>
-
-              <div className="master-add-form__row">
-                <label>
-                  <span>Фамилия клиента</span>
-                  <input
-                    value={form.lastName}
-                    onChange={(event) =>
-                      setForm((currentForm) => ({
-                        ...currentForm,
-                        lastName: event.target.value,
-                      }))
-                    }
-                    placeholder="Иванова"
-                  />
-                </label>
-                <label>
-                  <span>Имя клиента</span>
-                  <input
-                    value={form.firstName}
-                    onChange={(event) =>
-                      setForm((currentForm) => ({
-                        ...currentForm,
-                        firstName: event.target.value,
-                      }))
-                    }
-                    placeholder="Анна"
-                  />
-                </label>
-              </div>
-
-              <label>
-                <span>Номер телефона</span>
-                <input
-                  value={form.phone}
-                  onChange={(event) =>
-                    setForm((currentForm) => ({
-                      ...currentForm,
-                      phone: event.target.value,
-                    }))
-                  }
-                  placeholder="+7 999 123-45-67"
-                  type="tel"
-                />
               </label>
 
               <div className="master-add-form__row">
                 <label>
                   <span>Временной слот</span>
                   <select
-                    value={selectedTime}
+                    value={selectedManualTime}
                     onChange={(event) =>
-                      setForm((currentForm) => ({
+                      setManualForm((currentForm) => ({
                         ...currentForm,
                         time: event.target.value,
                       }))
                     }
-                    disabled={selectedFreeSlots.length === 0}
+                    disabled={manualBookingSlots.length === 0}
                   >
-                    {selectedFreeSlots.length > 0 ? (
-                      selectedFreeSlots.map((slot) => (
-                        <option key={slot} value={slot}>
+                    {manualBookingSlots.length > 0 ? (
+                      manualBookingSlots.map((slot, index) => (
+                        <option key={`manual-slot-${slot}-${index}`} value={slot}>
                           {slot}
                         </option>
                       ))
@@ -417,39 +914,65 @@ export default function CalendarMasterPage() {
                 </label>
 
                 <label>
-                  <span>Начальный статус</span>
+                  <span>Статус</span>
                   <select
-                    value={form.status}
+                    value={manualForm.status}
                     onChange={(event) =>
-                      setForm((currentForm) => ({
+                      setManualForm((currentForm) => ({
                         ...currentForm,
-                        status: event.target.value as Appointment["status"],
+                        status: event.target.value,
                       }))
                     }
                   >
-                    <option value="pending">Ждет ответа</option>
-                    <option value="confirmed">Подтверждена</option>
+                    <option value="Ожидает подтверждения">Ожидает подтверждения</option>
+                    <option value="Подтверждено">Подтверждено</option>
                   </select>
                 </label>
               </div>
 
+              <label>
+                <span>Комментарий</span>
+                <textarea
+                  value={manualForm.clientComment}
+                  onChange={(event) =>
+                    setManualForm((currentForm) => ({
+                      ...currentForm,
+                      clientComment: event.target.value,
+                    }))
+                  }
+                  placeholder="Пожелания клиента или заметка мастера"
+                  rows={3}
+                />
+              </label>
+
               <div className="master-add-form__actions">
-                <button type="submit" disabled={selectedFreeSlots.length === 0}>
-                  Сохранить запись
+                <button
+                  type="submit"
+                  disabled={
+                    isManualBookingSaving ||
+                    !selectedManualService ||
+                    !selectedManualTime ||
+                    !manualForm.clientId
+                  }
+                >
+                  {isManualBookingSaving ? "Сохранение..." : "Сохранить запись"}
                 </button>
                 <button type="button" onClick={() => setIsAddFormOpen(false)}>
                   Отмена
                 </button>
               </div>
             </form>
-          )}
+          ) : null}
 
           <div className="master-day-section">
             <h3>Записи клиентов</h3>
             <div className="master-appointments">
               {selectedAppointments.length > 0 ? (
-                selectedAppointments.map((appointment) => (
-                  <article className="master-appointment-card" key={appointment.id}>
+                selectedAppointments.map((appointment, index) => (
+                  <article
+                    className="master-appointment-card"
+                    key={`appointment-${selectedKey}-${appointment.id}-${index}`}
+                  >
                     <div className="master-appointment-card__top">
                       <div>
                         <strong>{appointment.clientName}</strong>
@@ -473,16 +996,26 @@ export default function CalendarMasterPage() {
                         <dd>{appointment.price}</dd>
                       </div>
                     </dl>
+                    {appointment.clientComment ? (
+                      <p className="master-appointment-comment">
+                        {appointment.clientComment}
+                      </p>
+                    ) : null}
                     <div className="master-appointment-actions">
                       <button type="button">Открыть чат</button>
                       <button
                         className="master-appointment-actions__status"
                         type="button"
-                        onClick={() => handleChangeAppointmentStatus(appointment.id)}
+                        disabled={isStatusSaving === appointment.id}
+                        onClick={() => void handleChangeAppointmentStatus(appointment)}
                       >
-                        {nextStatusButtonText[appointment.status]}
+                        {isStatusSaving === appointment.id
+                          ? "Сохранение..."
+                          : nextStatusButtonText[appointment.status]}
                       </button>
-                      <a href={getPhoneHref(appointment.phone)}>Позвонить</a>
+                      <button type="button" disabled>
+                        Телефон не указан
+                      </button>
                     </div>
                   </article>
                 ))
@@ -496,9 +1029,13 @@ export default function CalendarMasterPage() {
             <h3>Свободные окна</h3>
             <div className="master-slots">
               {selectedFreeSlots.length > 0 ? (
-                selectedFreeSlots.map((slot) => <button type="button" key={slot}>{slot}</button>)
+                selectedFreeSlots.map((slot, index) => (
+                  <button type="button" key={`slot-${selectedKey}-${slot}-${index}`}>
+                    {slot}
+                  </button>
+                ))
               ) : (
-                <p className="master-empty-state">Свободных окон пока не добавлено.</p>
+                <p className="master-empty-state">Свободных окон нет.</p>
               )}
             </div>
           </div>

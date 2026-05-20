@@ -6,6 +6,8 @@ MasterPortfolioRouter.post(
   "/",
   verifyAccessToken,
   MasterPortfolioController.createPortfolio,
-).delete("/:id", verifyAccessToken, MasterPortfolioController.cartDelite);
+)
+  .delete("/:id", verifyAccessToken, MasterPortfolioController.cartDelite)
+  .get("/master/:masterId", MasterPortfolioController.getPortfolioByMasterId);
 
 module.exports = MasterPortfolioRouter;

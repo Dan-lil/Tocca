@@ -144,6 +144,10 @@ module.exports = {
     await queryInterface.bulkDelete("Users", null, {});
     await queryInterface.bulkDelete("ProfileMasters", null, {});
     await queryInterface.bulkDelete("MasterPortfolios", null, {});
+    await queryInterface.bulkDelete("Services", null, {});
+    await queryInterface.bulkDelete("Bookings", null, {});
+    await queryInterface.bulkDelete("Chats", null, {});
+    await queryInterface.bulkDelete("Ecos", null, {});
     /**
      * Add commands to revert seed here.
      *
