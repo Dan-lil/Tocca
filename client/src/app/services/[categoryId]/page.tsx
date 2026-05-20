@@ -12,6 +12,7 @@ import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByCategory } from "@/shared/api/serviziApi";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
+import { openDirectChat } from "@/shared/lib/openDirectChat";
 import { expandPortfolioItems, getMasterAvatarUrl, getMediaUrl } from "@/shared/lib/media";
 import type {
   CategoryType,
@@ -86,6 +87,8 @@ export default function CategoryPage() {
     {},
   );
   const [selectedPortfolioPreview, setSelectedPortfolioPreview] = useState<SelectedPortfolioPreview | null>(null);
+  const [openingChatMasterId, setOpeningChatMasterId] = useState<number | null>(null);
+  const [chatErrorByMaster, setChatErrorByMaster] = useState<Record<number, string | null>>({});
 
   useEffect(() => {
     if (!categoryId) return;
@@ -215,6 +218,26 @@ export default function CategoryPage() {
     }
   };
 
+  const handleOpenDirectChat = async (masterId: number) => {
+    if (!user) {
+      router.push("/auth");
+      return;
+    }
+
+    try {
+      setOpeningChatMasterId(masterId);
+      setChatErrorByMaster((prev) => ({ ...prev, [masterId]: null }));
+      await openDirectChat(router, masterId);
+    } catch (chatError) {
+      setChatErrorByMaster((prev) => ({
+        ...prev,
+        [masterId]: chatError instanceof Error ? chatError.message : "Не удалось открыть чат",
+      }));
+    } finally {
+      setOpeningChatMasterId(null);
+    }
+  };
+
   return (
     <main className="services-directory-page">
       <div className="services-directory-shell">
@@ -304,7 +327,23 @@ export default function CategoryPage() {
                     >
                       Отзывы
                     </button>
+                    <button
+                      className="services-directory-badge"
+                      disabled={openingChatMasterId === card.masterId}
+                      type="button"
+                      onClick={() => {
+                        void handleOpenDirectChat(card.masterId);
+                      }}
+                    >
+                      {openingChatMasterId === card.masterId ? "Открываю..." : "Написать"}
+                    </button>
                   </div>
+
+                  {chatErrorByMaster[card.masterId] ? (
+                    <p className="services-directory-card-error">
+                      {chatErrorByMaster[card.masterId]}
+                    </p>
+                  ) : null}
 
                   {isReviewsOpen ? (
                     <div className="services-reviews-dropdown">

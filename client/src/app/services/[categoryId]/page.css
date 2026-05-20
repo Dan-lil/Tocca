@@ -226,6 +226,11 @@
   text-decoration: none;
 }
 
+.services-directory-badge:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .services-directory-badge:hover {
   background:
     linear-gradient(135deg, rgba(158, 91, 84, 0.96), rgba(220, 151, 141, 0.92)),
@@ -244,6 +249,12 @@
 .services-directory-badge:focus-visible {
   outline: 1px solid rgba(255, 248, 245, 0.82);
   outline-offset: 2px;
+}
+
+.services-directory-card-error {
+  margin: 0;
+  color: #fff4f2;
+  font-size: 13px;
 }
 
 .services-reviews-dropdown {
