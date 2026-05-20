@@ -5,13 +5,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
+import { confirmAIBooking, searchAIBookingOptions } from "@/shared/api/aiApi";
 import { createBooking, getBookingsByMaster } from "@/shared/api/bookingApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
 import { getShadulesByMaster } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { BOOKING_MODAL_EVENT, dispatchBookingModalClose } from "@/shared/lib/bookingEvents";
 import { BookingModalPayload, BookingType, ServiziType, ShaduleType } from "@/shared/types";
-import { getMockOptionsByPrompt, quickPrompts, type MasterItem } from "./booking.data";
+import { quickPrompts, type MasterItem } from "./booking.data";
 
 type BookingFlowStep = "idle" | "searching" | "options" | "confirmed";
 type DirectBookingStep = "service" | "calendar";
@@ -331,29 +332,67 @@ export default function GlobalBookingModal() {
     pushChatMessage("Подбираю доступные варианты, это займет пару секунд", "ai");
 
     try {
-      const found = await getMockOptionsByPrompt(prompt);
+      const found = await searchAIBookingOptions(prompt, 6);
+
+      if (found.length === 0) {
+        pushChatMessage(
+          "Пока не нашлось свободных слотов по такому запросу. Попробуйте изменить время или услугу.",
+          "ai",
+        );
+        setStep("idle");
+        return;
+      }
+
       setOptions(found);
       setStep("options");
-      pushChatMessage(`По запросу «${prompt}» найдено ${found.length} вариантов, выберите подходящий`, "ai");
-    } catch {
-      setError("Не удалось подобрать варианты, попробуйте еще раз");
+      pushChatMessage(
+        `По запросу «${prompt}» найдено ${found.length} вариантов, выберите подходящий`,
+        "ai",
+      );
+    } catch (searchError) {
+      setError(
+        searchError instanceof Error
+          ? searchError.message
+          : "Не удалось подобрать варианты, попробуйте еще раз",
+      );
       setStep("idle");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     if (!selectedOption || step !== "options" || bookingConfirmed) return;
 
-    setBookingConfirmed(true);
-    setConfirmedOption(selectedOption);
-    pushChatMessage(
-      `Запись подтверждена к мастеру ${selectedOption.name} на ${selectedOption.slot}`,
-      "ai",
-      "bottom",
-    );
-    setStep("confirmed");
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      await confirmAIBooking({
+        masterId: selectedOption.masterId,
+        serviziId: selectedOption.serviziId,
+        date: selectedOption.date,
+        startTime: selectedOption.startTime,
+        endTime: selectedOption.endTime,
+      });
+
+      setBookingConfirmed(true);
+      setConfirmedOption(selectedOption);
+      pushChatMessage(
+        `Запись подтверждена к мастеру ${selectedOption.name} на ${selectedOption.slot}`,
+        "ai",
+        "bottom",
+      );
+      setStep("confirmed");
+    } catch (confirmError) {
+      setError(
+        confirmError instanceof Error
+          ? confirmError.message
+          : "Не удалось создать запись",
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleDirectBookingCommentChange = (value: string) => {
@@ -770,9 +809,10 @@ export default function GlobalBookingModal() {
                 <button
                   className="booking-confirm-button"
                   type="button"
-                  onClick={handleConfirmBooking}
+                  disabled={isLoading}
+                  onClick={() => void handleConfirmBooking()}
                 >
-                  Подтвердить запись
+                  {isLoading ? "Подтверждаю" : "Подтвердить запись"}
                 </button>
               </div>
             ) : null}
