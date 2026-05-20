@@ -244,18 +244,6 @@ export default function GlobalBookingModal() {
   }, [resetModalState]);
 
   useEffect(() => {
-    if (!directBookingSuccess) return;
-
-    const closeTimer = window.setTimeout(() => {
-      closeModal();
-    }, 3000);
-
-    return () => {
-      window.clearTimeout(closeTimer);
-    };
-  }, [closeModal, directBookingSuccess]);
-
-  useEffect(() => {
     if (!pendingOpen || !isInitialized) return;
 
     if (!user) {
@@ -603,6 +591,13 @@ export default function GlobalBookingModal() {
                     onClick={() => void handleOpenDirectChat()}
                   >
                     {isOpeningDirectChat ? "Открываю чат..." : "Написать мастеру"}
+                  </button>
+                  <button
+                    className="booking-confirm-button"
+                    type="button"
+                    onClick={closeModal}
+                  >
+                    Закрыть
                   </button>
                 </div>
               ) : null}
