@@ -54,7 +54,7 @@ button {
 
 .page-shell {
   display: grid;
-  gap: 60px;
+  gap: 30px;
   width: min(100%, 1397px);
   margin: 0 auto;
 }
@@ -92,7 +92,7 @@ button {
   flex-direction: column;
   justify-content: space-evenly;
   overflow: hidden;
-  min-height: 710px;
+  min-height: 600px;
   margin-top: -24px;
   padding: 58px 32px 50px;
   border-radius: 0 0 32px 32px;
@@ -202,13 +202,16 @@ button {
 }
 
 .section-heading span {
-  padding: 8px 18px;
+  padding: 10px 22px;
+  border: 1px solid rgba(228, 184, 177, 0.72);
   border-radius: 999px;
-  background: rgba(255, 245, 244, 0.8);
-  color: #bc7f79;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  background: linear-gradient(180deg, rgba(255, 247, 245, 0.92) 0%, rgba(244, 220, 216, 0.88) 100%);
+  box-shadow: 0 12px 24px rgba(198, 145, 139, 0.14);
+  color: #b46f69;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0.04em;
 }
 
 .services-grid {
@@ -402,6 +405,11 @@ button {
   color: #fff5f3;
 }
 
+.promo-copy--panel-open {
+  justify-content: center;
+  align-items: center;
+}
+
 .promo-copy p {
   align-self: center;
   text-align: center;
@@ -430,20 +438,40 @@ button {
   color: rgba(255, 245, 242, 0.94);
 }
 
-.promo-link {
-  align-self: center;
-  min-width: 240px;
-  min-height: 46px;
-  padding: 10px 16px;
+.promo-master-link {
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.promo-master-link:hover,
+.promo-master-link:focus-visible {
+  color: #fffaf8;
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.promo-link,
+.promo-copy-button,
+.promo-book-button {
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(221, 176, 163, 0.72) 0%, rgba(196, 135, 119, 0.72) 100%);
   box-shadow: 0 14px 30px rgba(177, 107, 97, 0.18);
   backdrop-filter: blur(12px);
   color: #fff8f6;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+}
+
+.promo-link {
+  align-self: center;
+  min-width: 210px;
+  min-height: 42px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .promo-link:hover,
@@ -497,20 +525,8 @@ button {
   width: 100%;
   min-height: 46px;
   padding: 10px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(221, 176, 163, 0.72) 0%, rgba(196, 135, 119, 0.72) 100%);
-  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.18);
-  backdrop-filter: blur(12px);
-  color: #fff8f6;
   font-size: 14px;
   font-weight: 700;
-}
-
-.promo-book-button {
-  background: linear-gradient(180deg, rgba(221, 176, 163, 0.72) 0%, rgba(196, 135, 119, 0.72) 100%);
-  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.18);
-  backdrop-filter: blur(12px);
 }
 
 .promo-empty-state {
@@ -660,6 +676,11 @@ button {
   font-size: 10px;
   font-weight: 700;
   flex: 0 0 24px;
+}
+
+.master-avatar-image {
+  display: block;
+  object-fit: cover;
 }
 
 .master-head {
@@ -850,7 +871,7 @@ button {
   background: rgba(255, 244, 242, 0.9);
 }
 
-/* Адаптация домашней страницы для планшетов */
+/* Адаптация домашней страницы */
 @media (max-width: 1199px) {
   .services-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -862,10 +883,14 @@ button {
 
 }
 
-/* Адаптация домашней страницы для мобильных экранов */
+/* Адаптация домашней страницы для планшетов */
 @media (max-width: 767px) {
   .home-page {
     padding: 12px 12px 88px;
+  }
+
+  .page-shell {
+    gap: 18px;
   }
 
   .services-section,
@@ -880,25 +905,100 @@ button {
     padding: 108px 18px 30px;
   }
 
+  .hero-assistant-card {
+    left: 18px;
+    right: 18px;
+    bottom: -38px;
+    width: auto;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .assistant-badge {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 12px;
+  }
+
+  .assistant-copy strong {
+    font-size: 15px;
+  }
+
+  .assistant-copy span {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .section-heading {
+    margin-top: 18px;
+    margin-bottom: 20px;
+  }
+
+  .section-heading span {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+  }
+
   .services-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .promo-header {
     align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 0;
   }
 
- 
+  .promotions-heading {
+    position: static;
+    transform: none;
+    align-self: center;
+  }
+
+  .promo-controls {
+    justify-content: center;
+  }
 
   .promo-carousel-shell {
     height: 450px;
-    margin-inline: -16px;
-    padding: 18px 30px 8px;
+    margin-inline: 0;
+    padding: 18px 0 8px;
   }
 
   .promo-card {
-    width: 88vw;
+    width: min(88vw, 360px);
     min-width: 0;
+  }
+
+  .promo-copy {
+    gap: 10px;
+    padding: 22px 18px;
+  }
+
+  .promo-copy p {
+    max-width: 100%;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .promo-link {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .promo-code-panel {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .promo-copy-button,
+  .promo-book-button {
+    min-height: 42px;
+    font-size: 13px;
   }
 
   .service-card,

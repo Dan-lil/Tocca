@@ -7,56 +7,56 @@ module.exports = {
       {
         userId: 2,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId2/nails13.jpg, /portfolio/userId2/nails3.jpg, /portfolio/userId2/nails4.jpg, /portfolio/userId2/nails5.jpg",
+        text: "Маникюр с чистой формой, плотным покрытием и деликатным дизайном",
       },
       {
         userId: 6,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId6/nails1.jpg, /portfolio/userId6/nails10.jpg, /portfolio/userId6/nails2.jpg, /portfolio/userId6/nails6.jpg",
+        text: "Маникюр на каждый день",
       },
       {
         userId: 7,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId7/nails11.jpg, /portfolio/userId7/nails12.jpg",
+        text: "Педикюрс акцентом на комфорт",
       },
       {
         userId: 8,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId8/cosmetology1.jpg, /portfolio/userId8/cosmetology10.jpg, /portfolio/userId8/cosmetology2.jpg, /portfolio/userId8/cosmetology7.jpg",
+        text: "Эстетические процедуры и уход",
       },
       {
         userId: 9,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId9/epilation1.jpg, /portfolio/userId9/epilation2.jpg, /portfolio/userId9/epilation3.jpg",
+        text: "Эпиляция с деликатным подходом",
       },
       {
         userId: 10,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId10/makeup2.jpg, /portfolio/userId10/makeup3.jpg, /portfolio/userId10/makeup5.jpg, /portfolio/userId10/makeup7.jpg",
+        text: "Макияж",
       },
       {
         userId: 11,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId11/hairstyle10.jpg, /portfolio/userId11/hairstyle11.jpg, /portfolio/userId11/hairstyle12.jpg, /portfolio/userId11/hairstyle9.jpg",
+        text: "Образ для важных событий",
       },
       {
         userId: 12,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId12/hairstyle3.jpg, /portfolio/userId12/hairstyle4.jpg, /portfolio/userId12/hairstyle5.jpg, /portfolio/userId12/hairstyle7.jpg",
+        text: "Образ для важных событий",
       },
       {
         userId: 13,
         portfolioImages:
-          "https://i.pinimg.com/1200x/f7/ba/f2/f7baf2f8b1ae4b65425adce7ba511b98.jpg, https://i.pinimg.com/736x/f1/1d/2d/f11d2de604fcd0e390107ceccb30e218.jpg, https://i.pinimg.com/1200x/e4/5c/04/e45c04b93a56ab88cb07bbb891c2c876.jpg, https://i.pinimg.com/736x/1d/c8/0f/1dc80f739240ec526ba327d8c7243371.jpg",
-        text: "Супер проф работа",
+          "/portfolio/userId13/cat-massage.jpg, /portfolio/userId13/massage1.jpg, /portfolio/userId13/massage3.jpg, /portfolio/userId13/massage4.jpg",
+        text: "Массаж",
       },
     ]);
   },

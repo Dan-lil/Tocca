@@ -20,7 +20,7 @@ import {
 } from "@/entities/master/api/masterThunk";
 import { updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
-import type { BookingToMaster, PortfolioItem } from "@/entities/master/model/index";
+import type { BookingToMaster } from "@/entities/master/model/index";
 import type { Sale } from "@/entities/sale/model";
 import type { Booking } from "@/entities/booking/model";
 import { getBookingsByClient } from "@/shared/api/bookingApi";
@@ -32,6 +32,7 @@ import {
   getMyMasterSocials,
 } from "@/shared/api/masterSocialApi";
 import { axiosInstance } from "@/shared/lib/axiosInstance";
+import { expandPortfolioItems, getMediaUrl } from "@/shared/lib/media";
 import type {
   BookingType,
   CategoryType,
@@ -116,22 +117,6 @@ const emptyMasterProfile: ProfileMaster = {
   rating: 0,
 };
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-function getMediaUrl(value?: string | null) {
-  if (!value) return "";
-
-  if (value.startsWith("http") || value.startsWith("data:") || value.startsWith("blob:")) {
-    return value;
-  }
-
-  if (value.startsWith("/")) {
-    return `${apiBaseUrl}${value}`;
-  }
-
-  return value;
-}
-
 function formatDateTime(value: string | number) {
   const date = new Date(value);
 
@@ -165,6 +150,7 @@ export default function ProfilePage() {
   const { salesForClient } = useSelector((state: RootState) => state.sale);
   const { stats, earnings, services, portfolio, upcomingBookings: masterBookings, loading } =
     useSelector((state: RootState) => state.master);
+  const expandedPortfolio = expandPortfolioItems(portfolio);
 
   const [showAddService, setShowAddService] = useState(false);
   const [showAddPhoto, setShowAddPhoto] = useState(false);
@@ -777,7 +763,7 @@ export default function ProfilePage() {
           <div className="stat-card">{stats?.totalBookings || 0} записей</div>
           <div className="stat-card">{stats?.rating || 0} рейтинг</div>
           <div className="stat-card">{services.length} услуг</div>
-          <div className="stat-card">{portfolio.length} фото</div>
+          <div className="stat-card">{expandedPortfolio.length} фото</div>
         </div>
 
         <section className="profile-section">
@@ -852,10 +838,10 @@ export default function ProfilePage() {
           </div>
 
           <div className="portfolio-grid">
-            {portfolio.length === 0 ? (
+            {expandedPortfolio.length === 0 ? (
               <p>Портфолио пусто</p>
             ) : (
-              portfolio.map((item: PortfolioItem) => (
+              expandedPortfolio.map((item) => (
                 <div key={item.id} className="portfolio-item">
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -864,7 +850,7 @@ export default function ProfilePage() {
                     <div className="portfolio-placeholder">Нет фото</div>
                   )}
                   <p>{item.title}</p>
-                  <button type="button" onClick={() => dispatch(deletePortfolioItemThunk(item.id))}>
+                  <button type="button" onClick={() => dispatch(deletePortfolioItemThunk(item.sourceId))}>
                     Удалить
                   </button>
                 </div>

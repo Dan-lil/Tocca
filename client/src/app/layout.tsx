@@ -6,8 +6,8 @@ import AppFooter from "@/shared/ui/AppFooter/AppFooter";
 import GlobalBookingModal from "@/shared/ui/GlobalBookingModal/GlobalBookingModal";
 
 export const metadata: Metadata = {
-  title: "Tossa",
-  description: "Tossa",
+  title: "Tocca",
+  description: "Tocca",
 };
 
 export default function RootLayout({

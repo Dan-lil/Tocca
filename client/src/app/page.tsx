@@ -4,92 +4,47 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { getMediaUrl } from "@/shared/lib/media";
 import "./page.css";
+import { mapSalesToPromotions } from "@/features/promotions/lib/promotionUtils";
 import type { PromotionItem } from "@/features/promotions/model/promotions.data";
 import { PromotionsSection } from "@/features/promotions/ui/PromotionsSection";
+import { getCategories } from "@/shared/api/categoryApi";
 import { getSales } from "@/shared/api/saleApi";
 import { getServices } from "@/shared/api/serviziApi";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
-import type { SaleType, ServiziType } from "@/shared/types";
+import type { CategoryType, ServiziType } from "@/shared/types";
 
-const SERVICE_IMAGE_FALLBACK = "/С„РѕРЅ3.jpeg";
-const PROMOTION_IMAGE_FALLBACK = "/Р°РєС†РёСЏ_РґРЅСЏ.jpeg";
+const SERVICE_IMAGE_FALLBACK = "/фон3.jpeg";
 
-// Собираем путь до картинки услуги из базы или берем локальную заглушку
 function getServiceImageSrc(service: ServiziType) {
-  return service.image || SERVICE_IMAGE_FALLBACK;
-}
-
-// Собираем полный путь до картинки акции на сервере
-function getPromotionImageSrc(imagePath?: string | null) {
-  if (!imagePath) return PROMOTION_IMAGE_FALLBACK;
-
-  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
-    return imagePath;
-  }
-
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
-  return `${apiBaseUrl}${imagePath}`;
-}
-
-// Преобразуем сущность Sale в формат карточки акции на клиенте
-function mapSalesToPromotions(
-  sales: SaleType[],
-  services: ServiziType[],
-): PromotionItem[] {
-  return sales.map((sale) => {
-    const relatedService =
-      services.find((service) => service.id === sale.serviziId) ?? null;
-    const serviceTitle = relatedService?.title ?? "Услуга";
-    const masterName =
-      relatedService?.masterName?.trim() || `Мастер #${sale.masterId}`;
-    const masterServices = services.filter(
-      (service) => service.masterId === sale.masterId && service.isActive,
-    );
-
-    return {
-      id: sale.id,
-      masterId: sale.masterId,
-      categoryId: relatedService?.categoryId ?? 0,
-      title: sale.comment || `Акция ${sale.discount}%`,
-      comment: sale.comment || `Скидка ${sale.discount}%`,
-      image: getPromotionImageSrc(sale.image),
-      expiresAt: new Date(sale.date).toLocaleDateString("ru-RU"),
-      masterName,
-      serviceTitle,
-      services:
-        masterServices.length > 0
-          ? masterServices
-          : relatedService
-            ? [relatedService]
-            : [],
-    };
-  });
+  return getMediaUrl(service.image) || SERVICE_IMAGE_FALLBACK;
 }
 
 export default function HomePage() {
+  const [categories, setCategories] = useState<CategoryType[]>([]);
   const [services, setServices] = useState<ServiziType[]>([]);
   const [promotions, setPromotions] = useState<PromotionItem[]>([]);
   const [servicesError, setServicesError] = useState<string | null>(null);
   const [promotionsError, setPromotionsError] = useState<string | null>(null);
 
-  // Все AI кнопки на странице вызывают один и тот же сценарий модалки
   const handleAiClick = useCallback(() => {
     dispatchBookingModalOpen();
   }, []);
 
   useEffect(() => {
-    // Для витрины на главной берем услуги и акции прямо из базы через серверный API
     const loadHomeData = async () => {
       try {
         setServicesError(null);
         setPromotionsError(null);
 
-        const [servicesData, salesData] = await Promise.all([
+        const [categoriesData, servicesData, salesData] = await Promise.all([
+          getCategories(),
           getServices(),
           getSales(),
         ]);
 
+        setCategories(categoriesData);
         setServices(servicesData);
         setPromotions(mapSalesToPromotions(salesData, servicesData));
       } catch (error) {
@@ -104,11 +59,30 @@ export default function HomePage() {
     void loadHomeData();
   }, []);
 
-  const visibleServices = useMemo(
-    // Показываем на главной только активные услуги из базы
-    () => services.filter((service) => service.isActive).slice(0, 5),
-    [services],
-  );
+  const visibleServices = useMemo(() => {
+    const activeServices = services.filter((service) => service.isActive);
+
+    return categories
+      .map((category) => {
+        const categoryServices = activeServices.filter(
+          (service) => service.categoryId === category.id,
+        );
+
+        if (categoryServices.length === 0) {
+          return null;
+        }
+
+        const primaryService =
+          categoryServices.find((service) => service.title.trim() === category.title.trim()) ??
+          categoryServices[0];
+
+        return {
+          ...primaryService,
+          title: category.title,
+        };
+      })
+      .filter((service): service is ServiziType => service !== null);
+  }, [categories, services]);
 
   return (
     <main className="home-page">
@@ -135,19 +109,24 @@ export default function HomePage() {
             {visibleServices.map((service, index) => (
               <article className="service-card" key={`service-${service.id}-${index}`}>
                 <div className="service-media">
-                  <Image src={getServiceImageSrc(service)} alt={service.title} fill />
+                  <Image
+                    src={getServiceImageSrc(service)}
+                    alt={service.title}
+                    fill
+                    unoptimized
+                  />
                 </div>
                 <div className="service-overlay">
                   <Link
                     className="glass-button glass-button--compact service-title-link"
-                    href={`/services/${service.categoryId}?serviceId=${service.id}`}
+                    href={`/services/${service.categoryId}`}
                   >
                     {service.title}
                   </Link>
                   <p>{service.description}</p>
                   <Link
                     className="card-button glass-button glass-button--compact"
-                    href={`/services/${service.categoryId}?serviceId=${service.id}`}
+                    href={`/services/${service.categoryId}`}
                   >
                     Записаться
                   </Link>
