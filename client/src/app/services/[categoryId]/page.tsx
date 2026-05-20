@@ -29,6 +29,12 @@ type ServiceDirectoryCard = {
   services: ServiziType[];
 };
 
+type SelectedPortfolioPreview = {
+  masterName: string;
+  title: string;
+  imageUrl: string;
+};
+
 const HERO_IMAGE_FALLBACK = "/фон3.jpeg";
 
 function buildServiceCards(services: ServiziType[], categoryTitle: string): ServiceDirectoryCard[] {
@@ -81,6 +87,7 @@ export default function CategoryPage() {
   const [masterProfilesById, setMasterProfilesById] = useState<Record<number, PublicMasterProfileType>>(
     {},
   );
+  const [selectedPortfolioPreview, setSelectedPortfolioPreview] = useState<SelectedPortfolioPreview | null>(null);
 
   useEffect(() => {
     if (!categoryId) return;
@@ -338,20 +345,26 @@ export default function CategoryPage() {
                     <div className="services-directory-portfolio">
                       <div className="services-directory-portfolio-head">
                         <strong>Портфолио мастера</strong>
-                        <span>{portfolioItems.length} фото</span>
                       </div>
                       <div className="services-directory-portfolio-grid">
                         {portfolioItems.map((item) => (
-                          <Link
+                          <button
                             className="services-directory-portfolio-item"
                             key={item.id}
-                            href={`/masters/${card.masterId}`}
+                            type="button"
+                            onClick={() =>
+                              setSelectedPortfolioPreview({
+                                masterName: card.masterName,
+                                title: item.title || `Работа мастера ${card.masterName}`,
+                                imageUrl: getMediaUrl(item.imageUrl),
+                              })
+                            }
                           >
                             <img
                               src={getMediaUrl(item.imageUrl)}
                               alt={item.title || `Работа мастера ${card.masterName}`}
                             />
-                          </Link>
+                          </button>
                         ))}
                       </div>
                     </div>
@@ -378,6 +391,40 @@ export default function CategoryPage() {
           </section>
         ) : null}
       </div>
+
+      {selectedPortfolioPreview ? (
+        <div
+          className="services-directory-preview-backdrop"
+          role="presentation"
+          onClick={() => setSelectedPortfolioPreview(null)}
+        >
+          <div
+            className="services-directory-preview-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={selectedPortfolioPreview.title}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              className="services-directory-preview-close"
+              type="button"
+              aria-label="Закрыть просмотр"
+              onClick={() => setSelectedPortfolioPreview(null)}
+            >
+              ×
+            </button>
+            <img
+              className="services-directory-preview-image"
+              src={selectedPortfolioPreview.imageUrl}
+              alt={selectedPortfolioPreview.title}
+            />
+            <div className="services-directory-preview-caption">
+              <strong>{selectedPortfolioPreview.masterName}</strong>
+              <span>{selectedPortfolioPreview.title}</span>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

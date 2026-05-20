@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { getMediaUrl } from "@/shared/lib/media";
 import "./page.css";
 import { mapSalesToPromotions } from "@/features/promotions/lib/promotionUtils";
 import type { PromotionItem } from "@/features/promotions/model/promotions.data";
@@ -16,7 +17,7 @@ import type { ServiziType } from "@/shared/types";
 const SERVICE_IMAGE_FALLBACK = "/фон3.jpeg";
 
 function getServiceImageSrc(service: ServiziType) {
-  return service.image || SERVICE_IMAGE_FALLBACK;
+  return getMediaUrl(service.image) || SERVICE_IMAGE_FALLBACK;
 }
 
 export default function HomePage() {
@@ -84,7 +85,12 @@ export default function HomePage() {
             {visibleServices.map((service, index) => (
               <article className="service-card" key={`service-${service.id}-${index}`}>
                 <div className="service-media">
-                  <Image src={getServiceImageSrc(service)} alt={service.title} fill />
+                  <Image
+                    src={getServiceImageSrc(service)}
+                    alt={service.title}
+                    fill
+                    unoptimized
+                  />
                 </div>
                 <div className="service-overlay">
                   <Link

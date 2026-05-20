@@ -438,6 +438,21 @@ button {
   color: rgba(255, 245, 242, 0.94);
 }
 
+.promo-master-link {
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.promo-master-link:hover,
+.promo-master-link:focus-visible {
+  color: #fffaf8;
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
 .promo-link {
   align-self: center;
   min-width: 240px;

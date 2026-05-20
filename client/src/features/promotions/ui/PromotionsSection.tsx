@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRef, useState } from "react";
 
 import type { PromotionItem } from "@/features/promotions/model/promotions.data";
@@ -81,14 +82,12 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
                       <span className="promo-date">
                         Акция действует до {promotion.expiresAt}
                       </span>
-                      <span className="promo-master">Мастер {promotion.masterName}</span>
-                      <div
-                        className="promotion-card-rating"
-                        aria-label={`Рейтинг ${promotion.masterRating.toFixed(1)}`}
+                      <Link
+                        className="promo-master promo-master-link"
+                        href={`/masters/${promotion.masterId}`}
                       >
-                        <span className="promotion-card-rating-star">★</span>
-                        <strong>{promotion.masterRating.toFixed(1)}</strong>
-                      </div>
+                        Мастер {promotion.masterName} ★ {promotion.masterRating.toFixed(1)}
+                      </Link>
                     </>
                   ) : null}
 

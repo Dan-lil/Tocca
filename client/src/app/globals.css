@@ -376,6 +376,24 @@ body {
     line-height: 1.45;
 }
 
+.site-header-offer-master {
+    margin: 0;
+    color: rgba(255, 244, 240, 0.94);
+    font-size: 14px;
+    line-height: 1.45;
+    text-decoration: none;
+    transition:
+        color 0.2s ease,
+        opacity 0.2s ease,
+        transform 0.2s ease;
+}
+
+.site-header-offer-master:hover,
+.site-header-offer-master:focus-visible {
+    color: rgba(255, 250, 246, 1);
+    transform: translateY(-1px);
+}
+
 .promotion-card-rating {
     display: inline-flex;
     align-items: center;

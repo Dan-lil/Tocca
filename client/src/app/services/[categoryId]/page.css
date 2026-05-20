@@ -242,8 +242,9 @@
 .services-directory-portfolio-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 12px;
+  text-align: center;
 }
 
 .services-directory-portfolio-head strong {
@@ -276,6 +277,8 @@
   background: rgba(255, 255, 255, 0.12);
   box-shadow: 0 16px 30px rgba(155, 86, 94, 0.16);
   aspect-ratio: 1 / 1;
+  padding: 0;
+  cursor: zoom-in;
 }
 
 .services-directory-portfolio-item img {
@@ -283,11 +286,82 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
+}
+
+.services-directory-preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(69, 38, 40, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.services-directory-preview-modal {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(100%, 980px);
+  max-height: min(92vh, 980px);
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+    rgba(118, 68, 72, 0.78);
+  box-shadow: 0 24px 70px rgba(37, 18, 20, 0.36);
+}
+
+.services-directory-preview-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fffaf8;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.services-directory-preview-image {
+  display: block;
+  width: 100%;
+  max-height: min(76vh, 760px);
+  object-fit: contain;
+  object-position: center;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.services-directory-preview-caption {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  text-align: center;
+  color: rgba(255, 247, 244, 0.96);
+}
+
+.services-directory-preview-caption strong {
+  font-size: 16px;
+}
+
+.services-directory-preview-caption span {
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .services-directory-card-button {
   min-height: 48px;
-  margin-top: 2px;
+  max-width: fit-content;
+  margin: 2px auto 0;
   padding: 12px 20px;
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 999px;

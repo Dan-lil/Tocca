@@ -205,15 +205,12 @@ export default function AppHeader() {
                     </div>
 
                     <div className="site-header-offer-copy">
-                      <span>Мастер {promotion.masterName}</span>
-                      <div
-                        className="promotion-card-rating"
-                        aria-label={`Рейтинг ${promotion.masterRating.toFixed(1)}`}
+                      <Link
+                        className="site-header-offer-master"
+                        href={`/masters/${promotion.masterId}`}
                       >
-                        <span className="promotion-card-rating-star">★</span>
-                        <strong>{promotion.masterRating.toFixed(1)}</strong>
-                      </div>
-
+                        Мастер {promotion.masterName} ★ {promotion.masterRating.toFixed(1)}
+                      </Link>
                       <PromotionRedeemActions
                         promotion={promotion}
                         triggerClassName="glass-button glass-button--compact promo-link"
