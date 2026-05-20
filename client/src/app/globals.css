@@ -291,14 +291,14 @@ body {
 }
 
 .site-header-promo-heading span {
-    padding: 8px 16px;
-    border: 1px solid rgba(255, 248, 244, 0.42);
-    border-radius: 999px;
-    color: rgba(255, 250, 246, 0.98);
-    font-size: clamp(24px, 4vw, 34px);
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: none;
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 248, 244, 0.42);
+  border-radius: 999px;
+  color: rgba(255, 250, 246, 0.98);
+  font-size: clamp(34px);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: none;
     background: linear-gradient(180deg, rgba(196, 135, 119, 0.62) 0%, rgba(143, 82, 77, 0.78) 100%);
     box-shadow: 0 12px 28px rgba(123, 75, 68, 0.18);
     text-shadow: 0 1px 6px rgba(88, 50, 47, 0.16);

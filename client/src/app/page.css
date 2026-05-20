@@ -54,7 +54,7 @@ button {
 
 .page-shell {
   display: grid;
-  gap: 60px;
+  gap: 30px;
   width: min(100%, 1397px);
   margin: 0 auto;
 }
@@ -92,7 +92,7 @@ button {
   flex-direction: column;
   justify-content: space-evenly;
   overflow: hidden;
-  min-height: 710px;
+  min-height: 600px;
   margin-top: -24px;
   padding: 58px 32px 50px;
   border-radius: 0 0 32px 32px;
@@ -455,18 +455,18 @@ button {
 
 .promo-link {
   align-self: center;
-  min-width: 240px;
-  min-height: 46px;
-  padding: 10px 16px;
+  min-width: 210px;
+  min-height: 42px;
+  padding: 8px 14px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(221, 176, 163, 0.72) 0%, rgba(196, 135, 119, 0.72) 100%);
   box-shadow: 0 14px 30px rgba(177, 107, 97, 0.18);
   backdrop-filter: blur(12px);
   color: #fff8f6;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .promo-link:hover,

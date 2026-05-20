@@ -35,8 +35,6 @@ type SelectedPortfolioPreview = {
   imageUrl: string;
 };
 
-const HERO_IMAGE_FALLBACK = "/фон3.jpeg";
-
 function buildServiceCards(services: ServiziType[], categoryTitle: string): ServiceDirectoryCard[] {
   const activeServices = services.filter((service) => service.isActive);
   const visibleServices = activeServices.length > 0 ? activeServices : services;
@@ -222,7 +220,7 @@ export default function CategoryPage() {
       <div className="services-directory-shell">
         <section
           className="services-directory-hero"
-          style={{ backgroundImage: `linear-gradient(135deg, rgba(255, 252, 251, 0.65), rgba(255, 240, 241, 0.28)), url("${HERO_IMAGE_FALLBACK}")` }}
+          style={{ backgroundImage: `linear-gradient(135deg, rgba(255, 252, 251, 0.65), rgba(255, 240, 241, 0.28)), url("/фон3.jpeg")` }}
         >
           <div className="services-directory-hero-copy glass-surface">
             <span className="services-directory-eyebrow">Категория услуг</span>

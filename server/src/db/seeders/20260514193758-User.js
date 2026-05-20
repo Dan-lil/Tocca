@@ -101,8 +101,8 @@ module.exports = {
           role: "master",
         },
         {
-          name: "Александра",
-          email: "aleksandra@mail.ru",
+          name: "Александр",
+          email: "aleksandr@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
           avatar: "/avatar/userId12.jpg",
