@@ -453,17 +453,22 @@ button {
   transform: translateY(-1px);
 }
 
-.promo-link {
-  align-self: center;
-  min-width: 210px;
-  min-height: 42px;
-  padding: 8px 14px;
+.promo-link,
+.promo-copy-button,
+.promo-book-button {
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 999px;
   background: linear-gradient(180deg, rgba(221, 176, 163, 0.72) 0%, rgba(196, 135, 119, 0.72) 100%);
   box-shadow: 0 14px 30px rgba(177, 107, 97, 0.18);
   backdrop-filter: blur(12px);
   color: #fff8f6;
+}
+
+.promo-link {
+  align-self: center;
+  min-width: 210px;
+  min-height: 42px;
+  padding: 8px 14px;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -520,20 +525,8 @@ button {
   width: 100%;
   min-height: 46px;
   padding: 10px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(221, 176, 163, 0.72) 0%, rgba(196, 135, 119, 0.72) 100%);
-  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.18);
-  backdrop-filter: blur(12px);
-  color: #fff8f6;
   font-size: 14px;
   font-weight: 700;
-}
-
-.promo-book-button {
-  background: linear-gradient(180deg, rgba(221, 176, 163, 0.72) 0%, rgba(196, 135, 119, 0.72) 100%);
-  box-shadow: 0 14px 30px rgba(177, 107, 97, 0.18);
-  backdrop-filter: blur(12px);
 }
 
 .promo-empty-state {
@@ -896,6 +889,10 @@ button {
     padding: 12px 12px 88px;
   }
 
+  .page-shell {
+    gap: 18px;
+  }
+
   .services-section,
   .promo-card,
   .booking-modal {
@@ -908,25 +905,100 @@ button {
     padding: 108px 18px 30px;
   }
 
+  .hero-assistant-card {
+    left: 18px;
+    right: 18px;
+    bottom: -38px;
+    width: auto;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .assistant-badge {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+    border-radius: 12px;
+  }
+
+  .assistant-copy strong {
+    font-size: 15px;
+  }
+
+  .assistant-copy span {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .section-heading {
+    margin-top: 18px;
+    margin-bottom: 20px;
+  }
+
+  .section-heading span {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+  }
+
   .services-grid {
     grid-template-columns: 1fr;
+    gap: 16px;
   }
 
   .promo-header {
     align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 0;
   }
 
- 
+  .promotions-heading {
+    position: static;
+    transform: none;
+    align-self: center;
+  }
+
+  .promo-controls {
+    justify-content: center;
+  }
 
   .promo-carousel-shell {
     height: 450px;
-    margin-inline: -16px;
-    padding: 18px 30px 8px;
+    margin-inline: 0;
+    padding: 18px 0 8px;
   }
 
   .promo-card {
-    width: 88vw;
+    width: min(88vw, 360px);
     min-width: 0;
+  }
+
+  .promo-copy {
+    gap: 10px;
+    padding: 22px 18px;
+  }
+
+  .promo-copy p {
+    max-width: 100%;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .promo-link {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .promo-code-panel {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .promo-copy-button,
+  .promo-book-button {
+    min-height: 42px;
+    font-size: 13px;
   }
 
   .service-card,

@@ -61,21 +61,28 @@
   font-size: clamp(30px, 3vw, 44px);
 }
 
-.services-directory-back {
-  align-self: flex-start;
-  border-color: rgba(255, 244, 242, 0.84);
-  background:
-    linear-gradient(135deg, rgba(179, 108, 99, 0.96), rgba(220, 151, 141, 0.88)),
-    rgba(255, 255, 255, 0.62);
+.services-directory-back,
+.services-directory-badge,
+.services-directory-card-button {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
   color: #fffaf8;
-  box-shadow: 0 18px 38px rgba(177, 107, 97, 0.32);
-  text-shadow: none;
   font: 700 14px/1 Arial, Helvetica, sans-serif;
   letter-spacing: 0.02em;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
     background 0.2s ease;
+}
+
+.services-directory-back {
+  align-self: flex-start;
+  border-color: rgba(255, 244, 242, 0.84);
+  background:
+    linear-gradient(135deg, rgba(179, 108, 99, 0.96), rgba(220, 151, 141, 0.88)),
+    rgba(255, 255, 255, 0.62);
+  box-shadow: 0 18px 38px rgba(177, 107, 97, 0.32);
+  text-shadow: none;
 }
 
 .services-directory-back:hover {
@@ -210,22 +217,13 @@
   justify-content: center;
   min-height: 42px;
   padding: 10px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 999px;
   background:
     linear-gradient(135deg, rgba(179, 108, 99, 0.92), rgba(220, 151, 141, 0.84)),
     rgba(255, 255, 255, 0.62);
   box-shadow: 0 16px 34px rgba(177, 107, 97, 0.28);
-  color: #fffaf8;
-  font: 700 14px/1 Arial, Helvetica, sans-serif;
-  letter-spacing: 0.02em;
   line-height: 1;
   cursor: pointer;
   text-decoration: none;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
 }
 
 .services-directory-badge:hover {
@@ -395,19 +393,10 @@
   max-width: fit-content;
   margin: 2px auto 0;
   padding: 12px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 999px;
-  color: #fffaf8;
-  font: 700 14px/1 Arial, Helvetica, sans-serif;
-  letter-spacing: 0.02em;
   background:
     linear-gradient(135deg, rgba(179, 108, 99, 0.96), rgba(220, 151, 141, 0.88)),
     rgba(255, 255, 255, 0.62);
   box-shadow: 0 18px 38px rgba(177, 107, 97, 0.32);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
 }
 
 .services-directory-card-button:hover {
@@ -481,6 +470,10 @@
     padding: 12px 12px 88px;
   }
 
+  .services-directory-shell {
+    gap: 16px;
+  }
+
   .services-directory-hero,
   .services-directory-hero-copy,
   .services-directory-state,
@@ -489,6 +482,7 @@
   }
 
   .services-directory-hero {
+    gap: 16px;
     padding: 18px;
   }
 
@@ -497,8 +491,27 @@
     padding: 18px;
   }
 
+  .services-directory-hero-copy {
+    width: 100%;
+  }
+
+  .services-directory-back {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .services-directory-card {
+    gap: 14px;
+  }
+
+  .services-directory-card-head {
+    gap: 14px;
+  }
+
   .services-directory-card-master {
     align-items: flex-start;
+    width: 100%;
+    gap: 12px;
   }
 
   .services-directory-card-avatar {
@@ -507,8 +520,41 @@
     flex-basis: 52px;
   }
 
+  .services-directory-card-head-copy {
+    width: 100%;
+  }
+
   .services-directory-card-head-copy strong {
     font-size: 19px;
+  }
+
+  .services-directory-card-head-copy span {
+    font-size: 14px;
+  }
+
+  .services-directory-card-rating {
+    align-self: flex-start;
+    padding: 9px 12px;
+  }
+
+  .services-directory-badges {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .services-directory-badge,
+  .services-directory-card-button {
+    width: 100%;
+    max-width: none;
+  }
+
+  .services-directory-badge {
+    min-height: 44px;
+  }
+
+  .services-directory-card-button {
+    min-height: 46px;
+    margin-top: 0;
   }
 
   .services-directory-portfolio-head,
@@ -519,5 +565,46 @@
 
   .services-directory-portfolio-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .services-reviews-dropdown,
+  .services-reviews-card {
+    padding: 14px;
+  }
+
+  .services-reviews-card-head {
+    gap: 6px;
+  }
+
+  .services-directory-preview-backdrop {
+    padding: 12px;
+  }
+
+  .services-directory-preview-modal {
+    width: 100%;
+    max-height: 88vh;
+    padding: 14px 14px 12px;
+    border-radius: 22px;
+  }
+
+  .services-directory-preview-close {
+    top: 10px;
+    right: 10px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .services-directory-preview-image {
+    max-height: 68vh;
+    border-radius: 16px;
+  }
+
+  .services-directory-preview-caption strong {
+    font-size: 15px;
+  }
+
+  .services-directory-preview-caption span {
+    font-size: 13px;
   }
 }

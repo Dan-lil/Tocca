@@ -5,6 +5,14 @@
     margin: 0;
 }
 
+a,
+button,
+input,
+textarea,
+select {
+    -webkit-tap-highlight-color: transparent;
+}
+
 /* Общие CSS-переменные для стеклянных поверхностей и кнопок по всему приложению */
 :root {
     --glass-border: 1px solid rgba(255, 255, 255, 0.28);
@@ -877,11 +885,11 @@ body {
     }
 
     .site-header {
-        padding-top: 12px;
+        padding-top: 10px;
     }
 
     .site-header::after {
-        height: 49px;
+        height: 38px;
     }
 
     .site-footer {
@@ -890,47 +898,91 @@ body {
 
     .site-header-shell {
         min-height: 0;
+        margin-bottom: 12px;
+    }
+
+    .site-header-content {
+        gap: 14px;
     }
 
     .site-header-promo-heading {
         padding-inline: 0;
     }
 
+    .site-header-promo-heading span {
+        width: 100%;
+        max-width: 320px;
+        padding: 8px 14px;
+        font-size: clamp(24px, 8vw, 34px);
+        line-height: 1.15;
+    }
+
     .site-header-promotions-grid {
-       
+        grid-template-columns: 1fr;
+        gap: 14px;
         justify-items: center;
     }
 
     .site-header-offer {
-        min-height: 280px;
+        min-height: 264px;
+        width: min(100%, 360px);
         max-width: 360px;
     }
 
     .site-header-offer-copy {
-        padding: 18px;
+        gap: 6px;
+        padding: 16px 16px 18px;
+    }
+
+    .site-header-offer-copy .promo-link,
+    .site-header-offer-copy .promo-code-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .site-header-actions {
+        width: 100%;
+        justify-content: center;
+        padding-top: 12px;
+        padding-right: 0;
+    }
+
+    .site-header-button {
+        width: 100%;
+        max-width: 320px;
     }
 
     .top-nav {
-        justify-content: flex-start;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
         width: 100%;
-        padding: 8px 10px;
+        max-width: 420px;
+        padding: 10px;
+        border-radius: 24px;
     }
 
     .top-nav-link {
+        width: 100%;
+        min-width: 0;
+        min-height: 42px;
+        padding: 8px 9px;
         font-size: 12px;
-        padding: 6px 8px;
     }
 
     .top-nav-dropdown {
         width: 100%;
-        justify-content: center;
+        justify-content: stretch;
     }
 
     .top-nav-dropdown-menu {
         left: 0;
         right: 0;
+        top: calc(100% + 10px);
         min-width: 0;
         transform: none;
+        padding: 10px;
+        border-radius: 20px;
     }
 
     .auth-page {
@@ -946,8 +998,5 @@ body {
     .form-container .form {
         gap: 22px;
     }
-
-
-
 }
 
