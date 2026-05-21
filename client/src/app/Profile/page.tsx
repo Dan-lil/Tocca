@@ -20,7 +20,7 @@ import {
   fetchMasterStatsThunk,
   fetchUpcomingBookingsForMasterThunk,
 } from "@/entities/master/api/masterThunk";
-import { updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
+import { deleteAccountThunk, updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
 import type { BookingToMaster } from "@/entities/master/model/index";
 import MasterGeoPicker from "@/features/master/ui/MasterGeoPicker/MasterGeoPicker";
@@ -163,6 +163,24 @@ function isClientBookingCanceled(booking: BookingType) {
   return status.includes("отмен") || status.includes("cancel");
 }
 
+function isClientBookingDone(booking: BookingType) {
+  const status = booking.status.toLowerCase();
+
+  return (
+    status.includes("заверш") ||
+    status.includes("done") ||
+    status.includes("completed")
+  );
+}
+
+function isClientBookingPast(booking: BookingType, now: number) {
+  return (
+    new Date(booking.endTime).getTime() < now ||
+    isClientBookingCanceled(booking) ||
+    isClientBookingDone(booking)
+  );
+}
+
 function sortBookingsDesc(bookings: BookingType[]) {
   return [...bookings].sort(
     (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
@@ -206,6 +224,7 @@ export default function ProfilePage() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClientProfileModalOpen, setIsClientProfileModalOpen] = useState(false);
   const [isProfileSaving, setIsProfileSaving] = useState(false);
+  const [isAccountDeleting, setIsAccountDeleting] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [masterProfile, setMasterProfile] = useState<ProfileMaster>(emptyMasterProfile);
   const [clientProfile, setClientProfile] = useState<ClientProfileForm>({
@@ -260,7 +279,8 @@ export default function ProfilePage() {
       .filter(
         (booking) =>
           new Date(booking.endTime).getTime() >= clientNowTimestamp &&
-          !isClientBookingCanceled(booking),
+          !isClientBookingCanceled(booking) &&
+          !isClientBookingDone(booking),
       )
       .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
   }, [clientBookings, clientNowTimestamp]);
@@ -320,9 +340,7 @@ export default function ProfilePage() {
         setClientPastBookings(
           bookingsData
             .filter(
-              (booking) =>
-                new Date(booking.endTime).getTime() < now ||
-                isClientBookingCanceled(booking),
+              (booking) => isClientBookingPast(booking, now),
             )
             .sort(
               (a, b) =>
@@ -364,9 +382,7 @@ export default function ProfilePage() {
         const nextBookings = currentBookings.filter(
           (booking) => booking.id !== updatedBooking.id,
         );
-        const isPastOrCanceled =
-          new Date(updatedBooking.endTime).getTime() < clientNowTimestamp ||
-          isClientBookingCanceled(updatedBooking);
+        const isPastOrCanceled = isClientBookingPast(updatedBooking, clientNowTimestamp);
 
         return isPastOrCanceled ? sortBookingsDesc([updatedBooking, ...nextBookings]) : nextBookings;
       });
@@ -588,6 +604,23 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleDeleteAccount() {
+    const confirmed = window.confirm(t("deleteAccountConfirm"));
+
+    if (!confirmed) return;
+
+    try {
+      setIsAccountDeleting(true);
+      setProfileError(null);
+      await dispatch(deleteAccountThunk()).unwrap();
+      router.push("/auth");
+    } catch (error) {
+      setProfileError(typeof error === "string" ? error : t("deleteAccountError"));
+    } finally {
+      setIsAccountDeleting(false);
+    }
+  }
+
   async function handleCreateReview(booking: BookingType) {
     const draft = reviewDrafts[booking.id] ?? { rating: 5, text: "" };
 
@@ -727,6 +760,14 @@ export default function ProfilePage() {
             </Link>
             <button type="button" onClick={handleOpenClientProfileModal}>
               {commonT("edit")}
+            </button>
+            <button
+              className="profile-danger-button"
+              type="button"
+              disabled={isAccountDeleting}
+              onClick={() => void handleDeleteAccount()}
+            >
+              {isAccountDeleting ? t("deletingAccount") : t("deleteAccount")}
             </button>
           </div>
 
@@ -1079,6 +1120,14 @@ export default function ProfilePage() {
           <button type="button" onClick={handleOpenMasterProfileModal}>
             {commonT("edit")}
           </button>
+          <button
+            className="profile-danger-button"
+            type="button"
+            disabled={isAccountDeleting}
+            onClick={() => void handleDeleteAccount()}
+          >
+            {isAccountDeleting ? t("deletingAccount") : t("deleteAccount")}
+          </button>
         </div>
 
         {profileError && <p className="profile-error">{profileError}</p>}
@@ -1125,11 +1174,26 @@ export default function ProfilePage() {
         </section>
 
         <div className="stats-grid">
-          <div className="stat-card">{earnings?.total || 0} {commonT("currencyRub")}</div>
-          <div className="stat-card">{t("totalBookings", { count: stats?.totalBookings || 0 })}</div>
-          <div className="stat-card">{t("ratingStat", { value: stats?.rating || 0 })}</div>
-          <div className="stat-card">{t("servicesStat", { count: services.length })}</div>
-          <div className="stat-card">{t("photosStat", { count: expandedPortfolio.length })}</div>
+          <div className="stat-card">
+            <span>{t("earningsStatTitle")}</span>
+            <strong>{earnings?.total || 0} {commonT("currencyRub")}</strong>
+          </div>
+          <div className="stat-card">
+            <span>{t("bookingsStatTitle")}</span>
+            <strong>{t("totalBookings", { count: stats?.totalBookings || 0 })}</strong>
+          </div>
+          <div className="stat-card">
+            <span>{t("ratingStatTitle")}</span>
+            <strong>{t("ratingStat", { value: stats?.rating || 0 })}</strong>
+          </div>
+          <div className="stat-card">
+            <span>{t("servicesStatTitle")}</span>
+            <strong>{t("servicesStat", { count: services.length })}</strong>
+          </div>
+          <div className="stat-card">
+            <span>{t("photosStatTitle")}</span>
+            <strong>{t("photosStat", { count: expandedPortfolio.length })}</strong>
+          </div>
         </div>
 
         <section className="profile-section">

@@ -242,6 +242,31 @@ class AuthController {
     }
   }
 
+  static async deleteAccount(req, res) {
+    const { user } = res.locals;
+
+    try {
+      const deleted = await AuthService.deleteAccount(user.id);
+
+      if (!deleted) {
+        return res
+          .status(404)
+          .json(formatResponse(404, "Пользователь не найден"));
+      }
+
+      return res
+        .status(200)
+        .clearCookie("refreshToken")
+        .json(formatResponse(200, "Аккаунт удален"));
+    } catch (error) {
+      console.log("======== AuthController.deleteAccount =========");
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, "Ошибка сервера при удалении аккаунта"));
+    }
+  }
+
   static async updateProfile(req, res) {
     const { user } = res.locals;
     const { name, email, phone, avatar, avatarFile } = req.body;

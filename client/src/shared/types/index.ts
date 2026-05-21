@@ -103,7 +103,7 @@ export type RecommendedMasterType = {
 };
 
 export type BookingModalPayload = {
-  categoryId: number;
+  categoryId?: number;
   categoryTitle: string;
   categoryTitleEn?: string | null;
   masterId: number;
@@ -149,6 +149,12 @@ export type CreateBookingPayload = {
 
 export type BookingType = CreateBookingPayload & {
   id: number;
+  client?: {
+    name?: string | null;
+    phone?: string | null;
+  };
+  service?: ServiziType | null;
+  totalPrice?: number;
   cancelReason?: string;
   createdAt?: string;
   updatedAt?: string;

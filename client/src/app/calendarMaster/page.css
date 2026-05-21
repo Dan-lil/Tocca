@@ -111,8 +111,10 @@
 
 .master-schedule-day {
   display: grid;
+  grid-template-rows: auto 1fr;
   gap: 12px;
   min-width: 0;
+  min-height: 238px;
   padding: 12px;
   background: #fff8f6;
   border: 1px solid #f0d3ca;
@@ -136,7 +138,9 @@
 
 .master-schedule-day__time {
   display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 8px;
+  min-height: 0;
 }
 
 .master-schedule-day__time label {
@@ -169,12 +173,26 @@
 .master-schedule-slots {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: 6px;
+  min-height: 72px;
+  max-height: 72px;
+  padding-right: 2px;
+  overflow-y: auto;
 }
 
 .master-schedule-slots button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 78px;
+  min-width: 78px;
   min-height: 30px;
   padding: 6px 8px;
+  overflow: visible;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: #6c4d2b;
   background: #f5d8ad;
   border: 1px solid #edc98f;
@@ -264,7 +282,9 @@
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+  height: 116px;
   min-height: 116px;
+  overflow: hidden;
   padding: 12px;
   color: #4e3c36;
   text-align: left;
@@ -293,8 +313,12 @@
 .master-calendar-day__meta,
 .master-calendar-day__slots {
   display: inline-flex;
+  max-width: 100%;
   padding: 5px 8px;
+  overflow: hidden;
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border-radius: 8px;
 }
 
@@ -557,6 +581,17 @@
   background: #f8e2dc;
 }
 
+.master-appointment-phone-empty {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: #92736a;
+  background: #fff;
+  border: 1px solid #f0d3ca;
+  border-radius: 8px;
+}
+
 .master-slots {
   display: flex;
   flex-wrap: wrap;
@@ -615,6 +650,7 @@
   }
 
   .master-calendar-day {
+    height: 92px;
     min-height: 92px;
     padding: 8px;
   }
