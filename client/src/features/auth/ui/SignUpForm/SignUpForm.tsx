@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 // import "./SignUpForm.css";
 import { UserValidator } from "@/entities/user/model/UserValidator";
 import FormInput from "@/shared/ui/FormInput/FormInput";
@@ -15,6 +16,7 @@ export default function SignUpForm() {
     role: "",
   };
   const router = useRouter();
+  const t = useTranslations();
 
   const dispatch = useAppDispatch();
 
@@ -56,7 +58,7 @@ export default function SignUpForm() {
           required
           onChange={inputHandler}
           value={signUpData.name}
-          label="Имя"
+          label={t("auth.name")}
         />
         <FormInput
           placeholder=" "
@@ -65,7 +67,7 @@ export default function SignUpForm() {
           required
           onChange={inputHandler}
           value={signUpData.email}
-          label="Почта"
+          label={t("auth.email")}
         />
         <FormInput
           placeholder=" "
@@ -74,7 +76,7 @@ export default function SignUpForm() {
           required
           onChange={inputHandler}
           value={signUpData.password}
-          label="Пароль"
+          label={t("auth.password")}
         />
         <FormInput
           placeholder=" "
@@ -83,7 +85,7 @@ export default function SignUpForm() {
           required
           onChange={inputHandler}
           value={signUpData.confirm}
-          label="Подтвердите пароль"
+          label={t("auth.confirmPassword")}
         />
         <select
           className="auth-select"
@@ -92,16 +94,16 @@ export default function SignUpForm() {
           onChange={inputHandler}
           required
         >
-          <option value="">Выберите роль</option>
-          <option value="client">Клиент</option>
-          <option value="master">Мастер</option>
+          <option value="">{t("auth.chooseRole")}</option>
+          <option value="client">{t("auth.client")}</option>
+          <option value="master">{t("auth.master")}</option>
         </select>
 
         <button
           className="form-action-button"
           disabled={signUpData.password !== signUpData.confirm}
         >
-          Зарегистрироваться
+          {t("auth.register")}
         </button>
       </form>
     </div>

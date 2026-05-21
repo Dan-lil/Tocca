@@ -4,12 +4,14 @@ import SignUpForm from "@/features/auth/ui/SignUpForm/SignUpForm";
 import SignInForm from "@/features/auth/ui/SignInForm/SignInForm";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useAppSelector, useAppDispatch } from "@/shared/hooks/useReduxHooks";
 import { setError } from "@/entities/user/slice/userSlice";
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const dispatch = useAppDispatch();
+  const t = useTranslations();
 
   const router = useRouter();
 
@@ -32,7 +34,7 @@ export default function AuthPage() {
         {error && <p className="auth-error">{error}</p>}
         {isSignUp ? (
           <div className="auth-switch">
-            <p>Уже есть учетная запись?</p>
+            <p>{t("auth.hasAccount")}</p>
             <button
               type="button"
               className="auth-link"
@@ -41,12 +43,12 @@ export default function AuthPage() {
                 dispatch(setError(null));
               }}
             >
-              Войти
+              {t("auth.login")}
             </button>
           </div>
         ) : (
           <div className="auth-switch">
-            <p>Еще нет учетной записи?</p>
+            <p>{t("auth.noAccount")}</p>
             <button
               type="button"
               className="auth-link"
@@ -55,7 +57,7 @@ export default function AuthPage() {
                 dispatch(setError(null));
               }}
             >
-              Создать
+              {t("auth.create")}
             </button>
           </div>
         )}

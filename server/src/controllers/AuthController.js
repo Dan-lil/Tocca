@@ -2,11 +2,11 @@ const AuthService = require("../services/AuthService");
 const formatResponse = require("../utils/formatResponse");
 const { User } = require("../db/models");
 const bcrypt = require("bcrypt");
-const crypto = require("crypto");
 const fs = require("fs/promises");
 const generateTokens = require("../utils/generateTokens");
 const path = require("path");
 const cookieConfig = require("../config/cookieConfig");
+const { createSafeImageFileName, getImageExtension } = require("../utils/uploadFileName");
 
 async function saveProfileAvatar(imageFile) {
   if (!imageFile?.data || !imageFile?.type) {
@@ -21,7 +21,7 @@ async function saveProfileAvatar(imageFile) {
 
   const mimeType = match[1];
   const base64Data = match[2];
-  const extension = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+  const extension = getImageExtension(mimeType);
   const allowedExtensions = new Set(["jpg", "png", "webp", "gif"]);
 
   if (!allowedExtensions.has(extension)) {
@@ -29,7 +29,7 @@ async function saveProfileAvatar(imageFile) {
   }
 
   const uploadsDir = path.join(__dirname, "../public/uploads/profile");
-  const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const fileName = createSafeImageFileName(mimeType);
   const filePath = path.join(uploadsDir, fileName);
 
   await fs.mkdir(uploadsDir, { recursive: true });

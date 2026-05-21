@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 // import "./SignInForm.css";
 import { UserValidator } from "@/entities/user/model/UserValidator";
 import FormInput from "@/shared/ui/FormInput/FormInput";
@@ -9,6 +10,7 @@ import { loginThunk } from "@/entities/user/api/UserApiThunk";
 export default function SignInForm() {
   const initialValue = { email: "", password: "" };
   const router = useRouter();
+  const t = useTranslations();
 
   const dispatch = useAppDispatch();
 
@@ -49,7 +51,7 @@ export default function SignInForm() {
           required
           onChange={inputHandler}
           value={signInData.email}
-          label="Почта"
+          label={t("auth.email")}
         />
         <FormInput
           placeholder=" "
@@ -58,9 +60,9 @@ export default function SignInForm() {
           required
           onChange={inputHandler}
           value={signInData.password}
-          label="Пароль"
+          label={t("auth.password")}
         />
-        <button className="form-action-button">Войти</button>
+        <button className="form-action-button">{t("auth.login")}</button>
       </form>
     </div>
   );

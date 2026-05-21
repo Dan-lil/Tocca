@@ -211,6 +211,33 @@ body {
     -webkit-backdrop-filter: var(--glass-backdrop);
 }
 
+.language-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 248, 246, 0.12);
+}
+
+.language-switcher-button {
+    min-width: 34px;
+    min-height: 26px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 999px;
+    color: rgba(255, 248, 246, 0.82);
+    background: transparent;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.language-switcher-button.is-active {
+    color: #7a4d4b;
+    background: rgba(255, 248, 246, 0.88);
+}
+
 /* Контейнер dropdown для услуг в header */
 .top-nav-dropdown {
     position: relative;

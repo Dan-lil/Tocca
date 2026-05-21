@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import type { PromotionItem } from "@/features/promotions/model/promotions.data";
 import {
@@ -47,7 +48,7 @@ export function PromotionRedeemActions({
   panelClassName,
   copyButtonClassName = "glass-button glass-button--compact",
   bookButtonClassName = "glass-button glass-button--compact",
-  triggerLabel = "Воспользоваться акцией",
+  triggerLabel,
   isOpen: controlledIsOpen,
   onToggle,
   keepTriggerVisible = true,
@@ -56,8 +57,10 @@ export function PromotionRedeemActions({
   const [uncontrolledIsOpen, setUncontrolledIsOpen] = useState(false);
   const [promotionCode, setPromotionCode] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const t = useTranslations("promotions");
   const isControlled = typeof controlledIsOpen === "boolean";
   const isOpen = isControlled ? controlledIsOpen : uncontrolledIsOpen;
+  const resolvedTriggerLabel = triggerLabel ?? t("usePromotion");
 
   const setIsOpen = (nextOpen: boolean) => {
     if (!isControlled) {
@@ -151,17 +154,14 @@ export function PromotionRedeemActions({
           type="button"
           onClick={handlePromoReveal}
         >
-          {triggerLabel}
+          {resolvedTriggerLabel}
         </button>
       ) : null}
 
       {isOpen ? (
         <div className={joinClassNames(styles.panel, panelClassName)} ref={panelRef}>
           <strong className={styles.code}>{promotionCode}</strong>
-          <p className={styles.description}>
-            Скопируйте код и добавьте его в комментарий при записи на
-            услугу к мастеру
-          </p>
+          <p className={styles.description}>{t("copyCodeHint")}</p>
 
           <div className={styles.actions}>
             <button
@@ -169,7 +169,7 @@ export function PromotionRedeemActions({
               type="button"
               onClick={() => void handlePromoCopy()}
             >
-              {isCopied ? "Код скопирован" : "Скопировать код"}
+              {isCopied ? t("codeCopied") : t("copyCode")}
             </button>
 
             <button
@@ -177,7 +177,7 @@ export function PromotionRedeemActions({
               type="button"
               onClick={handleBookingOpen}
             >
-              Записаться
+              {t("book")}
             </button>
           </div>
         </div>

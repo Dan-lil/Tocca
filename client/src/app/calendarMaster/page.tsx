@@ -1,8 +1,9 @@
 "use client";
 
 import "./page.css";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
 import { createBooking, getBookingsByMaster, updateBooking } from "@/shared/api/bookingApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
@@ -40,7 +41,6 @@ type ScheduleDraft = {
   newSlotTime: string;
 };
 
-const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const scheduleDays = [
   { dayOdWeek: 1, label: "Понедельник" },
   { dayOdWeek: 2, label: "Вторник" },
@@ -51,25 +51,11 @@ const scheduleDays = [
   { dayOdWeek: 0, label: "Воскресенье" },
 ];
 
-const statusText: Record<AppointmentStatus, string> = {
-  confirmed: "Подтверждена",
-  pending: "Ждет ответа",
-  done: "Завершена",
-  canceled: "Отменена",
-};
-
 const nextStatus: Record<AppointmentStatus, AppointmentStatus> = {
   pending: "confirmed",
   confirmed: "done",
   done: "pending",
   canceled: "pending",
-};
-
-const nextStatusButtonText: Record<AppointmentStatus, string> = {
-  pending: "Подтвердить",
-  confirmed: "Завершить",
-  done: "Вернуть в ожидание",
-  canceled: "Вернуть в ожидание",
 };
 
 const backendStatusByUiStatus: Record<AppointmentStatus, string> = {
@@ -191,26 +177,35 @@ function getAppointmentStatus(status: string): AppointmentStatus {
   return "pending";
 }
 
-function getDurationLabel(booking: BookingType, service?: ServiziType) {
+function getDurationLabel(booking: BookingType, service: ServiziType | undefined, minutesLabel: string) {
   if (service?.duration) {
-    return `${service.duration} мин`;
+    return `${service.duration} ${minutesLabel}`;
   }
 
   const diffMs = new Date(booking.endTime).getTime() - new Date(booking.startTime).getTime();
   const diffMinutes = Math.max(0, Math.round(diffMs / 60000));
 
-  return diffMinutes > 0 ? `${diffMinutes} мин` : "—";
+  return diffMinutes > 0 ? `${diffMinutes} ${minutesLabel}` : "—";
 }
 
-function getPriceLabel(service?: ServiziType) {
-  return service ? `${service.price.toLocaleString("ru-RU")} ₽` : "—";
+function getPriceLabel(service: ServiziType | undefined, locale: string) {
+  return service ? `${service.price.toLocaleString(locale)} ₽` : "—";
 }
 
 function isBookingCanceled(booking: BookingType) {
   return getAppointmentStatus(booking.status) === "canceled";
 }
 
-function buildAppointmentsByDate(bookings: BookingType[], services: ServiziType[]) {
+function buildAppointmentsByDate(
+  bookings: BookingType[],
+  services: ServiziType[],
+  labels: {
+    clientNumber: (id: number) => string;
+    serviceNumber: (id: number) => string;
+    minutes: string;
+  },
+  locale: string,
+) {
   const servicesById = new Map(services.map((service) => [service.id, service]));
 
   return bookings.reduce<Record<string, Appointment[]>>((result, booking) => {
@@ -220,15 +215,15 @@ function buildAppointmentsByDate(bookings: BookingType[], services: ServiziType[
     const appointment: Appointment = {
       id: booking.id,
       booking,
-      clientName: `Клиент #${booking.clientId}`,
+      clientName: labels.clientNumber(booking.clientId),
       clientComment: booking.clientComment,
-      service: service?.title ?? `Услуга #${booking.serviziId}`,
-      time: startDate.toLocaleTimeString("ru-RU", {
+      service: service?.title ?? labels.serviceNumber(booking.serviziId),
+      time: startDate.toLocaleTimeString(locale, {
         hour: "2-digit",
         minute: "2-digit",
       }),
-      duration: getDurationLabel(booking, service),
-      price: getPriceLabel(service),
+      duration: getDurationLabel(booking, service, labels.minutes),
+      price: getPriceLabel(service, locale),
       status: getAppointmentStatus(booking.status),
     };
 
@@ -321,6 +316,9 @@ function buildSlotsForDate(
 }
 
 export default function CalendarMasterPage() {
+  const t = useTranslations("masterCalendar");
+  const commonT = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { user, isInitialized } = useAppSelector((state) => state.user);
@@ -354,13 +352,37 @@ export default function CalendarMasterPage() {
     () => getMonthDays(selectedDate.getFullYear(), selectedDate.getMonth()),
     [selectedDate],
   );
-  const monthTitle = selectedDate.toLocaleDateString("ru-RU", {
+  const calendarWeekDays = t.raw("weekDays") as string[];
+  const scheduleDayLabels = t.raw("scheduleDays") as string[];
+  const statusLabels: Record<AppointmentStatus, string> = {
+    confirmed: t("statusConfirmed"),
+    pending: t("statusPending"),
+    done: t("statusDone"),
+    canceled: t("statusCanceled"),
+  };
+  const nextStatusLabels: Record<AppointmentStatus, string> = {
+    pending: t("nextPending"),
+    confirmed: t("nextConfirmed"),
+    done: t("nextDone"),
+    canceled: t("nextCanceled"),
+  };
+  const monthTitle = selectedDate.toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
   });
   const appointmentsByDate = useMemo(
-    () => buildAppointmentsByDate(bookings, services),
-    [bookings, services],
+    () =>
+      buildAppointmentsByDate(
+        bookings,
+        services,
+        {
+          clientNumber: (id) => t("clientNumber", { id }),
+          serviceNumber: (id) => t("serviceNumber", { id }),
+          minutes: commonT("minutes"),
+        },
+        locale,
+      ),
+    [bookings, commonT, locale, services, t],
   );
   const freeSlotsByDate = useMemo(
     () => buildFreeSlotsByDate(monthDays, scheduleDrafts, bookings),
@@ -387,7 +409,7 @@ export default function CalendarMasterPage() {
     : manualBookingSlots[0] ?? "";
   const scheduleAccessError =
     isInitialized && !masterId
-      ? "Войдите как мастер, чтобы загрузить календарь и сохранить расписание."
+      ? t("accessError")
       : null;
 
   useEffect(() => {
@@ -396,7 +418,7 @@ export default function CalendarMasterPage() {
     }
   }, [dispatch, isInitialized]);
 
-  async function loadMasterCalendarData(currentMasterId: number) {
+  const loadMasterCalendarData = useCallback(async (currentMasterId: number) => {
     try {
       setIsPageLoading(true);
       setPageError(null);
@@ -426,18 +448,18 @@ export default function CalendarMasterPage() {
         setScheduleDrafts(getInitialScheduleDrafts(shadulesResult.value));
       } else {
         setScheduleDrafts(getInitialScheduleDrafts());
-        setScheduleError("Расписание пока не найдено, можно сохранить новое.");
+        setScheduleError(t("scheduleMissing"));
       }
     } finally {
       setIsPageLoading(false);
     }
-  }
+  }, [t]);
 
   useEffect(() => {
     if (!isInitialized || !masterId) return;
 
     void loadMasterCalendarData(masterId);
-  }, [isInitialized, masterId]);
+  }, [isInitialized, loadMasterCalendarData, masterId]);
 
   function changeMonth(direction: number) {
     setSelectedDate(
@@ -469,7 +491,7 @@ export default function CalendarMasterPage() {
       setPageError(null);
       await openBookingChat(router, booking);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Не удалось открыть чат.");
+      setPageError(error instanceof Error ? error.message : t("chatError"));
     } finally {
       setOpeningChatBookingId(null);
     }
@@ -479,14 +501,14 @@ export default function CalendarMasterPage() {
     event.preventDefault();
 
     if (!masterId || !selectedManualService || !selectedManualTime) {
-      setManualBookingError("Выберите услугу и свободное время.");
+      setManualBookingError(t("chooseServiceAndSlot"));
       return;
     }
 
     const clientId = Number(manualForm.clientId);
 
     if (!Number.isInteger(clientId) || clientId <= 0) {
-      setManualBookingError("Укажите корректный ID клиента.");
+      setManualBookingError(t("invalidClientId"));
       return;
     }
 
@@ -521,7 +543,7 @@ export default function CalendarMasterPage() {
       setIsAddFormOpen(false);
     } catch (error) {
       setManualBookingError(
-        error instanceof Error ? error.message : "Не удалось создать запись.",
+        error instanceof Error ? error.message : t("createBookingError"),
       );
     } finally {
       setIsManualBookingSaving(false);
@@ -571,7 +593,7 @@ export default function CalendarMasterPage() {
 
   async function handleSaveSchedule() {
     if (!masterId) {
-      setScheduleError("Войдите как мастер, чтобы сохранить расписание.");
+      setScheduleError(t("saveScheduleAuth"));
       return;
     }
 
@@ -580,7 +602,7 @@ export default function CalendarMasterPage() {
     );
 
     if (emptyWorkingDay) {
-      setScheduleError(`Добавьте хотя бы один слот на ${emptyWorkingDay.label} или выключите день.`);
+      setScheduleError(t("emptyWorkingDay", { day: emptyWorkingDay.label }));
       return;
     }
 
@@ -629,9 +651,11 @@ export default function CalendarMasterPage() {
           });
         } catch (error) {
           throw new Error(
-            `Не удалось сохранить ${slot.label}, ${slot.time}: ${
-              error instanceof Error ? error.message : "ошибка сервера"
-            }`,
+            t("saveSlotError", {
+              day: slot.label,
+              time: slot.time,
+              message: error instanceof Error ? error.message : t("serverError"),
+            }),
           );
         }
       }
@@ -650,10 +674,10 @@ export default function CalendarMasterPage() {
 
       const reloadedShadules = await getShadulesByMaster(masterId);
       setScheduleDrafts(getInitialScheduleDrafts(reloadedShadules));
-      setScheduleMessage("Расписание сохранено.");
+      setScheduleMessage(t("scheduleSaved"));
     } catch (error) {
       setScheduleError(
-        error instanceof Error ? error.message : "Не удалось сохранить расписание.",
+        error instanceof Error ? error.message : t("saveScheduleError"),
       );
     } finally {
       setIsScheduleSaving(false);
@@ -664,8 +688,8 @@ export default function CalendarMasterPage() {
     <main className="master-calendar-page">
       <section className="master-calendar-hero">
         <div>
-          <p className="master-calendar-kicker">Календарь мастера</p>
-          <h1>Записи, свободные окна и клиенты на день</h1>
+          <p className="master-calendar-kicker">{t("kicker")}</p>
+          <h1>{t("title")}</h1>
         </div>
         <div className="master-calendar-actions">
           <button
@@ -681,7 +705,7 @@ export default function CalendarMasterPage() {
               }));
             }}
           >
-            Добавить запись
+            {t("addBooking")}
           </button>
         </div>
       </section>
@@ -695,8 +719,8 @@ export default function CalendarMasterPage() {
       <section className="master-schedule-panel">
         <div className="master-schedule-panel__header">
           <div>
-            <p className="master-calendar-kicker">Рабочая неделя</p>
-            <h2>Расписание мастера</h2>
+            <p className="master-calendar-kicker">{t("workWeek")}</p>
+            <h2>{t("scheduleTitle")}</h2>
           </div>
           <button
             className="master-calendar-primary"
@@ -704,7 +728,7 @@ export default function CalendarMasterPage() {
             disabled={isScheduleSaving || isPageLoading || !masterId}
             onClick={() => void handleSaveSchedule()}
           >
-            {isScheduleSaving ? "Сохранение..." : "Сохранить график"}
+            {isScheduleSaving ? commonT("saving") : t("saveSchedule")}
           </button>
         </div>
 
@@ -731,12 +755,12 @@ export default function CalendarMasterPage() {
                     })
                   }
                 />
-                <span>{draft.label}</span>
+                <span>{scheduleDayLabels[index] ?? draft.label}</span>
               </label>
 
               <div className="master-schedule-day__time">
                 <label>
-                  <span>Новый слот</span>
+                  <span>{t("newSlot")}</span>
                   <input
                     type="time"
                     value={draft.newSlotTime}
@@ -753,7 +777,7 @@ export default function CalendarMasterPage() {
                   disabled={!draft.isWorkingDay}
                   onClick={() => addScheduleSlot(draft.dayOdWeek)}
                 >
-                  Добавить слот
+                  {t("addSlot")}
                 </button>
                 <div className="master-schedule-slots">
                   {draft.slots.length > 0 ? (
@@ -763,13 +787,13 @@ export default function CalendarMasterPage() {
                         key={`${draft.dayOdWeek}-${slot.time}`}
                         disabled={!draft.isWorkingDay}
                         onClick={() => removeScheduleSlot(draft.dayOdWeek, slot.time)}
-                        aria-label={`Удалить слот ${slot.time}`}
+                        aria-label={t("deleteSlot", { time: slot.time })}
                       >
                         {slot.time} x
                       </button>
                     ))
                   ) : (
-                    <p>Слоты не добавлены</p>
+                    <p>{t("noSlotsAdded")}</p>
                   )}
                 </div>
               </div>
@@ -781,17 +805,17 @@ export default function CalendarMasterPage() {
       <section className="master-calendar-layout">
         <div className="master-calendar-panel">
           <div className="master-calendar-toolbar">
-            <button type="button" onClick={() => changeMonth(-1)} aria-label="Предыдущий месяц">
+            <button type="button" onClick={() => changeMonth(-1)} aria-label={t("prevMonth")}>
               ‹
             </button>
             <h2>{monthTitle}</h2>
-            <button type="button" onClick={() => changeMonth(1)} aria-label="Следующий месяц">
+            <button type="button" onClick={() => changeMonth(1)} aria-label={t("nextMonth")}>
               ›
             </button>
           </div>
 
           <div className="master-calendar-weekdays">
-            {weekDays.map((day) => (
+            {calendarWeekDays.map((day) => (
               <span key={`weekday-${day}`}>{day}</span>
             ))}
           </div>
@@ -823,10 +847,10 @@ export default function CalendarMasterPage() {
                 >
                   <span className="master-calendar-day__number">{date.getDate()}</span>
                   <span className="master-calendar-day__meta">
-                    {dayAppointments > 0 ? `${dayAppointments} записи` : "нет записей"}
+                    {dayAppointments > 0 ? t("appointmentsCount", { count: dayAppointments }) : t("noAppointmentsShort")}
                   </span>
                   {dayFreeSlots > 0 && (
-                    <span className="master-calendar-day__slots">{dayFreeSlots} окон</span>
+                    <span className="master-calendar-day__slots">{t("freeSlotsCount", { count: dayFreeSlots })}</span>
                   )}
                 </button>
               );
@@ -837,20 +861,20 @@ export default function CalendarMasterPage() {
         <aside className="master-day-panel">
           <div className="master-day-panel__header">
             <div>
-              <p>Выбранный день</p>
+              <p>{t("selectedDay")}</p>
               <h2>
-                {selectedDate.toLocaleDateString("ru-RU", {
+                {selectedDate.toLocaleDateString(locale, {
                   day: "numeric",
                   month: "long",
                 })}
               </h2>
             </div>
-            <span>{selectedAppointments.length} записи</span>
+            <span>{t("appointmentsCount", { count: selectedAppointments.length })}</span>
           </div>
 
           {isAddFormOpen ? (
             <form className="master-add-form" onSubmit={handleCreateManualBooking}>
-              <h3>Добавить запись</h3>
+              <h3>{t("addBooking")}</h3>
 
               {manualBookingError ? (
                 <p className="master-form-error">{manualBookingError}</p>
@@ -858,13 +882,12 @@ export default function CalendarMasterPage() {
 
               {services.length === 0 ? (
                 <p className="master-empty-state">
-                  У мастера пока нет услуг. Сначала добавьте услуги в профиле мастера,
-                  потом можно будет создать запись вручную.
+                  {t("noMasterServices")}
                 </p>
               ) : null}
 
               <label>
-                <span>ID клиента</span>
+                <span>{t("clientId")}</span>
                 <input
                   value={manualForm.clientId}
                   onChange={(event) =>
@@ -873,13 +896,13 @@ export default function CalendarMasterPage() {
                       clientId: event.target.value,
                     }))
                   }
-                  placeholder="Например, 3"
+                  placeholder={t("clientIdPlaceholder")}
                   inputMode="numeric"
                 />
               </label>
 
               <label>
-                <span>Услуга</span>
+                <span>{t("service")}</span>
                 <select
                   value={selectedManualService?.id ?? ""}
                   onChange={(event) =>
@@ -894,19 +917,19 @@ export default function CalendarMasterPage() {
                   {services.length > 0 ? (
                     services.map((service) => (
                       <option key={service.id} value={service.id}>
-                        {service.title} · {service.duration} мин ·{" "}
-                        {service.price.toLocaleString("ru-RU")} ₽
+                        {service.title} · {service.duration} {commonT("minutes")} ·{" "}
+                        {service.price.toLocaleString(locale)} ₽
                       </option>
                     ))
                   ) : (
-                    <option value="">Нет услуг</option>
+                    <option value="">{t("noServices")}</option>
                   )}
                 </select>
               </label>
 
               <div className="master-add-form__row">
                 <label>
-                  <span>Временной слот</span>
+                  <span>{t("timeSlot")}</span>
                   <select
                     value={selectedManualTime}
                     onChange={(event) =>
@@ -924,13 +947,13 @@ export default function CalendarMasterPage() {
                         </option>
                       ))
                     ) : (
-                      <option value="">Нет свободных окон</option>
+                      <option value="">{t("noFreeSlots")}</option>
                     )}
                   </select>
                 </label>
 
                 <label>
-                  <span>Статус</span>
+                  <span>{t("status")}</span>
                   <select
                     value={manualForm.status}
                     onChange={(event) =>
@@ -940,14 +963,14 @@ export default function CalendarMasterPage() {
                       }))
                     }
                   >
-                    <option value="Ожидает подтверждения">Ожидает подтверждения</option>
-                    <option value="Подтверждено">Подтверждено</option>
+                    <option value="Ожидает подтверждения">{t("pendingBackend")}</option>
+                    <option value="Подтверждено">{t("confirmedBackend")}</option>
                   </select>
                 </label>
               </div>
 
               <label>
-                <span>Комментарий</span>
+                <span>{t("comment")}</span>
                 <textarea
                   value={manualForm.clientComment}
                   onChange={(event) =>
@@ -956,7 +979,7 @@ export default function CalendarMasterPage() {
                       clientComment: event.target.value,
                     }))
                   }
-                  placeholder="Пожелания клиента или заметка мастера"
+                  placeholder={t("commentPlaceholder")}
                   rows={3}
                 />
               </label>
@@ -971,17 +994,17 @@ export default function CalendarMasterPage() {
                     !manualForm.clientId
                   }
                 >
-                  {isManualBookingSaving ? "Сохранение..." : "Сохранить запись"}
+                  {isManualBookingSaving ? commonT("saving") : t("saveBooking")}
                 </button>
                 <button type="button" onClick={() => setIsAddFormOpen(false)}>
-                  Отмена
+                  {commonT("cancel")}
                 </button>
               </div>
             </form>
           ) : null}
 
           <div className="master-day-section">
-            <h3>Записи клиентов</h3>
+            <h3>{t("clientBookings")}</h3>
             <div className="master-appointments">
               {selectedAppointments.length > 0 ? (
                 selectedAppointments.map((appointment, index) => (
@@ -995,20 +1018,20 @@ export default function CalendarMasterPage() {
                         <p>{appointment.service}</p>
                       </div>
                       <span className={`master-status master-status--${appointment.status}`}>
-                        {statusText[appointment.status]}
+                        {statusLabels[appointment.status]}
                       </span>
                     </div>
                     <dl>
                       <div>
-                        <dt>Время</dt>
+                        <dt>{t("time")}</dt>
                         <dd>{appointment.time}</dd>
                       </div>
                       <div>
-                        <dt>Длительность</dt>
+                        <dt>{t("duration")}</dt>
                         <dd>{appointment.duration}</dd>
                       </div>
                       <div>
-                        <dt>Стоимость</dt>
+                        <dt>{t("price")}</dt>
                         <dd>{appointment.price}</dd>
                       </div>
                     </dl>
@@ -1024,8 +1047,8 @@ export default function CalendarMasterPage() {
                         onClick={() => void handleOpenAppointmentChat(appointment.booking)}
                       >
                         {openingChatBookingId === appointment.booking.id
-                          ? "Открываю..."
-                          : "Открыть чат"}
+                          ? commonT("opening")
+                          : t("openChat")}
                       </button>
                       <button
                         className="master-appointment-actions__status"
@@ -1034,23 +1057,23 @@ export default function CalendarMasterPage() {
                         onClick={() => void handleChangeAppointmentStatus(appointment)}
                       >
                         {isStatusSaving === appointment.id
-                          ? "Сохранение..."
-                          : nextStatusButtonText[appointment.status]}
+                          ? commonT("saving")
+                          : nextStatusLabels[appointment.status]}
                       </button>
                       <button type="button" disabled>
-                        Телефон не указан
+                        {t("phoneMissing")}
                       </button>
                     </div>
                   </article>
                 ))
               ) : (
-                <p className="master-empty-state">На этот день записей пока нет.</p>
+                <p className="master-empty-state">{t("noBookingsToday")}</p>
               )}
             </div>
           </div>
 
           <div className="master-day-section">
-            <h3>Свободные окна</h3>
+            <h3>{t("freeSlots")}</h3>
             <div className="master-slots">
               {selectedFreeSlots.length > 0 ? (
                 selectedFreeSlots.map((slot, index) => (
@@ -1059,7 +1082,7 @@ export default function CalendarMasterPage() {
                   </button>
                 ))
               ) : (
-                <p className="master-empty-state">Свободных окон нет.</p>
+                <p className="master-empty-state">{t("noFreeSlotsToday")}</p>
               )}
             </div>
           </div>
