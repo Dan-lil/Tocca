@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
@@ -485,10 +486,13 @@ export default function CategoryPage() {
                     <div className="services-directory-card-master">
                       <div className="services-directory-card-avatar">
                         {avatarUrl ? (
-                          <img
+                          <Image
                             className="services-directory-card-avatar-image"
                             src={avatarUrl}
                             alt={t("avatarAlt", { name: masterDisplayName })}
+                            width={58}
+                            height={58}
+                            unoptimized
                           />
                         ) : (
                           <span>{masterInitial}</span>
@@ -594,9 +598,12 @@ export default function CategoryPage() {
                               })
                             }
                           >
-                            <img
+                            <Image
                               src={getMediaUrl(item.imageUrl)}
                               alt={item.title || t("workTitle", { name: masterDisplayName })}
+                              width={220}
+                              height={220}
+                              unoptimized
                             />
                           </button>
                         ))}
@@ -648,10 +655,13 @@ export default function CategoryPage() {
             >
               ×
             </button>
-            <img
+            <Image
               className="services-directory-preview-image"
               src={selectedPortfolioPreview.imageUrl}
               alt={selectedPortfolioPreview.title}
+              width={980}
+              height={760}
+              unoptimized
             />
             <div className="services-directory-preview-caption">
               <strong>{selectedPortfolioPreview.masterName}</strong>
