@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { PromotionItem } from "@/features/promotions/model/promotions.data";
@@ -62,13 +62,13 @@ export function PromotionRedeemActions({
   const isOpen = isControlled ? controlledIsOpen : uncontrolledIsOpen;
   const resolvedTriggerLabel = triggerLabel ?? t("usePromotion");
 
-  const setIsOpen = (nextOpen: boolean) => {
+  const setIsOpen = useCallback((nextOpen: boolean) => {
     if (!isControlled) {
       setUncontrolledIsOpen(nextOpen);
     }
 
     onToggle?.(nextOpen);
-  };
+  }, [isControlled, onToggle]);
 
   // После закрытия модалки сбрасываем раскрытую акцию
   useEffect(() => {
@@ -82,7 +82,7 @@ export function PromotionRedeemActions({
     return () => {
       window.removeEventListener(BOOKING_MODAL_CLOSE_EVENT, handleBookingModalClose);
     };
-  }, []);
+  }, [setIsOpen]);
 
   // Закрываем панель промокода по клику вне блока и по Escape
   useEffect(() => {
@@ -112,7 +112,7 @@ export function PromotionRedeemActions({
       document.removeEventListener("mousedown", handlePointerDown);
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
   // При первом раскрытии генерируем код и сохраняем его в состоянии
   const handlePromoReveal = () => {

@@ -2,6 +2,7 @@
 
 import "./page.css";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { io } from "socket.io-client";
@@ -726,6 +727,9 @@ export default function CalendarMasterPage() {
           <h1>{t("title")}</h1>
         </div>
         <div className="master-calendar-actions">
+          <Link className="master-calendar-secondary master-calendar-link" href="/Profile">
+            {t("backToProfile")}
+          </Link>
           <button
             className="master-calendar-secondary"
             type="button"
