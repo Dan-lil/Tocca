@@ -1,6 +1,7 @@
 "use client";
 
 import "./page.css";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,6 @@ import {
 import { deleteAccountThunk, updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
 import type { BookingToMaster } from "@/entities/master/model/index";
-import MasterGeoPicker from "@/features/master/ui/MasterGeoPicker/MasterGeoPicker";
 import { getBookingsByClient, updateBooking } from "@/shared/api/bookingApi";
 import { getCategories } from "@/shared/api/categoryApi";
 import { getMyMasterRecommendations } from "@/shared/api/aiApi";
@@ -53,6 +53,14 @@ import type {
   ServerResponseType,
   ServiziType,
 } from "@/shared/types";
+
+const MasterGeoPicker = dynamic(
+  () => import("@/features/master/ui/MasterGeoPicker/MasterGeoPicker"),
+  {
+    ssr: false,
+    loading: () => <div className="profile-location-map-state">Карта загружается...</div>,
+  },
+);
 
 type ProfileMaster = {
   id?: number;
