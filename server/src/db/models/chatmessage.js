@@ -18,7 +18,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       chatId: DataTypes.INTEGER,
       senderId: DataTypes.INTEGER,
-      text: DataTypes.STRING,
+      text: DataTypes.TEXT,
     },
     {
       sequelize,
