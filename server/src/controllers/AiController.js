@@ -200,17 +200,6 @@ class AiController {
         .json(formatResponse(401, "Пользователь не авторизован"));
     }
 
-    if (user.role !== "client") {
-      return res
-        .status(403)
-        .json(
-          formatResponse(
-            403,
-            "AI-помощник по записи доступен только клиенту",
-          ),
-        );
-    }
-
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
       return res
         .status(400)
