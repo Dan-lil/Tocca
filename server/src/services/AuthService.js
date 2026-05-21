@@ -1,4 +1,19 @@
-const { User } = require("../db/models");
+const { Op } = require("sequelize");
+const {
+  Booking,
+  Chat,
+  ChatMessage,
+  Eco,
+  MasterPortfolio,
+  MasterSocial,
+  Message,
+  ProfileMaster,
+  Sale,
+  Servizi,
+  Shadule,
+  User,
+  sequelize,
+} = require("../db/models");
 
 class AuthService {
   static async findUserByEmail(email) {
@@ -104,6 +119,99 @@ class AuthService {
 
   static async delite(id) {
     await User.destroy({ where: { id: id } });
+  }
+
+  static async deleteAccount(id) {
+    return sequelize.transaction(async (transaction) => {
+      const user = await User.findByPk(id, { transaction });
+
+      if (!user) {
+        return false;
+      }
+
+      const bookings = await Booking.findAll({
+        where: {
+          [Op.or]: [{ clientId: id }, { masterId: id }],
+        },
+        attributes: ["id"],
+        transaction,
+      });
+      const bookingIds = bookings.map((booking) => booking.id);
+
+      const chats = await Chat.findAll({
+        where: {
+          [Op.or]: [
+            { clientId: id },
+            { masterId: id },
+            ...(bookingIds.length ? [{ bookingId: { [Op.in]: bookingIds } }] : []),
+          ],
+        },
+        attributes: ["id"],
+        transaction,
+      });
+      const chatIds = chats.map((chat) => chat.id);
+
+      if (chatIds.length) {
+        await ChatMessage.destroy({
+          where: { chatId: { [Op.in]: chatIds } },
+          transaction,
+        });
+        await Message.destroy({
+          where: { chatId: { [Op.in]: chatIds } },
+          transaction,
+        });
+      }
+
+      await ChatMessage.destroy({ where: { senderId: id }, transaction });
+      await Message.destroy({ where: { userId: id }, transaction });
+
+      if (chatIds.length) {
+        await Chat.destroy({
+          where: { id: { [Op.in]: chatIds } },
+          transaction,
+        });
+      }
+
+      await Eco.destroy({
+        where: {
+          [Op.or]: [
+            { clientId: id },
+            { masterId: id },
+            ...(bookingIds.length ? [{ bookingId: { [Op.in]: bookingIds } }] : []),
+          ],
+        },
+        transaction,
+      });
+
+      await Sale.destroy({
+        where: {
+          [Op.or]: [
+            { masterId: id },
+            ...(bookingIds.length ? [{ bookingId: { [Op.in]: bookingIds } }] : []),
+          ],
+        },
+        transaction,
+      });
+
+      if (bookingIds.length) {
+        await Booking.destroy({
+          where: { id: { [Op.in]: bookingIds } },
+          transaction,
+        });
+      }
+
+      await Promise.all([
+        Servizi.destroy({ where: { masterId: id }, transaction }),
+        Shadule.destroy({ where: { masterId: id }, transaction }),
+        ProfileMaster.destroy({ where: { userId: id }, transaction }),
+        MasterPortfolio.destroy({ where: { userId: id }, transaction }),
+        MasterSocial.destroy({ where: { userId: id }, transaction }),
+      ]);
+
+      await User.destroy({ where: { id }, transaction });
+
+      return true;
+    });
   }
 
   static async update(id) {

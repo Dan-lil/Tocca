@@ -20,6 +20,7 @@ const USER_THUNK_NAMES = {
     REFRESH: "user/refresh",
     LOGOUT: "user/logout",
     UPDATE_PROFILE: "user/updateProfile",
+    DELETE_ACCOUNT: "user/deleteAccount",
 } as const;
 
 
@@ -31,6 +32,7 @@ const USER_API_URLS = {
     REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
     UPDATE_PROFILE: "/auth/profile",
+    DELETE_ACCOUNT: "/auth/profile",
 } as const;
 
 //thunk - выполняет работу асинхронно, генерирует action и передаёт его в reducer
@@ -91,6 +93,26 @@ export const logoutThunk = createAsyncThunk<null, void, { rejectValue: string }>
         return rejectWithValue((error as AxiosError<ServerResponseType<null>>).response?.data?.message ?? 'Ошибка при выходе из приложения')
     }
 });
+
+export const deleteAccountThunk = createAsyncThunk<null, void, { rejectValue: string }>(
+    USER_THUNK_NAMES.DELETE_ACCOUNT,
+    async (_, { rejectWithValue }) => {
+        try {
+            const { data } = await axiosInstance.delete<ServerResponseType<null>>(
+                USER_API_URLS.DELETE_ACCOUNT,
+            );
+
+            if (data.statusCode === 200) {
+                setAccessToken('');
+                return null;
+            }
+
+            return rejectWithValue(data.message ?? 'Не удалось удалить аккаунт');
+        } catch (error) {
+            return rejectWithValue((error as AxiosError<ServerResponseType<null>>).response?.data?.message ?? 'Не удалось удалить аккаунт');
+        }
+    },
+);
 
 export const telegramLoginThunk = createAsyncThunk<UserType, TelegramLoginPayload, { rejectValue: string }>(
     USER_THUNK_NAMES.TELEGRAM_LOGIN,

@@ -26,6 +26,7 @@ type Appointment = {
   id: number;
   booking: BookingType;
   clientName: string;
+  clientPhone?: string | null;
   clientComment?: string;
   service: string;
   time: string;
@@ -136,6 +137,14 @@ function getScheduleSlotKey(dayOdWeek: number, time: string) {
   return `${dayOdWeek}-${time}`;
 }
 
+function normalizeSlotTime(value: string) {
+  const [rawHours = "0", rawMinutes = "0"] = value.split(":");
+  const hours = rawHours.padStart(2, "0").slice(-2);
+  const minutes = rawMinutes.padEnd(2, "0").slice(0, 2);
+
+  return `${hours}:${minutes}`;
+}
+
 function getBookingDateTimes(dateKey: string, time: string, duration: number) {
   const [hours, minutes] = time.split(":").map(Number);
   const startTime = new Date(`${dateKey}T00:00:00`);
@@ -173,6 +182,24 @@ function getInitialScheduleDrafts(shadules: ShaduleType[] = []): ScheduleDraft[]
 function getAppointmentStatus(status: string): AppointmentStatus {
   const normalizedStatus = status.toLowerCase();
 
+  if (
+    normalizedStatus.includes("\u043e\u0436\u0438\u0434") ||
+    normalizedStatus.includes("pending") ||
+    normalizedStatus.includes("waiting")
+  ) {
+    return "pending";
+  }
+
+  if (normalizedStatus.includes("\u043e\u0442\u043c\u0435\u043d")) {
+    return "canceled";
+  }
+  if (normalizedStatus.includes("\u0437\u0430\u0432\u0435\u0440\u0448")) {
+    return "done";
+  }
+  if (normalizedStatus.includes("\u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d")) {
+    return "confirmed";
+  }
+
   if (normalizedStatus.includes("отмен") || normalizedStatus.includes("cancel")) {
     return "canceled";
   }
@@ -203,6 +230,40 @@ function isBookingCanceled(booking: BookingType) {
   return getAppointmentStatus(booking.status) === "canceled";
 }
 
+function getBookingClientName(booking: BookingType, fallback: string) {
+  const bookingWithDetails = booking as BookingType & {
+    User?: { name?: string | null };
+    Client?: { name?: string | null };
+    clientName?: string | null;
+  };
+
+  return (
+    booking.client?.name ||
+    bookingWithDetails.Client?.name ||
+    bookingWithDetails.User?.name ||
+    bookingWithDetails.clientName ||
+    fallback
+  );
+}
+
+function getBookingClientPhone(booking: BookingType) {
+  const bookingWithDetails = booking as BookingType & {
+    User?: { phone?: string | null };
+    Client?: { phone?: string | null };
+    clientPhone?: string | null;
+    phone?: string | null;
+  };
+
+  return (
+    booking.client?.phone ||
+    bookingWithDetails.Client?.phone ||
+    bookingWithDetails.User?.phone ||
+    bookingWithDetails.clientPhone ||
+    bookingWithDetails.phone ||
+    null
+  );
+}
+
 function buildAppointmentsByDate(
   bookings: BookingType[],
   services: ServiziType[],
@@ -226,9 +287,12 @@ function buildAppointmentsByDate(
     const appointment: Appointment = {
       id: booking.id,
       booking,
-      clientName: labels.clientNumber(booking.clientId),
+      clientName: getBookingClientName(booking, labels.clientNumber(booking.clientId)),
+      clientPhone: getBookingClientPhone(booking),
       clientComment: booking.clientComment,
-      service: service?.title ?? labels.serviceNumber(booking.serviziId),
+      service:
+        getLocalizedTitle(booking.service ?? service ?? {}, locale) ??
+        labels.serviceNumber(booking.serviziId),
       time: startDate.toLocaleTimeString(locale, {
         hour: "2-digit",
         minute: "2-digit",
@@ -602,10 +666,12 @@ export default function CalendarMasterPage() {
           return draft;
         }
 
+        const slotTime = normalizeSlotTime(draft.newSlotTime);
+
         return {
           ...draft,
           isWorkingDay: true,
-          slots: [...draft.slots, { time: draft.newSlotTime }].sort((a, b) =>
+          slots: [...draft.slots, { time: slotTime }].sort((a, b) =>
             a.time.localeCompare(b.time),
           ),
         };
@@ -827,7 +893,7 @@ export default function CalendarMasterPage() {
                         onClick={() => removeScheduleSlot(draft.dayOdWeek, slot.time)}
                         aria-label={t("deleteSlot", { time: slot.time })}
                       >
-                        {slot.time} x
+                        {normalizeSlotTime(slot.time)}
                       </button>
                     ))
                   ) : (
@@ -1098,9 +1164,15 @@ export default function CalendarMasterPage() {
                           ? commonT("saving")
                           : nextStatusLabels[appointment.status]}
                       </button>
-                      <button type="button" disabled>
-                        {t("phoneMissing")}
-                      </button>
+                      {appointment.clientPhone ? (
+                        <a href={`tel:${appointment.clientPhone}`}>
+                          {appointment.clientPhone}
+                        </a>
+                      ) : (
+                        <span className="master-appointment-phone-empty">
+                          {t("phoneMissing")}
+                        </span>
+                      )}
                     </div>
                   </article>
                 ))

@@ -137,8 +137,10 @@ function buildSlotsByDate(
   return slotsByDate;
 }
 
-function getCategoryServices(services: ServiziType[], categoryId: number) {
-  return services.filter((service) => service.isActive && service.categoryId === categoryId);
+function getCategoryServices(services: ServiziType[], categoryId?: number) {
+  return services.filter(
+    (service) => service.isActive && (!categoryId || service.categoryId === categoryId),
+  );
 }
 
 export default function GlobalBookingModal() {
