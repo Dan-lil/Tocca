@@ -517,7 +517,10 @@ export default function ProfilePage() {
 
       const response = await axiosInstance.put<ServerResponseType<ProfileMaster>>(
         "/profile/update",
-        masterProfile,
+        {
+          ...masterProfile,
+          rating: undefined,
+        },
       );
 
       if (response.data.data) {
@@ -1533,20 +1536,6 @@ export default function ProfilePage() {
                   />
                 </label>
               </div>
-
-              <label>
-                <span>{t("rating")}</span>
-                <input
-                  min={0}
-                  max={5}
-                  step={0.1}
-                  type="number"
-                  value={masterProfile.rating}
-                  onChange={(event) =>
-                    setMasterProfile((profile) => ({ ...profile, rating: Number(event.target.value) }))
-                  }
-                />
-              </label>
 
               <div className="modal-actions">
                 <button type="submit" disabled={isProfileSaving}>

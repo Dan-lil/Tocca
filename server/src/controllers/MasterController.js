@@ -1,6 +1,6 @@
 const path = require("path");
 const { Op } = require("sequelize");
-const { Booking, MasterPortfolio, ProfileMaster, Servizi, User } = require("../db/models");
+const { Booking, Eco, MasterPortfolio, ProfileMaster, Servizi, User } = require("../db/models");
 const formatResponse = require("../utils/formatResponse");
 const { withAutoServiceEnglish } = require("../utils/translate");
 const { optimizeImageFile } = require("../utils/imageOptimizer");
@@ -42,17 +42,24 @@ class MasterController {
     const masterId = getMasterId(res);
 
     try {
-      const [totalBookings, activeServices, portfolioCount, profile] = await Promise.all([
+      const [totalBookings, activeServices, portfolioCount] = await Promise.all([
         Booking.count({ where: { masterId } }),
         Servizi.count({ where: { masterId, isActive: true } }),
         MasterPortfolio.count({ where: { userId: masterId } }),
-        ProfileMaster.findOne({ where: { userId: masterId } }),
       ]);
+      const reviews = await Eco.findAll({
+        where: { masterId },
+        attributes: ["rating"],
+      });
+      const rating =
+        reviews.length > 0
+          ? reviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0) / reviews.length
+          : 0;
 
       return res.status(200).json(
         formatResponse(200, "Master stats loaded", {
           totalBookings,
-          rating: profile?.rating ?? 0,
+          rating: Number(rating.toFixed(1)),
           activeServices,
           portfolioCount,
         }),

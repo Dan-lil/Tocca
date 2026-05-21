@@ -460,7 +460,10 @@ export default function CategoryPage() {
               const reviewsError = reviewsErrorByMaster[card.masterId] ?? null;
               const masterProfile = masterProfilesById[card.masterId];
               // Аватар и мини-портфолио берутся из публичного профиля мастера, а не из самой услуги
-              const avatarUrl = getMasterAvatarUrl(card.masterId, masterProfile?.user.avatar);
+              const avatarUrls = [
+                getMasterAvatarUrl(card.masterId, masterProfile?.user.avatar),
+                getMediaUrl(masterProfile?.user.avatar),
+              ].filter(Boolean);
               const portfolioItems = expandPortfolioItems(masterProfile?.portfolio ?? []).slice(0, 4);
               const masterDisplayName =
                 getLocalizedTitle(masterProfile?.profile ?? {}, locale) || card.masterName;
@@ -471,18 +474,26 @@ export default function CategoryPage() {
                   <div className="services-directory-card-head">
                     <div className="services-directory-card-master">
                       <div className="services-directory-card-avatar">
-                        {avatarUrl ? (
-                          <Image
+                        <span>{masterInitial}</span>
+                        {avatarUrls.length > 0 ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
                             className="services-directory-card-avatar-image"
-                            src={avatarUrl}
+                            src={avatarUrls[0]}
                             alt={t("avatarAlt", { name: masterDisplayName })}
-                            width={58}
-                            height={58}
-                            unoptimized
+                            onError={(event) => {
+                              const image = event.currentTarget;
+                              const nextAvatarUrl = avatarUrls.find((url) => url !== image.src);
+
+                              if (nextAvatarUrl) {
+                                image.src = nextAvatarUrl;
+                                return;
+                              }
+
+                              image.style.display = "none";
+                            }}
                           />
-                        ) : (
-                          <span>{masterInitial}</span>
-                        )}
+                        ) : null}
                       </div>
                       <div className="services-directory-card-head-copy">
                         <strong>{masterDisplayName}</strong>
