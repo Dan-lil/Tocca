@@ -689,6 +689,17 @@
   line-height: 1.45;
 }
 
+.profile-location-map-state {
+  display: grid;
+  min-height: 350px;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(255, 248, 247, 0.82);
+  color: rgba(122, 77, 75, 0.72);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .profile-form-row,
 .modal-actions {
   display: grid;
