@@ -3,11 +3,13 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import styles from "./BookingCalendarModal.module.css";
+import { getLocalizedTitle } from "@/shared/lib/localized";
 
 export type BookingService = {
   id: number;
   masterId: number;
   title: string;
+  titleEn?: string | null;
   duration: number;
   price: number;
 };
@@ -160,7 +162,7 @@ export default function BookingCalendarModal({
         <div className={styles["booking-modal-header"]}>
           <div>
             <p>{t("title")}</p>
-            <h2>{service.title}</h2>
+            <h2>{getLocalizedTitle(service, locale) ?? service.title}</h2>
             <span>
               {master.name} · {master.title}
             </span>
@@ -218,7 +220,7 @@ export default function BookingCalendarModal({
           <aside className={styles["booking-summary"]}>
             <div className={styles["booking-service-card"]}>
               <p>{t("service")}</p>
-              <strong>{service.title}</strong>
+              <strong>{getLocalizedTitle(service, locale) ?? service.title}</strong>
               <span>
                 {service.duration} {commonT("minutes")} · {service.price.toLocaleString(locale)} ₽
               </span>

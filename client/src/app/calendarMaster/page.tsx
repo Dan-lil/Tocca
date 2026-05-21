@@ -15,6 +15,7 @@ import {
 } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { getAccessToken } from "@/shared/lib/axiosInstance";
+import { getLocalizedTitle } from "@/shared/lib/localized";
 import { openBookingChat } from "@/shared/lib/openBookingChat";
 import type { BookingType, ServiziType, ShaduleType } from "@/shared/types";
 
@@ -950,7 +951,7 @@ export default function CalendarMasterPage() {
                   {services.length > 0 ? (
                     services.map((service) => (
                       <option key={service.id} value={service.id}>
-                        {service.title} · {service.duration} {commonT("minutes")} ·{" "}
+                        {getLocalizedTitle(service, locale) ?? service.title} · {service.duration} {commonT("minutes")} ·{" "}
                         {service.price.toLocaleString(locale)} ₽
                       </option>
                     ))

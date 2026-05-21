@@ -27,7 +27,9 @@ module.exports = (sequelize, DataTypes) => {
     {
       masterId: DataTypes.INTEGER,
       title: DataTypes.STRING,
+      titleEn: DataTypes.STRING,
       description: DataTypes.STRING,
+      descriptionEn: DataTypes.STRING,
       price: DataTypes.FLOAT,
       duration: DataTypes.FLOAT,
       categoryId: DataTypes.INTEGER,

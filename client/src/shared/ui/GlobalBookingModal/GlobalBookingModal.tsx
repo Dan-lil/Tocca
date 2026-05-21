@@ -13,6 +13,7 @@ import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { BOOKING_MODAL_EVENT, dispatchBookingModalClose } from "@/shared/lib/bookingEvents";
 import { openBookingChat } from "@/shared/lib/openBookingChat";
 import { getMasterAvatarUrl } from "@/shared/lib/media";
+import { getLocalizedTitle } from "@/shared/lib/localized";
 import { BookingModalPayload, BookingType, ServiziType, ShaduleType } from "@/shared/types";
 import { getMockOptionsByPrompt, quickPrompts, type MasterItem } from "./booking.data";
 
@@ -562,7 +563,11 @@ export default function GlobalBookingModal() {
                 )}
                 <div className="master-head">
                   <strong>{presetBooking.masterName ?? t("masterNumber", { id: presetBooking.masterId })}</strong>
-                  <span>{presetBooking.categoryTitle}</span>
+                  <span>
+                    {locale === "en" && presetBooking.categoryTitleEn
+                      ? presetBooking.categoryTitleEn
+                      : presetBooking.categoryTitle}
+                  </span>
                 </div>
               </div>
 
@@ -621,7 +626,7 @@ export default function GlobalBookingModal() {
                       disabled={!!directBookingSuccess}
                       onClick={() => handleDirectServiceSelect(service.id)}
                     >
-                      <strong>{service.title}</strong>
+                      <strong>{getLocalizedTitle(service, locale) ?? service.title}</strong>
                       <span>
                         {service.duration} {commonT("minutes")} · {service.price.toLocaleString(locale)} ₽
                       </span>

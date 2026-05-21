@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getMediaUrl } from "@/shared/lib/media";
@@ -14,6 +14,7 @@ import { getCategories } from "@/shared/api/categoryApi";
 import { getSales } from "@/shared/api/saleApi";
 import { getServices } from "@/shared/api/serviziApi";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
+import { getLocalizedDescription, getLocalizedTitle } from "@/shared/lib/localized";
 import type { CategoryType, ServiziType } from "@/shared/types";
 
 const SERVICE_IMAGE_FALLBACK = "/фон3.jpeg";
@@ -24,6 +25,7 @@ function getServiceImageSrc(service: ServiziType) {
 
 export default function HomePage() {
   const t = useTranslations();
+  const locale = useLocale();
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [services, setServices] = useState<ServiziType[]>([]);
   const [promotions, setPromotions] = useState<PromotionItem[]>([]);
@@ -80,11 +82,13 @@ export default function HomePage() {
 
         return {
           ...primaryService,
-          title: category.title,
+          title: getLocalizedTitle(category, locale) ?? category.title,
+          description:
+            getLocalizedDescription(primaryService, locale) ?? primaryService.description,
         };
       })
       .filter((service): service is ServiziType => service !== null);
-  }, [categories, services]);
+  }, [categories, locale, services]);
 
   return (
     <main className="home-page">

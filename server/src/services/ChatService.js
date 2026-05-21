@@ -23,7 +23,7 @@ const chatInclude = [
     include: [
       {
         model: ProfileMaster,
-        attributes: ["title", "city", "category", "rating"],
+        attributes: ["title", "titleEn", "city", "category", "categoryEn", "rating"],
       },
     ],
   },
@@ -33,7 +33,7 @@ const chatInclude = [
     include: [
       {
         model: Servizi,
-        attributes: ["id", "title", "price", "duration"],
+        attributes: ["id", "title", "titleEn", "price", "duration"],
       },
     ],
   },
