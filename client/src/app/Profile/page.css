@@ -637,6 +637,31 @@
   object-fit: cover;
 }
 
+.profile-location-picker {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(122, 77, 75, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.profile-location-picker > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-location-picker strong {
+  color: #754846;
+  font-size: 15px;
+}
+
+.profile-location-picker span {
+  color: rgba(122, 77, 75, 0.72);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .profile-form-row,
 .modal-actions {
   display: grid;

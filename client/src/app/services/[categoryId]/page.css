@@ -104,6 +104,52 @@
   font-size: 16px;
 }
 
+.services-directory-nearby {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px;
+  border-radius: 24px;
+}
+
+.services-directory-nearby-copy {
+  display: grid;
+  gap: 5px;
+  color: #754846;
+}
+
+.services-directory-nearby-copy strong {
+  font-size: 18px;
+}
+
+.services-directory-nearby-copy span,
+.services-directory-nearby-error {
+  color: rgba(122, 77, 75, 0.76);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.services-directory-nearby-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.services-directory-nearby-error {
+  margin: 0;
+  color: #9c3030;
+}
+
+.services-directory-map {
+  height: 360px;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  box-shadow: 0 24px 60px rgba(181, 119, 129, 0.18);
+}
+
 .services-directory-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -244,6 +290,36 @@
     linear-gradient(135deg, rgba(143, 80, 74, 0.98), rgba(205, 136, 126, 0.94)),
     rgba(255, 255, 255, 0.68);
   border-color: rgba(255, 255, 255, 0.82);
+}
+
+.services-directory-badge--light {
+  color: #754846;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 247, 246, 0.72)),
+    rgba(255, 255, 255, 0.72);
+  box-shadow: 0 12px 26px rgba(181, 119, 129, 0.12);
+}
+
+.distance-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid rgba(122, 77, 75, 0.14);
+  border-radius: 999px;
+  color: #7a4d4b;
+  background: rgba(255, 247, 246, 0.92);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.distance-badge__icon {
+  width: 16px;
+  height: 16px;
 }
 
 .services-directory-badge:focus-visible {
@@ -466,6 +542,15 @@
     flex-direction: column;
   }
 
+  .services-directory-nearby {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .services-directory-nearby-actions {
+    justify-content: flex-start;
+  }
+
   .services-directory-card-head {
     align-items: flex-start;
     flex-direction: column;
@@ -554,7 +639,8 @@
   }
 
   .services-directory-badge,
-  .services-directory-card-button {
+  .services-directory-card-button,
+  .distance-badge {
     width: 100%;
     max-width: none;
   }

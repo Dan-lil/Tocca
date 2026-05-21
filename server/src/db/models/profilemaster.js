@@ -28,6 +28,8 @@ module.exports = (sequelize, DataTypes) => {
       category: DataTypes.STRING,
       categoryEn: DataTypes.STRING,
       rating: DataTypes.FLOAT,
+      latitude: DataTypes.FLOAT,
+      longitude: DataTypes.FLOAT,
     },
     {
       sequelize,

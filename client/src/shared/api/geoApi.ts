@@ -1,3 +1,5 @@
+import { axiosInstance } from "@/shared/lib/axiosInstance";
+
 export interface GeoSortRequest {
   clientLat: number;
   clientLon: number;
@@ -21,10 +23,7 @@ export interface GeoSortResponse {
 export async function fetchNearbyMasters(
   payload: GeoSortRequest,
 ): Promise<GeoSortResponse> {
-  const res = await fetch("/api/ai/geo-sort", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  return res.json();
+  const { data } = await axiosInstance.post<GeoSortResponse>("/ai/geo-sort", payload);
+
+  return data;
 }
