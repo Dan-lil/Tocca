@@ -481,6 +481,8 @@ body {
 
 /* Глобальный контейнер и текст футера. */
 .site-footer-shell {
+    display: grid;
+    gap: 8px;
     padding: 18px 24px;
     border-radius: 28px;
     text-align: center;
@@ -490,6 +492,20 @@ body {
     color: rgba(122, 77, 75, 0.88);
     font-size: 14px;
     line-height: 1.5;
+}
+
+.site-footer-link {
+    width: fit-content;
+    margin: 0 auto;
+    color: rgba(122, 77, 75, 0.88);
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.site-footer-link:hover {
+    color: #754846;
+    text-decoration: underline;
 }
 
 .booking-direct-mode {
@@ -1080,4 +1096,3 @@ body {
         gap: 22px;
     }
 }
-
