@@ -3,11 +3,8 @@
 import "./page.css";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-<<<<<<< HEAD
 import { useLocale, useTranslations } from "next-intl";
-=======
 import { io } from "socket.io-client";
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
 import { createBooking, getBookingsByMaster, updateBooking } from "@/shared/api/bookingApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";

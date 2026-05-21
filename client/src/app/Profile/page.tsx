@@ -2,13 +2,9 @@
 
 import "./page.css";
 import Link from "next/link";
-<<<<<<< HEAD
-import { useTranslations } from "next-intl";
-import { type FormEvent, useEffect, useState } from "react";
-=======
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
 import { AppDispatch, RootState } from "@/app/store/store";
@@ -311,13 +307,8 @@ export default function ProfilePage() {
       }
     };
 
-<<<<<<< HEAD
-    void loadClientHistory();
-  }, [isMaster, t, user]);
-=======
     void loadClientBookings();
-  }, [isMaster, user]);
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
+  }, [isMaster, t, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -579,10 +570,6 @@ export default function ProfilePage() {
     }
   }
 
-<<<<<<< HEAD
-  if (!user) return <div className="profile-page">{commonT("loading")}</div>;
-  if (isMaster && loading) return <div className="profile-page">{t("loadingMasterData")}</div>;
-=======
   function getBookingService(booking: BookingType) {
     return clientServices.find((service) => service.id === booking.serviziId) ?? null;
   }
@@ -668,9 +655,8 @@ export default function ProfilePage() {
     }
   }
 
-  if (!user) return <div className="profile-page">Загрузка...</div>;
-  if (isMaster && loading) return <div className="profile-page">Загрузка данных мастера...</div>;
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
+  if (!user) return <div className="profile-page">{commonT("loading")}</div>;
+  if (isMaster && loading) return <div className="profile-page">{t("loadingMasterData")}</div>;
 
   if (!isMaster) {
     return (
@@ -711,16 +697,10 @@ export default function ProfilePage() {
           </div>
 
           <section className="profile-section">
-<<<<<<< HEAD
             <h2>{t("upcomingBookings")}</h2>
-            {upcomingBookings.length === 0 ? (
-              <p>{t("noUpcomingBookings")}</p>
-=======
-            <h2>Ближайшие записи</h2>
             {clientHistoryError ? <p className="profile-error">{clientHistoryError}</p> : null}
             {clientUpcomingBookings.length === 0 ? (
-              <p>Вы еще не записаны</p>
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
+              <p>{t("noUpcomingBookings")}</p>
             ) : (
               <div className="client-history-list">
                 {clientUpcomingBookings.map((booking) => {
@@ -775,12 +755,6 @@ export default function ProfilePage() {
                     <article className="client-history-card" key={booking.id}>
                       <div className="client-history-card__top">
                         <div>
-<<<<<<< HEAD
-                          <strong>{t("masterNumber", { id: booking.masterId })}</strong>
-                          <span>{formatDateTime(booking.startTime)}</span>
-                        </div>
-                        <span>{t("serviceNumber", { id: booking.serviziId })}</span>
-=======
                           <strong>
                             {getBookingService(booking)?.title ?? `Услуга #${booking.serviziId}`}
                           </strong>
@@ -788,7 +762,6 @@ export default function ProfilePage() {
                           <span>{formatDateTime(booking.startTime)}</span>
                         </div>
                         <span>{booking.status}</span>
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
                       </div>
 
                       {existingReview ? (
@@ -1104,23 +1077,17 @@ export default function ProfilePage() {
           {masterBookings.length === 0 ? (
             <p>{t("noMasterBookings")}</p>
           ) : (
-<<<<<<< HEAD
-            masterBookings.map((booking: BookingToMaster) => (
-              <div key={booking.id} className="booking-card">
-                {formatDateTime(booking.startTime)} - {booking.client.name} -{" "}
-                {booking.service?.title ?? t("serviceFallback")} ({booking.totalPrice} {commonT("currencyRub")})
-              </div>
-            ))
-=======
             <div className="client-history-list">
               {masterBookings.map((booking: BookingToMaster) => (
                 <article key={booking.id} className="booking-card booking-card--detailed">
                   <div className="booking-card__info">
-                    <strong>{booking.service?.title ?? "Услуга"}</strong>
+                    <strong>{booking.service?.title ?? t("serviceFallback")}</strong>
                     <span>{booking.client.name || `Клиент #${booking.clientId}`}</span>
                     <time>{formatDateTime(booking.startTime)}</time>
                     <small>
-                      {booking.client.phone ? `Телефон: ${booking.client.phone}` : "Телефон не указан"}
+                      {booking.client.phone
+                        ? `${t("phone")}: ${booking.client.phone}`
+                        : `${t("phone")}: ${commonT("notSpecifiedMale")}`}
                     </small>
                     <small>{booking.status}</small>
                   </div>
@@ -1136,7 +1103,6 @@ export default function ProfilePage() {
                 </article>
               ))}
             </div>
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
           )}
         </section>
 

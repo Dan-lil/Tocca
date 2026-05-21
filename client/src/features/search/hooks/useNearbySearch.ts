@@ -32,8 +32,8 @@ export function useNearbySearch() {
         if (result.statusCode !== 200)
           throw new Error(result.message || "Ошибка поиска");
         return result.data;
-      } catch (err: any) {
-        setError(err.message || "Не удалось определить местоположение");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Не удалось определить местоположение");
         return [];
       } finally {
         setLoading(false);

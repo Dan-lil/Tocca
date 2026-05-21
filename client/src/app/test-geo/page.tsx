@@ -2,10 +2,30 @@
 
 import { useState } from "react";
 import MasterGeoPicker from "@/features/master/ui/MasterGeoPicker/MasterGeoPicker";
-import { useNearbySearch } from "@/features/search/hooks/useNearbySearch";
 import DistanceBadge from "@/shared/ui/DistanceBadge/DistanceBadge";
 
-const TEST_MASTERS = [
+type TestMaster = {
+  id: number;
+  name: string;
+  categoryIds: number[];
+  latitude: number;
+  longitude: number;
+};
+
+type NearbyMaster = TestMaster & {
+  distanceKm: number;
+};
+
+type GeoSortResponse = {
+  statusCode: number;
+  message?: string;
+  data: Array<{
+    id: number;
+    distanceKm: number;
+  }>;
+};
+
+const TEST_MASTERS: TestMaster[] = [
   {
     id: 101,
     name: "Мастер Анна",
@@ -36,7 +56,7 @@ export default function TestGeoPage() {
   } | null>(null);
   const [loading, setLoading] = useState(false); // ← ДОБАВИЛИ
   const [error, setError] = useState<string | null>(null); // ← ДОБАВИЛИ
-  const [nearbyResults, setNearbyResults] = useState<any[]>([]);
+  const [nearbyResults, setNearbyResults] = useState<NearbyMaster[]>([]);
 
   const handleMasterLocationChange = (lat: number, lon: number) => {
     setMasterCoords({ lat, lon });
@@ -69,19 +89,23 @@ export default function TestGeoPage() {
         }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as GeoSortResponse;
 
       if (result.statusCode === 200) {
-        const merged = result.data.map((item: any) => {
-          const master = TEST_MASTERS.find((m: any) => m.id === item.id);
+        const merged = result.data.flatMap((item) => {
+          const master = TEST_MASTERS.find((m) => m.id === item.id);
+
+          if (!master) return [];
+
           return { ...master, distanceKm: item.distanceKm };
         });
+
         setNearbyResults(merged);
       } else {
         setError(result.message || "Ошибка поиска");
       }
-    } catch (err: any) {
-      setError(err.message || "Не удалось соединиться с бэкендом");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось соединиться с бэкендом");
     } finally {
       setLoading(false);
     }
@@ -108,7 +132,7 @@ export default function TestGeoPage() {
 
       <section className="bg-white p-4 rounded-xl shadow mb-6">
         <h2 className="text-lg font-semibold mb-3">
-          2. Найти мастеров категории "Ногти" рядом
+          2. Найти мастеров категории «Ногти» рядом
         </h2>
         <button
           onClick={handleFindNearby}

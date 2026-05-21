@@ -9,6 +9,10 @@ interface MasterGeoPickerProps {
   onChange?: (lat: number, lon: number) => void;
 }
 
+type YandexMapClickEvent = {
+  get: (key: "coords") => [number, number];
+};
+
 export default function MasterGeoPicker({
   initialLat = 55.751244,
   initialLon = 37.618423,
@@ -19,7 +23,7 @@ export default function MasterGeoPicker({
     initialLon,
   ]);
 
-  const handleClick = (e: any) => {
+  const handleClick = (e: YandexMapClickEvent) => {
     const [lat, lon] = e.get("coords");
     setCoords([lat, lon]);
     onChange?.(lat, lon);
