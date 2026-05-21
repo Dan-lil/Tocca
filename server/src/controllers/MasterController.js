@@ -1,10 +1,9 @@
-const fs = require("fs/promises");
 const path = require("path");
 const { Op } = require("sequelize");
 const { Booking, MasterPortfolio, ProfileMaster, Servizi, User } = require("../db/models");
 const formatResponse = require("../utils/formatResponse");
 const { withAutoServiceEnglish } = require("../utils/translate");
-const { createSafeImageFileName, getImageExtension } = require("../utils/uploadFileName");
+const { optimizeImageFile } = require("../utils/imageOptimizer");
 
 function getMasterId(res) {
   return res.locals.user?.id;
@@ -19,34 +18,23 @@ function mapPortfolioItem(item) {
 }
 
 async function savePortfolioImage(imageFile) {
-  if (!imageFile?.data || !imageFile?.type) {
-    return null;
-  }
+  return optimizeImageFile({
+    imageFile,
+    label: "portfolio image",
+    outputDir: path.join(__dirname, "../public/uploads/portfolio"),
+    preset: "portfolio",
+    publicDir: "/uploads/portfolio",
+  });
+}
 
-  if (!imageFile.type.startsWith("image/")) {
-    throw new Error("Only image files are allowed");
-  }
-
-  const [, base64Data] = imageFile.data.split(",");
-
-  if (!base64Data) {
-    throw new Error("Invalid image payload");
-  }
-
-  const extension = getImageExtension(imageFile.type);
-  const allowedExtensions = new Set(["jpg", "png", "webp", "gif"]);
-
-  if (!allowedExtensions.has(extension)) {
-    throw new Error("Unsupported image file type");
-  }
-
-  const uploadsDir = path.join(__dirname, "../public/uploads/portfolio");
-  const fileName = createSafeImageFileName(imageFile.type);
-
-  await fs.mkdir(uploadsDir, { recursive: true });
-  await fs.writeFile(path.join(uploadsDir, fileName), Buffer.from(base64Data, "base64"));
-
-  return `/uploads/portfolio/${fileName}`;
+async function saveServiceImage(imageFile) {
+  return optimizeImageFile({
+    imageFile,
+    label: "service image",
+    outputDir: path.join(__dirname, "../public/uploads/services"),
+    preset: "service",
+    publicDir: "/uploads/services",
+  });
 }
 
 class MasterController {
@@ -123,7 +111,15 @@ class MasterController {
     const masterId = getMasterId(res);
 
     try {
-      const serviceData = await withAutoServiceEnglish(req.body);
+      const { imageFile, ...rawServiceData } = req.body;
+      const uploadedImageUrl = await saveServiceImage(imageFile);
+      const servicePayload = { ...rawServiceData };
+
+      if (uploadedImageUrl) {
+        servicePayload.image = uploadedImageUrl;
+      }
+
+      const serviceData = await withAutoServiceEnglish(servicePayload);
       const service = await Servizi.create({
         ...serviceData,
         masterId,
@@ -143,7 +139,15 @@ class MasterController {
     const { id } = req.params;
 
     try {
-      const serviceData = await withAutoServiceEnglish(req.body);
+      const { imageFile, ...rawServiceData } = req.body;
+      const uploadedImageUrl = await saveServiceImage(imageFile);
+      const servicePayload = { ...rawServiceData };
+
+      if (uploadedImageUrl) {
+        servicePayload.image = uploadedImageUrl;
+      }
+
+      const serviceData = await withAutoServiceEnglish(servicePayload);
       const [rows] = await Servizi.update(serviceData, { where: { id, masterId } });
       if (rows === 0) {
         return res.status(404).json(formatResponse(404, "Service not found"));
