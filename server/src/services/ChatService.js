@@ -6,6 +6,7 @@ const {
   ProfileMaster,
   Servizi,
   User,
+  sequelize,
 } = require("../db/models");
 
 const userPublicAttributes = ["id", "name", "avatar", "role"];
@@ -63,18 +64,38 @@ const toPlain = (item) => (item ? item.get({ plain: true }) : null);
 
 class ChatService {
   static async create(ChatData) {
-    const bookingId = Number(ChatData.bookingId);
-    const hasBooking = Number.isInteger(bookingId) && bookingId > 0;
+    const chatData = {
+      clientId: Number(ChatData.clientId),
+      masterId: Number(ChatData.masterId),
+      bookingId: ChatData.bookingId ? Number(ChatData.bookingId) : null,
+    };
 
-    const where = hasBooking
-      ? { bookingId }
-      : {
-          bookingId: null,
-          clientId: ChatData.clientId,
-          masterId: ChatData.masterId,
+    const chat = await sequelize.transaction(async (transaction) => {
+      const existingChat = await Chat.findOne({
+        where: {
+          clientId: chatData.clientId,
+          masterId: chatData.masterId,
+        },
+        order: [["updatedAt", "DESC"]],
+        transaction,
+      });
+
+      if (existingChat) {
+        const nextPayload = {
+          updatedAt: new Date(),
         };
 
-    const [chat] = await Chat.findOrCreate({ where, defaults: ChatData });
+        if (chatData.bookingId) {
+          nextPayload.bookingId = chatData.bookingId;
+        }
+
+        await existingChat.update(nextPayload, { transaction });
+
+        return existingChat;
+      }
+
+      return Chat.create(chatData, { transaction });
+    });
 
     return this.findById(chat.id);
   }
