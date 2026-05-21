@@ -4,9 +4,9 @@ interface DistanceBadgeProps {
 
 export default function DistanceBadge({ distanceKm }: DistanceBadgeProps) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
+    <span className="distance-badge">
       <svg
-        className="w-3.5 h-3.5"
+        className="distance-badge__icon"
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"

@@ -4,6 +4,10 @@ import { fetchNearbyMasters, GeoSortRequest } from "@/shared/api/geoApi";
 export function useNearbySearch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [clientLocation, setClientLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
 
   const search = useCallback(
     async (request: Omit<GeoSortRequest, "clientLat" | "clientLon">) => {
@@ -28,6 +32,11 @@ export function useNearbySearch() {
           clientLon: position.coords.longitude,
         };
 
+        setClientLocation({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        });
+
         const result = await fetchNearbyMasters(payload);
         if (result.statusCode !== 200)
           throw new Error(result.message || "Ошибка поиска");
@@ -42,5 +51,5 @@ export function useNearbySearch() {
     [],
   );
 
-  return { search, loading, error };
+  return { search, loading, error, clientLocation };
 }

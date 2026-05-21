@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
+import { Map as YandexMap, Placemark, YMaps } from "@pbe/react-yandex-maps";
 
 import "../../page.css";
 import "./page.css";
@@ -11,11 +12,13 @@ import { getCategoryById } from "@/shared/api/categoryApi";
 import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByCategory } from "@/shared/api/serviziApi";
+import { useNearbySearch } from "@/features/search/hooks/useNearbySearch";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
 import { getLocalizedTitle } from "@/shared/lib/localized";
 import { openDirectChat } from "@/shared/lib/openDirectChat";
 import { expandPortfolioItems, getMasterAvatarUrl, getMediaUrl } from "@/shared/lib/media";
+import DistanceBadge from "@/shared/ui/DistanceBadge/DistanceBadge";
 import type {
   CategoryType,
   EcoReviewType,
@@ -30,6 +33,7 @@ type ServiceDirectoryCard = {
   masterRating: number;
   meta: string;
   services: ServiziType[];
+  distanceKm?: number;
 };
 
 type SelectedPortfolioPreview = {
@@ -83,6 +87,12 @@ export default function CategoryPage() {
   const categoryId = params?.categoryId;
   const selectedServiceId = searchParams.get("serviceId");
   const user = useAppSelector((state) => state.user.user);
+  const {
+    search: searchNearbyMasters,
+    loading: isNearbyLoading,
+    error: nearbySearchError,
+    clientLocation,
+  } = useNearbySearch();
 
   const [category, setCategory] = useState<CategoryType | null>(null);
   const [services, setServices] = useState<ServiziType[]>([]);
@@ -102,6 +112,9 @@ export default function CategoryPage() {
   const [selectedPortfolioPreview, setSelectedPortfolioPreview] = useState<SelectedPortfolioPreview | null>(null);
   const [openingChatMasterId, setOpeningChatMasterId] = useState<number | null>(null);
   const [chatErrorByMaster, setChatErrorByMaster] = useState<Record<number, string | null>>({});
+  const [isNearbyMode, setIsNearbyMode] = useState(false);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
+  const [distanceByMaster, setDistanceByMaster] = useState<Record<number, number>>({});
 
   useEffect(() => {
     if (!categoryId) return;
@@ -163,6 +176,41 @@ export default function CategoryPage() {
       }),
     [pageTitle, t, visibleServices],
   );
+
+  const displayedServiceCards = useMemo(() => {
+    if (!isNearbyMode) return serviceCards;
+
+    return serviceCards
+      .filter((card) => distanceByMaster[card.masterId] !== undefined)
+      .map((card) => ({
+        ...card,
+        distanceKm: distanceByMaster[card.masterId],
+      }))
+      .sort((a, b) => (a.distanceKm ?? 0) - (b.distanceKm ?? 0));
+  }, [distanceByMaster, isNearbyMode, serviceCards]);
+
+  const mapMasterPoints = useMemo(() => {
+    return displayedServiceCards.flatMap((card) => {
+      const profile = masterProfilesById[card.masterId]?.profile;
+      const lat = profile?.latitude;
+      const lon = profile?.longitude;
+
+      if (typeof lat !== "number" || typeof lon !== "number") return [];
+
+      return [
+        {
+          id: card.masterId,
+          name: getLocalizedTitle(profile ?? {}, locale) || card.masterName,
+          coords: [lat, lon] as [number, number],
+          distanceKm: card.distanceKm,
+        },
+      ];
+    });
+  }, [displayedServiceCards, locale, masterProfilesById]);
+
+  const mapCenter = clientLocation
+    ? ([clientLocation.lat, clientLocation.lon] as [number, number])
+    : (mapMasterPoints[0]?.coords ?? ([55.751244, 37.618423] as [number, number]));
 
   useEffect(() => {
     if (serviceCards.length === 0) return;
@@ -261,6 +309,57 @@ export default function CategoryPage() {
     }
   };
 
+  const handleFindNearby = async () => {
+    const mastersWithGeo = serviceCards.flatMap((card) => {
+      const profile = masterProfilesById[card.masterId]?.profile;
+      const lat = profile?.latitude;
+      const lon = profile?.longitude;
+
+      if (typeof lat !== "number" || typeof lon !== "number") return [];
+
+      return [
+        {
+          id: card.masterId,
+          categoryIds: Array.from(new Set(card.services.map((service) => service.categoryId))),
+          lat,
+          lon,
+        },
+      ];
+    });
+
+    if (mastersWithGeo.length === 0) {
+      setNearbyError("У мастеров этой категории пока не указана точка на карте");
+      setIsNearbyMode(false);
+      setDistanceByMaster({});
+      return;
+    }
+
+    setNearbyError(null);
+    const results = await searchNearbyMasters({
+      categoryId: Number(categoryId),
+      radiusKm: 15,
+      masters: mastersWithGeo,
+    });
+
+    if (results.length === 0) {
+      setNearbyError("Рядом с вами пока не найдено мастеров в радиусе 15 км");
+      setDistanceByMaster({});
+      setIsNearbyMode(true);
+      return;
+    }
+
+    setDistanceByMaster(
+      Object.fromEntries(results.map((result) => [result.id, result.distanceKm])),
+    );
+    setIsNearbyMode(true);
+  };
+
+  const handleResetNearby = () => {
+    setIsNearbyMode(false);
+    setDistanceByMaster({});
+    setNearbyError(null);
+  };
+
   return (
     <main className="services-directory-page">
       <div className="services-directory-shell">
@@ -296,8 +395,78 @@ export default function CategoryPage() {
         ) : null}
 
         {!isLoading && !error && serviceCards.length > 0 ? (
+          <section className="services-directory-nearby glass-surface">
+            <div className="services-directory-nearby-copy">
+              <strong>Мастера рядом с вами</strong>
+              <span>
+                Запросим вашу геопозицию и отсортируем мастеров этой категории по расстоянию
+              </span>
+            </div>
+            <div className="services-directory-nearby-actions">
+              <button
+                className="services-directory-badge"
+                disabled={isNearbyLoading}
+                type="button"
+                onClick={() => {
+                  void handleFindNearby();
+                }}
+              >
+                {isNearbyLoading ? commonT("loading") : "Найти рядом"}
+              </button>
+              {isNearbyMode ? (
+                <button
+                  className="services-directory-badge services-directory-badge--light"
+                  type="button"
+                  onClick={handleResetNearby}
+                >
+                  Показать всех
+                </button>
+              ) : null}
+            </div>
+            {nearbySearchError || nearbyError ? (
+              <p className="services-directory-nearby-error">
+                {nearbySearchError ?? nearbyError}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+
+        {!isLoading && !error && mapMasterPoints.length > 0 ? (
+          <section className="services-directory-map glass-surface">
+            <YMaps query={{ apikey: process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}>
+              <YandexMap
+                defaultState={{ center: mapCenter, zoom: isNearbyMode ? 12 : 10 }}
+                state={{ center: mapCenter, zoom: isNearbyMode ? 12 : 10 }}
+                width="100%"
+                height="100%"
+              >
+                {clientLocation ? (
+                  <Placemark
+                    geometry={[clientLocation.lat, clientLocation.lon]}
+                    options={{ preset: "islands#blueCircleDotIcon" }}
+                    properties={{ balloonContent: "Вы здесь" }}
+                  />
+                ) : null}
+                {mapMasterPoints.map((master) => (
+                  <Placemark
+                    geometry={master.coords}
+                    key={master.id}
+                    options={{ preset: "islands#redIcon" }}
+                    properties={{
+                      balloonContent: master.distanceKm
+                        ? `${master.name}: ${master.distanceKm.toFixed(1)} км`
+                        : master.name,
+                    }}
+                  />
+                ))}
+              </YandexMap>
+            </YMaps>
+          </section>
+        ) : null}
+
+        {!isLoading && !error && serviceCards.length > 0 ? (
           <section className="services-directory-grid">
-            {serviceCards.map((card) => {
+            {displayedServiceCards.map((card) => {
               const isReviewsOpen = expandedReviewsMasterId === card.masterId;
               const reviews = reviewsByMaster[card.masterId] ?? [];
               const isReviewsLoading = reviewsLoadingByMaster[card.masterId] ?? false;
@@ -337,6 +506,9 @@ export default function CategoryPage() {
                   </div>
 
                   <div className="services-directory-badges">
+                    {card.distanceKm !== undefined ? (
+                      <DistanceBadge distanceKm={card.distanceKm} />
+                    ) : null}
                     <Link
                       className="services-directory-badge services-directory-badge-link"
                       href={`/masters/${card.masterId}`}
