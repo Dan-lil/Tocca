@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getDailyPromotions } from "@/features/promotions/lib/promotionUtils";
@@ -15,6 +15,7 @@ import { getSales } from "@/shared/api/saleApi";
 import { getServices } from "@/shared/api/serviziApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
+import { getLocalizedTitle } from "@/shared/lib/localized";
 import type { CategoryType } from "@/shared/types";
 import LanguageSwitcher from "@/shared/ui/LanguageSwitcher/LanguageSwitcher";
 
@@ -30,6 +31,7 @@ export default function AppHeader() {
   const pathname = usePathname();
   const { user } = useAppSelector((state) => state.user);
   const t = useTranslations();
+  const locale = useLocale();
   const isHomePage = pathname === "/";
   const localizedNavigationItems: HeaderNavigationItem[] = [
     { href: "/", label: t("header.home") },
@@ -174,7 +176,7 @@ export default function AppHeader() {
                           key={`header-category-${category.id}`}
                           onClick={() => setIsDropdownOpen(false)}
                         >
-                          {category.title}
+                          {getLocalizedTitle(category, locale) ?? category.title}
                         </Link>
                       ))
                     : null}

@@ -3,11 +3,8 @@
 import "./page.css";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-<<<<<<< HEAD
 import { useLocale, useTranslations } from "next-intl";
-=======
 import { io } from "socket.io-client";
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
 import { createBooking, getBookingsByMaster, updateBooking } from "@/shared/api/bookingApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
@@ -18,6 +15,7 @@ import {
 } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { getAccessToken } from "@/shared/lib/axiosInstance";
+import { getLocalizedTitle } from "@/shared/lib/localized";
 import { openBookingChat } from "@/shared/lib/openBookingChat";
 import type { BookingType, ServiziType, ShaduleType } from "@/shared/types";
 
@@ -953,7 +951,7 @@ export default function CalendarMasterPage() {
                   {services.length > 0 ? (
                     services.map((service) => (
                       <option key={service.id} value={service.id}>
-                        {service.title} · {service.duration} {commonT("minutes")} ·{" "}
+                        {getLocalizedTitle(service, locale) ?? service.title} · {service.duration} {commonT("minutes")} ·{" "}
                         {service.price.toLocaleString(locale)} ₽
                       </option>
                     ))

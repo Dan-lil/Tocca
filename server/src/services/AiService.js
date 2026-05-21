@@ -195,7 +195,7 @@ class AiService {
           attributes: ["masterId", "rating"],
         }),
         Category.findAll({
-          attributes: ["id", "title"],
+          attributes: ["id", "title", "titleEn"],
         }),
       ]);
 
@@ -211,6 +211,9 @@ class AiService {
     const profileByMasterId = new Map(profiles.map((profile) => [profile.userId, profile.get()]));
     const categoryTitleById = new Map(
       categories.map((category) => [category.id, category.title]),
+    );
+    const categoryTitleEnById = new Map(
+      categories.map((category) => [category.id, category.titleEn]),
     );
 
     const servicesByMasterId = new Map();
@@ -250,7 +253,9 @@ class AiService {
           name: plainMaster.name,
           avatar: plainMaster.avatar,
           title: profile?.title || plainMaster.name,
+          titleEn: profile?.titleEn || null,
           description: profile?.description || "",
+          descriptionEn: profile?.descriptionEn || null,
           city: profile?.city || "",
           address: profile?.address || "",
           rating,
@@ -259,9 +264,13 @@ class AiService {
           categoryTitles: masterCategoryIds
             .map((categoryId) => categoryTitleById.get(categoryId))
             .filter(Boolean),
+          categoryTitlesEn: masterCategoryIds
+            .map((categoryId) => categoryTitleEnById.get(categoryId))
+            .filter(Boolean),
           services: masterServices.slice(0, 3).map((service) => ({
             id: service.id,
             title: service.title,
+            titleEn: service.titleEn || null,
             price: Number(service.price) || 0,
             duration: Number(service.duration) || 0,
             categoryId: service.categoryId,

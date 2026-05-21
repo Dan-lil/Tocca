@@ -18,6 +18,7 @@ import "./page.css";
 import { createChatMessage, getChatMessages, getMyChats } from "@/shared/api/chatApi";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { getAccessToken } from "@/shared/lib/axiosInstance";
+import { getLocalizedTitle } from "@/shared/lib/localized";
 import { ChatMessageType, ChatType, ChatUserType } from "@/shared/types";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -214,8 +215,8 @@ function MessagesPageContent() {
               <div>
                 <h1>{activeCompanion?.name ?? t("selectChat")}</h1>
                 <p>
-                  {activeCompanion?.ProfileMaster?.title ??
-                    activeChat?.Booking?.Servizi?.title ??
+                  {getLocalizedTitle(activeCompanion?.ProfileMaster ?? {}, locale) ??
+                    getLocalizedTitle(activeChat?.Booking?.Servizi ?? {}, locale) ??
                     t("history")}
                 </p>
               </div>
@@ -227,7 +228,7 @@ function MessagesPageContent() {
 
           {activeChat?.Booking ? (
             <div className="messenger-booking">
-              <span>{activeChat.Booking.Servizi?.title ?? t("booking")}</span>
+              <span>{getLocalizedTitle(activeChat.Booking.Servizi ?? {}, locale) ?? t("booking")}</span>
               <strong>{formatBookingDate(activeChat.Booking.startTime, locale, t("bookingDateMissing"))}</strong>
             </div>
           ) : null}
@@ -308,7 +309,7 @@ function MessagesPageContent() {
                   </div>
                   <div>
                     <strong>{companion?.name ?? t("user")}</strong>
-                    <span>{chat.Booking?.Servizi?.title ?? t("privateChat")}</span>
+                    <span>{getLocalizedTitle(chat.Booking?.Servizi ?? {}, locale) ?? t("privateChat")}</span>
                     <p>{lastMessage?.text ?? t("emptyMessages")}</p>
                   </div>
                 </button>

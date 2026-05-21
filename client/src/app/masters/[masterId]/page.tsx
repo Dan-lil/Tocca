@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 import "./page.css";
@@ -10,6 +10,7 @@ import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { getLocalizedDescription, getLocalizedTitle } from "@/shared/lib/localized";
 import { openDirectChat } from "@/shared/lib/openDirectChat";
 import { expandPortfolioItems, getMasterAvatarUrl, getMediaUrl } from "@/shared/lib/media";
 import type { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shared/types";
@@ -17,6 +18,7 @@ import type { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shar
 export default function PublicMasterPage() {
   const t = useTranslations("master");
   const commonT = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const params = useParams<{ masterId: string }>();
   const masterId = params?.masterId;
@@ -60,8 +62,8 @@ export default function PublicMasterPage() {
   const masterName = useMemo(() => {
     if (!master) return t("profile");
 
-    return master.profile?.title?.trim() || master.user.name || t("fallbackName");
-  }, [master, t]);
+    return getLocalizedTitle(master.profile ?? {}, locale)?.trim() || master.user.name || t("fallbackName");
+  }, [locale, master, t]);
 
   const handleOpenDirectChat = async () => {
     const numericMasterId = Number(masterId);
@@ -143,7 +145,7 @@ export default function PublicMasterPage() {
           <div className="public-master-hero-copy">
             <span>{t("profile")}</span>
             <h1>{masterName}</h1>
-            <p>{master.profile?.description || t("descriptionEmpty")}</p>
+            <p>{getLocalizedDescription(master.profile ?? {}, locale) || t("descriptionEmpty")}</p>
           </div>
 
           <div className="public-master-actions">
@@ -215,8 +217,8 @@ export default function PublicMasterPage() {
               {services.map((service) => (
                 <article className="public-master-service" key={service.id}>
                   <div>
-                    <strong>{service.title}</strong>
-                    <p>{service.description || t("serviceDescriptionEmpty")}</p>
+                    <strong>{getLocalizedTitle(service, locale) ?? service.title}</strong>
+                    <p>{getLocalizedDescription(service, locale) || t("serviceDescriptionEmpty")}</p>
                   </div>
                   <span>{service.price.toLocaleString("ru-RU")} {commonT("currencyRub")}</span>
                 </article>

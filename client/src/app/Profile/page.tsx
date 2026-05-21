@@ -2,13 +2,9 @@
 
 import "./page.css";
 import Link from "next/link";
-<<<<<<< HEAD
-import { useTranslations } from "next-intl";
-import { type FormEvent, useEffect, useState } from "react";
-=======
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
 import { AppDispatch, RootState } from "@/app/store/store";
@@ -39,6 +35,11 @@ import {
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServices } from "@/shared/api/serviziApi";
 import { axiosInstance, getAccessToken } from "@/shared/lib/axiosInstance";
+import {
+  getLocalizedCategory,
+  getLocalizedDescription,
+  getLocalizedTitle,
+} from "@/shared/lib/localized";
 import { openBookingChat } from "@/shared/lib/openBookingChat";
 import { expandPortfolioItems, getMediaUrl } from "@/shared/lib/media";
 import type {
@@ -56,11 +57,14 @@ type ProfileMaster = {
   id?: number;
   userId?: number;
   title: string;
+  titleEn: string;
   description: string;
+  descriptionEn: string;
   city: string;
   address: string;
   experience: number;
   category: string;
+  categoryEn: string;
   rating: number;
 };
 
@@ -120,11 +124,14 @@ function normalizeSocialContact(network: string, value: string) {
 
 const emptyMasterProfile: ProfileMaster = {
   title: "",
+  titleEn: "",
   description: "",
+  descriptionEn: "",
   city: "",
   address: "",
   experience: 0,
   category: "",
+  categoryEn: "",
   rating: 0,
 };
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -170,6 +177,7 @@ function readFileAsDataUrl(file: File) {
 export default function ProfilePage() {
   const t = useTranslations("profile");
   const commonT = useTranslations("common");
+  const locale = useLocale();
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.user);
@@ -216,7 +224,9 @@ export default function ProfilePage() {
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [newService, setNewService] = useState({
     title: "",
+    titleEn: "",
     description: "",
+    descriptionEn: "",
     price: 0,
     duration: 60,
     categoryId: 1,
@@ -311,13 +321,8 @@ export default function ProfilePage() {
       }
     };
 
-<<<<<<< HEAD
-    void loadClientHistory();
-  }, [isMaster, t, user]);
-=======
     void loadClientBookings();
-  }, [isMaster, user]);
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
+  }, [isMaster, t, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -579,10 +584,6 @@ export default function ProfilePage() {
     }
   }
 
-<<<<<<< HEAD
-  if (!user) return <div className="profile-page">{commonT("loading")}</div>;
-  if (isMaster && loading) return <div className="profile-page">{t("loadingMasterData")}</div>;
-=======
   function getBookingService(booking: BookingType) {
     return clientServices.find((service) => service.id === booking.serviziId) ?? null;
   }
@@ -592,10 +593,10 @@ export default function ProfilePage() {
     const service = getBookingService(booking);
 
     return (
-      profile?.profile?.title?.trim() ||
+      getLocalizedTitle(profile?.profile ?? {}, locale)?.trim() ||
       profile?.user.name ||
       service?.masterName?.trim() ||
-      `Мастер #${booking.masterId}`
+      t("masterNumber", { id: booking.masterId })
     );
   }
 
@@ -605,7 +606,7 @@ export default function ProfilePage() {
       setClientHistoryError(null);
       await openBookingChat(router, booking);
     } catch (error) {
-      setClientHistoryError(error instanceof Error ? error.message : "Не удалось открыть чат");
+      setClientHistoryError(error instanceof Error ? error.message : t("chatError"));
     } finally {
       setOpeningChatBookingId(null);
     }
@@ -627,14 +628,14 @@ export default function ProfilePage() {
         clientComment: booking.clientComment,
       });
     } catch (error) {
-      setProfileError(error instanceof Error ? error.message : "Не удалось открыть чат");
+      setProfileError(error instanceof Error ? error.message : t("chatError"));
     } finally {
       setOpeningChatBookingId(null);
     }
   }
 
   async function handleCancelClientBooking(booking: BookingType) {
-    const shouldCancel = window.confirm("Отменить эту запись?");
+    const shouldCancel = window.confirm(t("cancelBookingConfirm"));
 
     if (!shouldCancel) return;
 
@@ -662,15 +663,14 @@ export default function ProfilePage() {
         );
       });
     } catch (error) {
-      setClientHistoryError(error instanceof Error ? error.message : "Не удалось отменить запись");
+      setClientHistoryError(error instanceof Error ? error.message : t("cancelBookingError"));
     } finally {
       setCancelingBookingId(null);
     }
   }
 
-  if (!user) return <div className="profile-page">Загрузка...</div>;
-  if (isMaster && loading) return <div className="profile-page">Загрузка данных мастера...</div>;
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
+  if (!user) return <div className="profile-page">{commonT("loading")}</div>;
+  if (isMaster && loading) return <div className="profile-page">{t("loadingMasterData")}</div>;
 
   if (!isMaster) {
     return (
@@ -711,16 +711,10 @@ export default function ProfilePage() {
           </div>
 
           <section className="profile-section">
-<<<<<<< HEAD
             <h2>{t("upcomingBookings")}</h2>
-            {upcomingBookings.length === 0 ? (
-              <p>{t("noUpcomingBookings")}</p>
-=======
-            <h2>Ближайшие записи</h2>
             {clientHistoryError ? <p className="profile-error">{clientHistoryError}</p> : null}
             {clientUpcomingBookings.length === 0 ? (
-              <p>Вы еще не записаны</p>
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
+              <p>{t("noUpcomingBookings")}</p>
             ) : (
               <div className="client-history-list">
                 {clientUpcomingBookings.map((booking) => {
@@ -730,7 +724,7 @@ export default function ProfilePage() {
                   return (
                     <article key={booking.id} className="booking-card booking-card--detailed">
                       <div className="booking-card__info">
-                        <strong>{service?.title ?? `Услуга #${booking.serviziId}`}</strong>
+                        <strong>{getLocalizedTitle(service ?? {}, locale) ?? t("serviceNumber", { id: booking.serviziId })}</strong>
                         <span>{masterName}</span>
                         <time>{formatDateTime(booking.startTime)}</time>
                         <small>{booking.status}</small>
@@ -741,14 +735,14 @@ export default function ProfilePage() {
                           disabled={openingChatBookingId === booking.id}
                           onClick={() => void handleOpenBookingChat(booking)}
                         >
-                          {openingChatBookingId === booking.id ? "Открываю..." : "Перейти в чат"}
+                          {openingChatBookingId === booking.id ? commonT("opening") : commonT("chat")}
                         </button>
                         <button
                           type="button"
                           disabled={cancelingBookingId === booking.id}
                           onClick={() => void handleCancelClientBooking(booking)}
                         >
-                          {cancelingBookingId === booking.id ? "Отменяю..." : "Отменить запись"}
+                          {cancelingBookingId === booking.id ? commonT("saving") : commonT("cancel")}
                         </button>
                       </div>
                     </article>
@@ -775,20 +769,14 @@ export default function ProfilePage() {
                     <article className="client-history-card" key={booking.id}>
                       <div className="client-history-card__top">
                         <div>
-<<<<<<< HEAD
-                          <strong>{t("masterNumber", { id: booking.masterId })}</strong>
-                          <span>{formatDateTime(booking.startTime)}</span>
-                        </div>
-                        <span>{t("serviceNumber", { id: booking.serviziId })}</span>
-=======
                           <strong>
-                            {getBookingService(booking)?.title ?? `Услуга #${booking.serviziId}`}
+                            {getLocalizedTitle(getBookingService(booking) ?? {}, locale) ??
+                              t("serviceNumber", { id: booking.serviziId })}
                           </strong>
                           <span>{getBookingMasterName(booking)}</span>
                           <span>{formatDateTime(booking.startTime)}</span>
                         </div>
                         <span>{booking.status}</span>
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
                       </div>
 
                       {existingReview ? (
@@ -869,16 +857,16 @@ export default function ProfilePage() {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={getMediaUrl(master.avatar)}
-                            alt={master.title || master.name}
+                            alt={getLocalizedTitle(master, locale) || master.name}
                           />
                         ) : (
                           <div className="recommended-master-card__avatar-fallback">
-                            {(master.title || master.name).slice(0, 1).toUpperCase()}
+                            {(getLocalizedTitle(master, locale) || master.name).slice(0, 1).toUpperCase()}
                           </div>
                         )}
 
                         <div>
-                          <strong>{master.title || master.name}</strong>
+                          <strong>{getLocalizedTitle(master, locale) || master.name}</strong>
                           <span>{master.city || t("cityMissing")}</span>
                         </div>
                       </div>
@@ -891,12 +879,18 @@ export default function ProfilePage() {
 
                     <p className="recommended-master-card__reason">{master.reason}</p>
                     <p className="recommended-master-card__description">
-                      {master.description || t("recommendedDescription")}
+                      {getLocalizedDescription(master, locale) || t("recommendedDescription")}
                     </p>
 
-                    {master.categoryTitles.length > 0 ? (
+                    {(locale === "en" && master.categoryTitlesEn?.length
+                      ? master.categoryTitlesEn
+                      : master.categoryTitles
+                    ).length > 0 ? (
                       <div className="recommended-master-card__tags">
-                        {master.categoryTitles.map((categoryTitle) => (
+                        {(locale === "en" && master.categoryTitlesEn?.length
+                          ? master.categoryTitlesEn
+                          : master.categoryTitles
+                        ).map((categoryTitle) => (
                           <span key={`${master.id}-${categoryTitle}`}>{categoryTitle}</span>
                         ))}
                       </div>
@@ -906,7 +900,7 @@ export default function ProfilePage() {
                       <div className="recommended-master-card__services">
                         {master.services.map((service) => (
                           <div key={service.id}>
-                            <strong>{service.title}</strong>
+                            <strong>{getLocalizedTitle(service, locale) ?? service.title}</strong>
                             <span>
                               {service.price.toLocaleString("ru-RU")} {commonT("currencyRub")} • {service.duration} {commonT("minutes")}
                             </span>
@@ -1031,7 +1025,7 @@ export default function ProfilePage() {
         <div className="profile-header">
           <div>
             <h1>{t("masterTitle")}</h1>
-            <p>{masterProfile.title || user.name}</p>
+            <p>{getLocalizedTitle(masterProfile, locale) || user.name}</p>
           </div>
           {user.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -1061,7 +1055,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <span>{t("category")}</span>
-            <strong>{masterProfile.category || commonT("notSpecifiedFemale")}</strong>
+            <strong>{getLocalizedCategory(masterProfile, locale) || commonT("notSpecifiedFemale")}</strong>
           </div>
           <div>
             <span>{t("experience")}</span>
@@ -1104,23 +1098,17 @@ export default function ProfilePage() {
           {masterBookings.length === 0 ? (
             <p>{t("noMasterBookings")}</p>
           ) : (
-<<<<<<< HEAD
-            masterBookings.map((booking: BookingToMaster) => (
-              <div key={booking.id} className="booking-card">
-                {formatDateTime(booking.startTime)} - {booking.client.name} -{" "}
-                {booking.service?.title ?? t("serviceFallback")} ({booking.totalPrice} {commonT("currencyRub")})
-              </div>
-            ))
-=======
             <div className="client-history-list">
               {masterBookings.map((booking: BookingToMaster) => (
                 <article key={booking.id} className="booking-card booking-card--detailed">
                   <div className="booking-card__info">
-                    <strong>{booking.service?.title ?? "Услуга"}</strong>
-                    <span>{booking.client.name || `Клиент #${booking.clientId}`}</span>
+                    <strong>{getLocalizedTitle(booking.service ?? {}, locale) ?? t("serviceFallback")}</strong>
+                    <span>{booking.client.name || t("clientNumber", { id: booking.clientId })}</span>
                     <time>{formatDateTime(booking.startTime)}</time>
                     <small>
-                      {booking.client.phone ? `Телефон: ${booking.client.phone}` : "Телефон не указан"}
+                      {booking.client.phone
+                        ? `${t("phone")}: ${booking.client.phone}`
+                        : commonT("notSpecifiedMale")}
                     </small>
                     <small>{booking.status}</small>
                   </div>
@@ -1130,13 +1118,12 @@ export default function ProfilePage() {
                       disabled={openingChatBookingId === booking.id}
                       onClick={() => void handleOpenMasterBookingChat(booking)}
                     >
-                      {openingChatBookingId === booking.id ? "Открываю..." : "Перейти в чат"}
+                      {openingChatBookingId === booking.id ? commonT("opening") : commonT("chat")}
                     </button>
                   </div>
                 </article>
               ))}
             </div>
->>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
           )}
         </section>
 
@@ -1155,7 +1142,7 @@ export default function ProfilePage() {
               {services.map((service: Servizi) => (
                 <div key={service.id} className="service-card">
                   <span>
-                    {service.title} - {service.price} {commonT("currencyRub")} ({service.duration} {commonT("minutes")})
+                    {getLocalizedTitle(service, locale) ?? service.title} - {service.price} {commonT("currencyRub")} ({service.duration} {commonT("minutes")})
                   </span>
                   <button type="button" onClick={() => dispatch(deleteServiceThunk(service.id))}>
                     {commonT("delete")}
@@ -1241,6 +1228,17 @@ export default function ProfilePage() {
               </label>
 
               <label>
+                <span>{t("masterNameEnLabel")}</span>
+                <input
+                  value={masterProfile.titleEn}
+                  onChange={(event) =>
+                    setMasterProfile((profile) => ({ ...profile, titleEn: event.target.value }))
+                  }
+                  placeholder={t("masterNameEnPlaceholder")}
+                />
+              </label>
+
+              <label>
                 <span>{t("description")}</span>
                 <textarea
                   value={masterProfile.description}
@@ -1248,6 +1246,21 @@ export default function ProfilePage() {
                     setMasterProfile((profile) => ({ ...profile, description: event.target.value }))
                   }
                   placeholder={t("masterDescriptionPlaceholder")}
+                  rows={4}
+                />
+              </label>
+
+              <label>
+                <span>{t("descriptionEn")}</span>
+                <textarea
+                  value={masterProfile.descriptionEn}
+                  onChange={(event) =>
+                    setMasterProfile((profile) => ({
+                      ...profile,
+                      descriptionEn: event.target.value,
+                    }))
+                  }
+                  placeholder={t("masterDescriptionEnPlaceholder")}
                   rows={4}
                 />
               </label>
@@ -1381,6 +1394,17 @@ export default function ProfilePage() {
                     placeholder={t("yourServices")}
                   />
                 </label>
+
+                <label>
+                  <span>{t("categoryEn")}</span>
+                  <input
+                    value={masterProfile.categoryEn}
+                    onChange={(event) =>
+                      setMasterProfile((profile) => ({ ...profile, categoryEn: event.target.value }))
+                    }
+                    placeholder={t("yourServicesEn")}
+                  />
+                </label>
               </div>
 
               <label>
@@ -1428,7 +1452,7 @@ export default function ProfilePage() {
                   {categories.length > 0 ? (
                     categories.map((category) => (
                       <option key={category.id} value={category.id}>
-                        {category.title}
+                        {getLocalizedTitle(category, locale) ?? category.title}
                       </option>
                     ))
                   ) : (
@@ -1448,11 +1472,29 @@ export default function ProfilePage() {
                 />
               </label>
               <label>
+                <span>{t("serviceTitleEn")}</span>
+                <input
+                  placeholder={t("serviceTitleEnPlaceholder")}
+                  value={newService.titleEn}
+                  onChange={(event) => setNewService({ ...newService, titleEn: event.target.value })}
+                />
+              </label>
+              <label>
                 <span>{t("serviceDescription")}</span>
                 <textarea
                   placeholder={t("serviceDescriptionPlaceholder")}
                   value={newService.description}
                   onChange={(event) => setNewService({ ...newService, description: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>{t("serviceDescriptionEn")}</span>
+                <textarea
+                  placeholder={t("serviceDescriptionEnPlaceholder")}
+                  value={newService.descriptionEn}
+                  onChange={(event) =>
+                    setNewService({ ...newService, descriptionEn: event.target.value })
+                  }
                 />
               </label>
               <div className="profile-form-row">
@@ -1495,7 +1537,9 @@ export default function ProfilePage() {
                     setShowAddService(false);
                     setNewService({
                       title: "",
+                      titleEn: "",
                       description: "",
+                      descriptionEn: "",
                       price: 0,
                       duration: 60,
                       categoryId: categories[0]?.id || 1,

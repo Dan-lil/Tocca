@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 import "../../page.css";
@@ -13,6 +13,7 @@ import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByCategory } from "@/shared/api/serviziApi";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
+import { getLocalizedTitle } from "@/shared/lib/localized";
 import { openDirectChat } from "@/shared/lib/openDirectChat";
 import { expandPortfolioItems, getMasterAvatarUrl, getMediaUrl } from "@/shared/lib/media";
 import type {
@@ -75,6 +76,7 @@ function buildServiceCards(
 export default function CategoryPage() {
   const t = useTranslations("services");
   const commonT = useTranslations("common");
+  const locale = useLocale();
   const router = useRouter();
   const params = useParams<{ categoryId: string }>();
   const searchParams = useSearchParams();
@@ -145,7 +147,12 @@ export default function CategoryPage() {
     return services.find((service) => service.id === serviceId) ?? null;
   }, [selectedServiceId, services]);
 
-  const pageTitle = selectedService?.title ?? category?.title ?? t("servicesFallback");
+  const pageTitle =
+    (selectedService
+      ? getLocalizedTitle(selectedService, locale)
+      : category
+        ? getLocalizedTitle(category, locale)
+        : null) ?? t("servicesFallback");
 
   const serviceCards = useMemo(
     () =>
@@ -299,7 +306,9 @@ export default function CategoryPage() {
               // Аватар и мини-портфолио берутся из публичного профиля мастера, а не из самой услуги
               const avatarUrl = getMasterAvatarUrl(card.masterId, masterProfile?.user.avatar);
               const portfolioItems = expandPortfolioItems(masterProfile?.portfolio ?? []).slice(0, 4);
-              const masterInitial = card.masterName.trim().slice(0, 1).toUpperCase();
+              const masterDisplayName =
+                getLocalizedTitle(masterProfile?.profile ?? {}, locale) || card.masterName;
+              const masterInitial = masterDisplayName.trim().slice(0, 1).toUpperCase();
 
               return (
                 <article className="services-directory-card glass-surface" key={card.id}>
@@ -310,14 +319,14 @@ export default function CategoryPage() {
                           <img
                             className="services-directory-card-avatar-image"
                             src={avatarUrl}
-                            alt={t("avatarAlt", { name: card.masterName })}
+                            alt={t("avatarAlt", { name: masterDisplayName })}
                           />
                         ) : (
                           <span>{masterInitial}</span>
                         )}
                       </div>
                       <div className="services-directory-card-head-copy">
-                        <strong>{card.masterName}</strong>
+                        <strong>{masterDisplayName}</strong>
                         <span>{card.meta}</span>
                       </div>
                     </div>
@@ -407,15 +416,15 @@ export default function CategoryPage() {
                             type="button"
                             onClick={() =>
                               setSelectedPortfolioPreview({
-                                masterName: card.masterName,
-                                title: item.title || t("workTitle", { name: card.masterName }),
+                                masterName: masterDisplayName,
+                                title: item.title || t("workTitle", { name: masterDisplayName }),
                                 imageUrl: getMediaUrl(item.imageUrl),
                               })
                             }
                           >
                             <img
                               src={getMediaUrl(item.imageUrl)}
-                              alt={item.title || t("workTitle", { name: card.masterName })}
+                              alt={item.title || t("workTitle", { name: masterDisplayName })}
                             />
                           </button>
                         ))}
@@ -430,8 +439,9 @@ export default function CategoryPage() {
                       dispatchBookingModalOpen({
                         categoryId: Number(categoryId),
                         categoryTitle: category?.title ?? t("servicesFallback"),
+                        categoryTitleEn: category?.titleEn ?? null,
                         masterId: card.masterId,
-                        masterName: card.masterName,
+                        masterName: masterDisplayName,
                         services: card.services,
                       })
                     }
