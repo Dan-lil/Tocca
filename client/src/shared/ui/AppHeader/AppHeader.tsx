@@ -212,7 +212,13 @@ export default function AppHeader() {
                   // В шапке показываем только отобранные акции дня
                   <article className="site-header-offer" key={`header-promo-${promotion.id}`}>
                     <div className="site-header-offer-media">
-                      <Image src={promotion.image} alt={promotion.title} fill unoptimized />
+                      <Image
+                        src={promotion.image}
+                        alt={promotion.title}
+                        fill
+                        className="site-header-offer-image"
+                        unoptimized
+                      />
                     </div>
 
                     <div className="site-header-offer-copy">
