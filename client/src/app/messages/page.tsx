@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { io, Socket } from "socket.io-client";
 
 import "./page.css";
@@ -21,17 +22,17 @@ import { ChatMessageType, ChatType, ChatUserType } from "@/shared/types";
 
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
-function formatMessageTime(date: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
+function formatMessageTime(date: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(date));
 }
 
-function formatBookingDate(date?: string) {
-  if (!date) return "Дата записи не указана";
+function formatBookingDate(date: string | undefined, locale: string, fallback: string) {
+  if (!date) return fallback;
 
-  return new Intl.DateTimeFormat("ru-RU", {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     hour: "2-digit",
@@ -44,6 +45,8 @@ function getAvatarLetter(user?: ChatUserType | null) {
 }
 
 function MessagesPageContent() {
+  const t = useTranslations("messages");
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const { user, isInitialized } = useAppSelector((state) => state.user);
   const [chats, setChats] = useState<ChatType[]>([]);
@@ -80,11 +83,11 @@ function MessagesPageContent() {
         hasRequestedChat ? requestedChatId : currentId ?? data[0]?.id ?? null,
       );
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить чаты");
+      setError(loadError instanceof Error ? loadError.message : t("loadChatsError"));
     } finally {
       setIsLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   useEffect(() => {
     if (!isInitialized || !user) return;
@@ -122,14 +125,14 @@ function MessagesPageContent() {
       });
     });
     socket.on("chat:error", (payload: { message?: string }) => {
-      setError(payload.message ?? "Ошибка подключения к чату");
+      setError(payload.message ?? t("chatConnectError"));
     });
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [activeChatId, user]);
+  }, [activeChatId, t, user]);
 
   useEffect(() => {
     if (!activeChatId) return;
@@ -143,7 +146,7 @@ function MessagesPageContent() {
         socketRef.current?.emit("chat:join", { chatId: activeChatId });
       } catch (loadError) {
         setError(
-          loadError instanceof Error ? loadError.message : "Не удалось загрузить сообщения",
+          loadError instanceof Error ? loadError.message : t("loadMessagesError"),
         );
       } finally {
         setIsMessagesLoading(false);
@@ -151,7 +154,7 @@ function MessagesPageContent() {
     };
 
     void loadMessages();
-  }, [activeChatId]);
+  }, [activeChatId, t]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({
@@ -179,7 +182,7 @@ function MessagesPageContent() {
       setMessages((currentMessages) => [...currentMessages, message]);
     } catch (sendError) {
       setDraft(text);
-      setError(sendError instanceof Error ? sendError.message : "Не удалось отправить сообщение");
+      setError(sendError instanceof Error ? sendError.message : t("sendError"));
     }
   };
 
@@ -187,8 +190,8 @@ function MessagesPageContent() {
     return (
       <main className="messenger-page">
         <section className="messenger-empty">
-          <h1>Сообщения</h1>
-          <p>Войдите в аккаунт, чтобы открыть переписку с мастерами и клиентами.</p>
+          <h1>{t("title")}</h1>
+          <p>{t("loginRequired")}</p>
         </section>
       </main>
     );
@@ -209,23 +212,23 @@ function MessagesPageContent() {
                 )}
               </div>
               <div>
-                <h1>{activeCompanion?.name ?? "Выберите чат"}</h1>
+                <h1>{activeCompanion?.name ?? t("selectChat")}</h1>
                 <p>
                   {activeCompanion?.ProfileMaster?.title ??
                     activeChat?.Booking?.Servizi?.title ??
-                    "История переписки"}
+                    t("history")}
                 </p>
               </div>
             </div>
             <span className={`messenger-status messenger-status--${socketStatus}`}>
-              {socketStatus === "online" ? "онлайн" : "подключение"}
+              {socketStatus === "online" ? t("online") : t("connecting")}
             </span>
           </header>
 
           {activeChat?.Booking ? (
             <div className="messenger-booking">
-              <span>{activeChat.Booking.Servizi?.title ?? "Запись"}</span>
-              <strong>{formatBookingDate(activeChat.Booking.startTime)}</strong>
+              <span>{activeChat.Booking.Servizi?.title ?? t("booking")}</span>
+              <strong>{formatBookingDate(activeChat.Booking.startTime, locale, t("bookingDateMissing"))}</strong>
             </div>
           ) : null}
 
@@ -233,11 +236,11 @@ function MessagesPageContent() {
 
           <div className="messenger-thread" ref={threadRef}>
             {isMessagesLoading ? (
-              <p className="messenger-state">Загружаю сообщения...</p>
+              <p className="messenger-state">{t("loadingMessages")}</p>
             ) : null}
 
             {!isMessagesLoading && messages.length === 0 ? (
-              <p className="messenger-state">Сообщений пока нет. Начните диалог.</p>
+              <p className="messenger-state">{t("emptyMessages")}</p>
             ) : null}
 
             {messages.map((message) => {
@@ -249,7 +252,7 @@ function MessagesPageContent() {
                   key={message.id}
                 >
                   <p>{message.text}</p>
-                  <time>{formatMessageTime(message.createdAt)}</time>
+                  <time>{formatMessageTime(message.createdAt, locale)}</time>
                 </article>
               );
             })}
@@ -260,26 +263,26 @@ function MessagesPageContent() {
               disabled={!activeChat}
               maxLength={1000}
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="Написать сообщение"
+              placeholder={t("placeholder")}
               type="text"
               value={draft}
             />
             <button disabled={!activeChat || !draft.trim()} type="submit">
-              Отправить
+              {t("send")}
             </button>
           </form>
         </div>
 
         <aside className="messenger-sidebar">
           <div className="messenger-sidebar-head">
-            <span>Чаты</span>
+            <span>{t("chats")}</span>
             <strong>{chats.length}</strong>
           </div>
 
-          {isLoading ? <p className="messenger-state">Загружаю чаты...</p> : null}
+          {isLoading ? <p className="messenger-state">{t("loadingChats")}</p> : null}
 
           {!isLoading && chats.length === 0 ? (
-            <p className="messenger-state">Чаты появятся после записи или сообщения мастеру.</p>
+            <p className="messenger-state">{t("emptyChats")}</p>
           ) : null}
 
           <div className="messenger-chat-list">
@@ -304,9 +307,9 @@ function MessagesPageContent() {
                     )}
                   </div>
                   <div>
-                    <strong>{companion?.name ?? "Пользователь"}</strong>
-                    <span>{chat.Booking?.Servizi?.title ?? "Личный чат"}</span>
-                    <p>{lastMessage?.text ?? "Сообщений пока нет"}</p>
+                    <strong>{companion?.name ?? t("user")}</strong>
+                    <span>{chat.Booking?.Servizi?.title ?? t("privateChat")}</span>
+                    <p>{lastMessage?.text ?? t("emptyMessages")}</p>
                   </div>
                 </button>
               );
@@ -319,13 +322,15 @@ function MessagesPageContent() {
 }
 
 export default function MessagesPage() {
+  const t = useTranslations("messages");
+
   return (
     <Suspense
       fallback={
         <main className="messenger-page">
           <section className="messenger-empty">
-            <h1>Сообщения</h1>
-            <p>Загружаю мессенджер...</p>
+            <h1>{t("title")}</h1>
+            <p>{t("loadingMessenger")}</p>
           </section>
         </main>
       }

@@ -150,6 +150,9 @@ module.exports = (sequelize, DataTypes) => {
       phone: DataTypes.STRING,
       avatar: DataTypes.STRING,
       role: DataTypes.STRING,
+      telegramId: DataTypes.STRING,
+      telegramUsername: DataTypes.STRING,
+      authProvider: DataTypes.STRING,
     },
     {
       sequelize,

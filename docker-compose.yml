@@ -37,6 +37,7 @@ services:
       context: ./client
       args:
         NEXT_PUBLIC_API_URL: https://tocca-beauty.ru
+        NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: tocca_beauty_bot
     restart: unless-stopped
     expose:
       - "3000"

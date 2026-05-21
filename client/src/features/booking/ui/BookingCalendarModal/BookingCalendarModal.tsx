@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import styles from "./BookingCalendarModal.module.css";
 
 export type BookingService = {
@@ -39,7 +40,6 @@ type BookingCalendarModalProps = {
   onSubmit: (payload: BookingPayload) => void;
 };
 
-const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const emptySlots: string[] = [];
 
 function toDateKey(date: Date) {
@@ -85,6 +85,10 @@ export default function BookingCalendarModal({
   onClose,
   onSubmit,
 }: BookingCalendarModalProps) {
+  const t = useTranslations("bookingCalendar");
+  const commonT = useTranslations("common");
+  const locale = useLocale();
+  const weekDays = t.raw("weekDays") as string[];
   const initialDate = useMemo(() => {
     const firstAvailableDate = Object.keys(availableSlotsByDate)[0];
 
@@ -104,7 +108,7 @@ export default function BookingCalendarModal({
     () => getMonthDays(selectedDate.getFullYear(), selectedDate.getMonth()),
     [selectedDate],
   );
-  const monthTitle = selectedDate.toLocaleDateString("ru-RU", {
+  const monthTitle = selectedDate.toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
   });
@@ -155,13 +159,13 @@ export default function BookingCalendarModal({
       <section className={styles["booking-modal"]} aria-modal="true" role="dialog">
         <div className={styles["booking-modal-header"]}>
           <div>
-            <p>Запись к мастеру</p>
+            <p>{t("title")}</p>
             <h2>{service.title}</h2>
             <span>
               {master.name} · {master.title}
             </span>
           </div>
-          <button type="button" onClick={onClose} aria-label="Закрыть модальное окно">
+          <button type="button" onClick={onClose} aria-label={t("close")}>
             ×
           </button>
         </div>
@@ -169,11 +173,11 @@ export default function BookingCalendarModal({
         <div className={styles["booking-modal-body"]}>
           <div className={styles["booking-calendar-panel"]}>
             <div className={styles["booking-calendar-toolbar"]}>
-              <button type="button" onClick={() => changeMonth(-1)} aria-label="Предыдущий месяц">
+              <button type="button" onClick={() => changeMonth(-1)} aria-label={t("prevMonth")}>
                 ‹
               </button>
               <h3>{monthTitle}</h3>
-              <button type="button" onClick={() => changeMonth(1)} aria-label="Следующий месяц">
+              <button type="button" onClick={() => changeMonth(1)} aria-label={t("nextMonth")}>
                 ›
               </button>
             </div>
@@ -204,7 +208,7 @@ export default function BookingCalendarModal({
                     onClick={() => handleDateSelect(date)}
                   >
                     <span>{date.getDate()}</span>
-                    {slotsCount > 0 && <small>{slotsCount} окон</small>}
+                    {slotsCount > 0 && <small>{t("slotsCount", { count: slotsCount })}</small>}
                   </button>
                 );
               })}
@@ -213,16 +217,16 @@ export default function BookingCalendarModal({
 
           <aside className={styles["booking-summary"]}>
             <div className={styles["booking-service-card"]}>
-              <p>Услуга</p>
+              <p>{t("service")}</p>
               <strong>{service.title}</strong>
               <span>
-                {service.duration} мин · {service.price.toLocaleString("ru-RU")} ₽
+                {service.duration} {commonT("minutes")} · {service.price.toLocaleString(locale)} ₽
               </span>
             </div>
 
             <div className={styles["booking-slot-section"]}>
               <h3>
-                {selectedDate.toLocaleDateString("ru-RU", {
+                {selectedDate.toLocaleDateString(locale, {
                   day: "numeric",
                   month: "long",
                 })}
@@ -240,17 +244,17 @@ export default function BookingCalendarModal({
                     </button>
                   ))
                 ) : (
-                  <p>На этот день свободных окон пока нет.</p>
+                  <p>{t("noSlots")}</p>
                 )}
               </div>
             </div>
 
             <label className={styles["booking-comment"]}>
-              <span>Комментарий</span>
+              <span>{t("comment")}</span>
               <textarea
                 value={clientComment}
                 onChange={(event) => setClientComment(event.target.value)}
-                placeholder="Можно указать пожелания к записи"
+                placeholder={t("commentPlaceholder")}
               />
             </label>
 
@@ -260,7 +264,7 @@ export default function BookingCalendarModal({
               disabled={!activeSlot}
               onClick={handleSubmit}
             >
-              Записаться
+              {t("book")}
             </button>
           </aside>
         </div>

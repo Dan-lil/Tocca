@@ -216,6 +216,33 @@
   gap: 12px;
 }
 
+.booking-card--detailed {
+  align-items: flex-start;
+}
+
+.booking-card__info {
+  display: grid;
+  gap: 5px;
+}
+
+.booking-card__info strong {
+  color: #754846;
+}
+
+.booking-card__info span,
+.booking-card__info time,
+.booking-card__info small {
+  color: rgba(122, 77, 75, 0.72);
+  font-size: 14px;
+}
+
+.booking-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .recommended-masters-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

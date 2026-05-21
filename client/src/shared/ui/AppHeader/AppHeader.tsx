@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getDailyPromotions } from "@/features/promotions/lib/promotionUtils";
@@ -15,19 +16,25 @@ import { getServices } from "@/shared/api/serviziApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
 import type { CategoryType } from "@/shared/types";
+import LanguageSwitcher from "@/shared/ui/LanguageSwitcher/LanguageSwitcher";
 
-// Верхняя навигация и блок акций дня в шапке
-const navigationItems = [
-  { href: "/", label: "Домашняя страница" },
-  { href: "#", label: "AI Помощник", action: "open-chat" as const },
-];
+type HeaderNavigationItem = {
+  href: string;
+  label: string;
+  action?: "open-chat";
+};
 
 export default function AppHeader() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAppSelector((state) => state.user);
+  const t = useTranslations();
   const isHomePage = pathname === "/";
+  const localizedNavigationItems: HeaderNavigationItem[] = [
+    { href: "/", label: t("header.home") },
+    { href: "#", label: t("header.aiAssistant"), action: "open-chat" },
+  ];
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [categories, setCategories] = useState<CategoryType[]>([]);
@@ -110,8 +117,8 @@ export default function AppHeader() {
     <header className="site-header">
       <div className="site-header-shell">
         <div className="site-header-content">
-          <nav className="top-nav glass-surface" aria-label="Основная навигация">
-            {navigationItems.map((item) =>
+          <nav className="top-nav glass-surface" aria-label={t("header.mainNavigation")}>
+            {localizedNavigationItems.map((item) =>
               item.action === "open-chat" ? (
                 <button
                   className="glass-button glass-button--compact top-nav-link"
@@ -134,7 +141,7 @@ export default function AppHeader() {
 
             {user ? (
               <Link className="glass-button glass-button--compact top-nav-link" href="/Profile">
-                Профиль
+                {t("header.profile")}
               </Link>
             ) : null}
 
@@ -146,13 +153,13 @@ export default function AppHeader() {
                 aria-haspopup="menu"
                 onClick={() => setIsDropdownOpen((prev) => !prev)}
               >
-                Услуги
+                {t("header.services")}
               </button>
 
               {isDropdownOpen ? (
                 <div className="top-nav-dropdown-menu glass-surface" role="menu">
                   {isCategoriesLoading ? (
-                    <span className="top-nav-dropdown-state">Загрузка категорий</span>
+                    <span className="top-nav-dropdown-state">{t("header.categoriesLoading")}</span>
                   ) : null}
 
                   {categoriesError ? (
@@ -181,19 +188,21 @@ export default function AppHeader() {
                 type="button"
                 onClick={handleLogout}
               >
-                Выйти
+                {t("header.logout")}
               </button>
             ) : (
               <Link className="glass-button glass-button--compact top-nav-link" href="/auth">
-                Регистрация/Вход
+                {t("header.auth")}
               </Link>
             )}
+
+            <LanguageSwitcher />
           </nav>
 
           {isHomePage ? (
             <div className="site-header-promo">
               <div className="site-header-promo-heading">
-                <span>Акции дня</span>
+                <span>{t("header.dailyPromotions")}</span>
               </div>
 
               <div className="site-header-promotions-grid">
@@ -209,7 +218,7 @@ export default function AppHeader() {
                         className="site-header-offer-master"
                         href={`/masters/${promotion.masterId}`}
                       >
-                        Мастер {promotion.masterName} ★ {promotion.masterRating.toFixed(1)}
+                        {t("header.master")} {promotion.masterName} ★ {promotion.masterRating.toFixed(1)}
                       </Link>
                       <PromotionRedeemActions
                         promotion={promotion}
@@ -224,13 +233,13 @@ export default function AppHeader() {
 
                 {dailyPromotions.length === 0 ? (
                   <div className="site-header-promo-empty glass-surface">
-                    <span>Акции загружаются</span>
+                    <span>{t("header.promotionsLoading")}</span>
                     <button
                       className="glass-button site-header-button"
                       type="button"
                       onClick={handleOpenChat}
                     >
-                      Записаться
+                      {t("header.book")}
                     </button>
                   </div>
                 ) : null}

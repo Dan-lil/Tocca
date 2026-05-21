@@ -211,6 +211,33 @@ body {
     -webkit-backdrop-filter: var(--glass-backdrop);
 }
 
+.language-switcher {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 248, 246, 0.12);
+}
+
+.language-switcher-button {
+    min-width: 34px;
+    min-height: 26px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 999px;
+    color: rgba(255, 248, 246, 0.82);
+    background: transparent;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.language-switcher-button.is-active {
+    color: #7a4d4b;
+    background: rgba(255, 248, 246, 0.88);
+}
+
 /* Контейнер dropdown для услуг в header */
 .top-nav-dropdown {
     position: relative;
@@ -875,6 +902,60 @@ body {
     color: #a35e5b;
     font-size: 14px;
     text-align: center;
+}
+
+.auth-telegram {
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+}
+
+.auth-telegram-label {
+    margin: 0;
+    color: #9f7370;
+    font-size: 14px;
+}
+
+.auth-telegram-widget {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+}
+
+.auth-telegram-hint {
+    margin: 0;
+    color: #9f7370;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.auth-telegram-role {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+}
+
+.auth-telegram-steps {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    padding-left: 22px;
+    color: #8f6765;
+    font-size: 13px;
+}
+
+.auth-telegram-steps code,
+.auth-telegram-hint code {
+    padding: 2px 6px;
+    border-radius: 8px;
+    background: rgba(255, 252, 251, 0.86);
+    color: #8d605f;
+}
+
+.auth-telegram--blocked {
+    justify-items: stretch;
 }
 
 /* Адаптация глобального layout и шапки для мобильных экранов */

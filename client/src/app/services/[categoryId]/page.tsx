@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 import "../../page.css";
@@ -36,7 +37,15 @@ type SelectedPortfolioPreview = {
   imageUrl: string;
 };
 
-function buildServiceCards(services: ServiziType[], categoryTitle: string): ServiceDirectoryCard[] {
+function buildServiceCards(
+  services: ServiziType[],
+  categoryTitle: string,
+  labels: {
+    masterFallback: string;
+    servicesFallback: string;
+    priceFrom: (price: string) => string;
+  },
+): ServiceDirectoryCard[] {
   const activeServices = services.filter((service) => service.isActive);
   const visibleServices = activeServices.length > 0 ? activeServices : services;
   const servicesByMaster = new Map<number, ServiziType[]>();
@@ -47,9 +56,9 @@ function buildServiceCards(services: ServiziType[], categoryTitle: string): Serv
   });
 
   return Array.from(servicesByMaster.entries()).map(([masterId, masterServices]) => {
-    const masterName = masterServices[0]?.masterName?.trim() || `Мастер #${masterId}`;
+    const masterName = masterServices[0]?.masterName?.trim() || `${labels.masterFallback} #${masterId}`;
     const masterRating = Number(masterServices[0]?.masterRating ?? 0);
-    const skillLabel = categoryTitle || "Услуги";
+    const skillLabel = categoryTitle || labels.servicesFallback;
     const priceFrom = Math.min(...masterServices.map((service) => service.price));
 
     return {
@@ -57,13 +66,15 @@ function buildServiceCards(services: ServiziType[], categoryTitle: string): Serv
       masterId,
       masterName,
       masterRating,
-      meta: `${skillLabel} · от ${priceFrom.toLocaleString("ru-RU")} ₽`,
+      meta: `${skillLabel} · ${labels.priceFrom(priceFrom.toLocaleString("ru-RU"))}`,
       services: masterServices,
     };
   });
 }
 
 export default function CategoryPage() {
+  const t = useTranslations("services");
+  const commonT = useTranslations("common");
   const router = useRouter();
   const params = useParams<{ categoryId: string }>();
   const searchParams = useSearchParams();
@@ -106,14 +117,14 @@ export default function CategoryPage() {
         setCategory(categoryData);
         setServices(servicesData);
       } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : "Не удалось загрузить страницу");
+        setError(loadError instanceof Error ? loadError.message : t("loadError"));
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadCategoryPage();
-  }, [categoryId]);
+  }, [categoryId, t]);
 
   const visibleServices = useMemo(() => {
     if (!selectedServiceId) return services;
@@ -134,11 +145,16 @@ export default function CategoryPage() {
     return services.find((service) => service.id === serviceId) ?? null;
   }, [selectedServiceId, services]);
 
-  const pageTitle = selectedService?.title ?? category?.title ?? "Услуги";
+  const pageTitle = selectedService?.title ?? category?.title ?? t("servicesFallback");
 
   const serviceCards = useMemo(
-    () => buildServiceCards(visibleServices, pageTitle),
-    [pageTitle, visibleServices],
+    () =>
+      buildServiceCards(visibleServices, pageTitle, {
+        masterFallback: t("masterFallback"),
+        servicesFallback: t("servicesFallback"),
+        priceFrom: (price) => t("priceFrom", { price }),
+      }),
+    [pageTitle, t, visibleServices],
   );
 
   useEffect(() => {
@@ -211,7 +227,7 @@ export default function CategoryPage() {
     } catch (loadError) {
       setReviewsErrorByMaster((prev) => ({
         ...prev,
-        [masterId]: loadError instanceof Error ? loadError.message : "Не удалось загрузить отзывы",
+        [masterId]: loadError instanceof Error ? loadError.message : t("reviewsError"),
       }));
     } finally {
       setReviewsLoadingByMaster((prev) => ({ ...prev, [masterId]: false }));
@@ -231,7 +247,7 @@ export default function CategoryPage() {
     } catch (chatError) {
       setChatErrorByMaster((prev) => ({
         ...prev,
-        [masterId]: chatError instanceof Error ? chatError.message : "Не удалось открыть чат",
+        [masterId]: chatError instanceof Error ? chatError.message : t("chatError"),
       }));
     } finally {
       setOpeningChatMasterId(null);
@@ -246,17 +262,17 @@ export default function CategoryPage() {
           style={{ backgroundImage: `linear-gradient(135deg, rgba(255, 252, 251, 0.65), rgba(255, 240, 241, 0.28)), url("/фон3.jpeg")` }}
         >
           <div className="services-directory-hero-copy glass-surface">
-            <span className="services-directory-eyebrow">Категория услуг</span>
+            <span className="services-directory-eyebrow">{t("category")}</span>
             <h1>{pageTitle}</h1>
           </div>
           <Link className="glass-button services-directory-back" href="/">
-            На главную
+            {t("backHome")}
           </Link>
         </section>
 
         {isLoading ? (
           <section className="services-directory-state glass-surface">
-            <p>Загружаю мастеров и услуги категории</p>
+            <p>{t("loading")}</p>
           </section>
         ) : null}
 
@@ -268,7 +284,7 @@ export default function CategoryPage() {
 
         {!isLoading && !error && serviceCards.length === 0 ? (
           <section className="services-directory-state glass-surface">
-            <p>Для этой категории пока нет активных услуг</p>
+            <p>{t("empty")}</p>
           </section>
         ) : null}
 
@@ -294,7 +310,7 @@ export default function CategoryPage() {
                           <img
                             className="services-directory-card-avatar-image"
                             src={avatarUrl}
-                            alt={`Аватар мастера ${card.masterName}`}
+                            alt={t("avatarAlt", { name: card.masterName })}
                           />
                         ) : (
                           <span>{masterInitial}</span>
@@ -305,7 +321,7 @@ export default function CategoryPage() {
                         <span>{card.meta}</span>
                       </div>
                     </div>
-                    <div className="services-directory-card-rating" aria-label={`Рейтинг ${card.masterRating}`}>
+                    <div className="services-directory-card-rating" aria-label={t("ratingLabel", { rating: card.masterRating })}>
                       <span className="services-directory-card-rating-star">★</span>
                       <strong>{card.masterRating.toFixed(1)}</strong>
                     </div>
@@ -316,7 +332,7 @@ export default function CategoryPage() {
                       className="services-directory-badge services-directory-badge-link"
                       href={`/masters/${card.masterId}`}
                     >
-                      Профиль мастера
+                      {t("masterProfile")}
                     </Link>
                     <button
                       className={`services-directory-badge${isReviewsOpen ? " is-active" : ""}`}
@@ -325,7 +341,7 @@ export default function CategoryPage() {
                         void handleToggleReviews(card.masterId);
                       }}
                     >
-                      Отзывы
+                      {t("reviews")}
                     </button>
                     <button
                       className="services-directory-badge"
@@ -335,7 +351,7 @@ export default function CategoryPage() {
                         void handleOpenDirectChat(card.masterId);
                       }}
                     >
-                      {openingChatMasterId === card.masterId ? "Открываю..." : "Написать"}
+                      {openingChatMasterId === card.masterId ? commonT("opening") : commonT("write")}
                     </button>
                   </div>
 
@@ -348,7 +364,7 @@ export default function CategoryPage() {
                   {isReviewsOpen ? (
                     <div className="services-reviews-dropdown">
                       {isReviewsLoading ? (
-                        <p className="services-reviews-state">Загружаю отзывы мастера...</p>
+                        <p className="services-reviews-state">{t("loadingReviews")}</p>
                       ) : null}
 
                       {!isReviewsLoading && reviewsError ? (
@@ -356,7 +372,7 @@ export default function CategoryPage() {
                       ) : null}
 
                       {!isReviewsLoading && !reviewsError && reviews.length === 0 ? (
-                        <p className="services-reviews-state">У мастера пока нет отзывов</p>
+                        <p className="services-reviews-state">{t("noReviews")}</p>
                       ) : null}
 
                       {!isReviewsLoading && !reviewsError && reviews.length > 0 ? (
@@ -364,7 +380,7 @@ export default function CategoryPage() {
                           {reviews.map((review) => (
                             <article className="services-reviews-card" key={review.id}>
                               <div className="services-reviews-card-head">
-                                <strong>Клиент #{review.clientId}</strong>
+                                <strong>{t("clientNumber", { id: review.clientId })}</strong>
                                 <span className="services-reviews-rating">
                                   {"★".repeat(review.rating)}
                                   {"☆".repeat(Math.max(0, 5 - review.rating))}
@@ -381,7 +397,7 @@ export default function CategoryPage() {
                   {portfolioItems.length > 0 ? (
                     <div className="services-directory-portfolio">
                       <div className="services-directory-portfolio-head">
-                        <strong>Портфолио мастера</strong>
+                        <strong>{t("masterPortfolio")}</strong>
                       </div>
                       <div className="services-directory-portfolio-grid">
                         {portfolioItems.map((item) => (
@@ -392,14 +408,14 @@ export default function CategoryPage() {
                             onClick={() =>
                               setSelectedPortfolioPreview({
                                 masterName: card.masterName,
-                                title: item.title || `Работа мастера ${card.masterName}`,
+                                title: item.title || t("workTitle", { name: card.masterName }),
                                 imageUrl: getMediaUrl(item.imageUrl),
                               })
                             }
                           >
                             <img
                               src={getMediaUrl(item.imageUrl)}
-                              alt={item.title || `Работа мастера ${card.masterName}`}
+                              alt={item.title || t("workTitle", { name: card.masterName })}
                             />
                           </button>
                         ))}
@@ -413,14 +429,14 @@ export default function CategoryPage() {
                     onClick={() =>
                       dispatchBookingModalOpen({
                         categoryId: Number(categoryId),
-                        categoryTitle: category?.title ?? "Услуги",
+                        categoryTitle: category?.title ?? t("servicesFallback"),
                         masterId: card.masterId,
                         masterName: card.masterName,
                         services: card.services,
                       })
                     }
                   >
-                    Записаться
+                    {t("book")}
                   </button>
                 </article>
               );
@@ -445,7 +461,7 @@ export default function CategoryPage() {
             <button
               className="services-directory-preview-close"
               type="button"
-              aria-label="Закрыть просмотр"
+              aria-label={t("closePreview")}
               onClick={() => setSelectedPortfolioPreview(null)}
             >
               ×

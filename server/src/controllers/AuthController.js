@@ -2,11 +2,12 @@ const AuthService = require("../services/AuthService");
 const formatResponse = require("../utils/formatResponse");
 const { User } = require("../db/models");
 const bcrypt = require("bcrypt");
-const crypto = require("crypto");
 const fs = require("fs/promises");
 const generateTokens = require("../utils/generateTokens");
 const path = require("path");
 const cookieConfig = require("../config/cookieConfig");
+const { createSafeImageFileName, getImageExtension } = require("../utils/uploadFileName");
+const verifyTelegramAuth = require("../utils/verifyTelegramAuth");
 
 async function saveProfileAvatar(imageFile) {
   if (!imageFile?.data || !imageFile?.type) {
@@ -21,7 +22,7 @@ async function saveProfileAvatar(imageFile) {
 
   const mimeType = match[1];
   const base64Data = match[2];
-  const extension = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
+  const extension = getImageExtension(mimeType);
   const allowedExtensions = new Set(["jpg", "png", "webp", "gif"]);
 
   if (!allowedExtensions.has(extension)) {
@@ -29,7 +30,7 @@ async function saveProfileAvatar(imageFile) {
   }
 
   const uploadsDir = path.join(__dirname, "../public/uploads/profile");
-  const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const fileName = createSafeImageFileName(mimeType);
   const filePath = path.join(uploadsDir, fileName);
 
   await fs.mkdir(uploadsDir, { recursive: true });
@@ -178,6 +179,50 @@ class AuthController {
       return res
         .status(500)
         .json(formatResponse(500, "Ошибка сервера при входе в приложение"));
+    }
+  }
+
+  static async telegramLogin(req, res) {
+    const { role, ...telegramData } = req.body || {};
+
+    try {
+      const parsedMaxAge = Number(process.env.TELEGRAM_AUTH_MAX_AGE_SECONDS);
+      const maxAgeSeconds =
+        Number.isFinite(parsedMaxAge) && parsedMaxAge > 0 ? parsedMaxAge : 86400;
+      const authCheck = verifyTelegramAuth(
+        telegramData,
+        process.env.TELEGRAM_BOT_TOKEN,
+        maxAgeSeconds,
+      );
+
+      if (!authCheck.isValid) {
+        return res.status(400).json(formatResponse(400, authCheck.error));
+      }
+
+      const passwordHash = await bcrypt.hash(crypto.randomUUID(), 10);
+      const user = await AuthService.upsertTelegramUser({
+        ...telegramData,
+        role,
+        passwordHash,
+      });
+
+      const { accessToken, refreshToken } = generateTokens({ user });
+
+      return res
+        .status(200)
+        .cookie("refreshToken", refreshToken, cookieConfig)
+        .json(
+          formatResponse(200, "Успешный вход через Telegram", {
+            user,
+            accessToken,
+          }),
+        );
+    } catch (error) {
+      console.log("======== AuthController.telegramLogin =========");
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, "Ошибка сервера при входе через Telegram"));
     }
   }
 
