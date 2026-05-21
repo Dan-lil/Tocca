@@ -1,5 +1,6 @@
 const formatResponse = require("../utils/formatResponse");
 const AiService = require("../services/AiService");
+const BookingService = require("../services/BookingService");
 
 class AiController {
   static async getAiResponse(req, res) {
@@ -188,54 +189,134 @@ class AiController {
         );
     }
   }
-  static async getGeoSortedMasters(req, res) {
-    const {
-      clientLat,
-      clientLon,
-      radiusKm = 10,
-      categoryId = null, // ← ДОБАВИЛИ: извлекаем categoryId
-      masters = [],
-    } = req.body;
 
-    if (!Array.isArray(masters) || masters.length === 0) {
+  static async searchBookingOptions(req, res) {
+    const { user } = res.locals;
+    const { prompt, limit = 6 } = req.body;
+
+    if (!user?.id) {
       return res
-        .status(400)
+        .status(401)
+        .json(formatResponse(401, "Пользователь не авторизован"));
+    }
+
+    if (user.role !== "client") {
+      return res
+        .status(403)
         .json(
           formatResponse(
-            400,
-            "masters должен быть непустым массивом",
-            null,
-            "masters обязателен",
+            403,
+            "AI-помощник по записи доступен только клиенту",
           ),
         );
     }
-    try {
-      const payload = {
-        clientLat: clientLat ? parseFloat(clientLat) : null,
-        clientLon: clientLon ? parseFloat(clientLon) : null,
-        radiusKm: parseFloat(radiusKm) || 10,
-        categoryId: categoryId ? parseInt(categoryId) : null, // ← ДОБАВИЛИ: передаём categoryId
-        masters,
-      };
 
-      const result = await AiService.getGeoSortedMasters(payload);
+    if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+      return res
+        .status(400)
+        .json(formatResponse(400, "Опишите, какую запись вы хотите"));
+    }
+
+    try {
+      const options = await AiService.searchBookingOptions(prompt, user.id, {
+        limit,
+      });
+
       return res
         .status(200)
         .json(
           formatResponse(
             200,
-            "Мастера отсортированы по геопозиции",
-            result,
+            "Подобраны варианты записи",
+            options,
             null,
           ),
         );
     } catch (error) {
-      console.log("==== AiController.getGeoSortedMasters ==== ");
+      console.log("==== AiController.searchBookingOptions ==== ");
       console.log(error);
-      res
+      return res
         .status(500)
         .json(
-          formatResponse(500, "Ошибка гео-сортировки", null, error.message),
+          formatResponse(
+            500,
+            "Ошибка при подборе вариантов записи",
+            null,
+            error.message,
+          ),
+        );
+    }
+  }
+
+  static async createBookingFromAssistant(req, res) {
+    const { user } = res.locals;
+    const { masterId, serviziId, startTime, endTime, date, clientComment } =
+      req.body;
+
+    if (!user?.id) {
+      return res
+        .status(401)
+        .json(formatResponse(401, "Пользователь не авторизован"));
+    }
+
+    if (user.role !== "client") {
+      return res
+        .status(403)
+        .json(
+          formatResponse(
+            403,
+            "AI-помощник по записи доступен только клиенту",
+          ),
+        );
+    }
+
+    if (!masterId || !serviziId || !startTime || !endTime) {
+      return res
+        .status(400)
+        .json(
+          formatResponse(
+            400,
+            "masterId, serviziId, startTime и endTime обязательны",
+          ),
+        );
+    }
+
+    try {
+      const booking = await BookingService.create(
+        {
+          masterId,
+          serviziId,
+          startTime,
+          endTime,
+          date: date ?? startTime,
+          status: "Ожидает подтверждения",
+          clientComment,
+        },
+        user,
+      );
+
+      return res
+        .status(201)
+        .json(
+          formatResponse(
+            201,
+            "Запись через AI-помощника успешно создана",
+            booking,
+            null,
+          ),
+        );
+    } catch (error) {
+      console.log("==== AiController.createBookingFromAssistant ==== ");
+      console.log(error);
+      return res
+        .status(500)
+        .json(
+          formatResponse(
+            500,
+            "Ошибка при создании записи через AI-помощника",
+            null,
+            error.message,
+          ),
         );
     }
   }

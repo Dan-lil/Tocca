@@ -4,6 +4,18 @@ const verifyAccessToken = require("../middleware/verifyAccessToken");
 
 aiRouter.post("/generate", AiController.getAiResponse);
 
+aiRouter.post(
+  "/booking-assistant/search",
+  verifyAccessToken,
+  AiController.searchBookingOptions,
+);
+
+aiRouter.post(
+  "/booking-assistant/book",
+  verifyAccessToken,
+  AiController.createBookingFromAssistant,
+);
+
 aiRouter.get(
   "/recommendations/masters/me",
   verifyAccessToken,

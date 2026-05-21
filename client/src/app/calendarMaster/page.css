@@ -54,6 +54,13 @@
   border-radius: 8px;
 }
 
+.master-calendar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .master-calendar-primary:disabled,
 .master-calendar-secondary:disabled {
   cursor: not-allowed;

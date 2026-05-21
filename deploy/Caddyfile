@@ -1,4 +1,8 @@
-tocca-beauty.ru, www.tocca-beauty.ru {
+www.tocca-beauty.ru {
+ redir https://tocca-beauty.ru{uri} permanent
+}
+
+tocca-beauty.ru {
  encode gzip
 
  @api path /api/*
