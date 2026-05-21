@@ -904,6 +904,60 @@ body {
     text-align: center;
 }
 
+.auth-telegram {
+    display: grid;
+    gap: 12px;
+    justify-items: center;
+}
+
+.auth-telegram-label {
+    margin: 0;
+    color: #9f7370;
+    font-size: 14px;
+}
+
+.auth-telegram-widget {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+}
+
+.auth-telegram-hint {
+    margin: 0;
+    color: #9f7370;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.auth-telegram-role {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+}
+
+.auth-telegram-steps {
+    display: grid;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    padding-left: 22px;
+    color: #8f6765;
+    font-size: 13px;
+}
+
+.auth-telegram-steps code,
+.auth-telegram-hint code {
+    padding: 2px 6px;
+    border-radius: 8px;
+    background: rgba(255, 252, 251, 0.86);
+    color: #8d605f;
+}
+
+.auth-telegram--blocked {
+    justify-items: stretch;
+}
+
 /* Адаптация глобального layout и шапки для мобильных экранов */
 @media (max-width: 767px) {
     .site-header,

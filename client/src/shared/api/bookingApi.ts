@@ -34,7 +34,10 @@ export async function createBooking(payload: CreateBookingPayload) {
   }
 }
 
-export async function updateBooking(id: number | string, payload: Partial<CreateBookingPayload>) {
+export async function updateBooking(
+  id: number | string,
+  payload: Partial<CreateBookingPayload & Pick<BookingType, "cancelReason">>,
+) {
   try {
     const { data } = await axiosInstance.put<ServerResponseType<BookingType>>(
       BOOKING_API_URLS.update(id),

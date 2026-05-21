@@ -6,6 +6,7 @@ const verifyRefreshToken = require('../middleware/verifyRefreshToken');
 authRouter
   .post('/register', AuthController.register)
   .post('/login', AuthController.login)
+  .post('/telegram', AuthController.telegramLogin)
   .post('/logout', AuthController.logout)
   .put('/profile', verifyAccessToken, AuthController.updateProfile)
   .get('/refresh', verifyRefreshToken, AuthController.refreshTokens);

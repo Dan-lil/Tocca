@@ -3,7 +3,11 @@
 import "./page.css";
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+<<<<<<< HEAD
 import { useLocale, useTranslations } from "next-intl";
+=======
+import { io } from "socket.io-client";
+>>>>>>> bd624dad4bf17e3c8d63b434feb8ae3ae8c221e8
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
 import { createBooking, getBookingsByMaster, updateBooking } from "@/shared/api/bookingApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
@@ -13,6 +17,7 @@ import {
   getShadulesByMaster,
 } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { getAccessToken } from "@/shared/lib/axiosInstance";
 import { openBookingChat } from "@/shared/lib/openBookingChat";
 import type { BookingType, ServiziType, ShaduleType } from "@/shared/types";
 
@@ -50,6 +55,7 @@ const scheduleDays = [
   { dayOdWeek: 6, label: "Суббота" },
   { dayOdWeek: 0, label: "Воскресенье" },
 ];
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 const nextStatus: Record<AppointmentStatus, AppointmentStatus> = {
   pending: "confirmed",
@@ -168,7 +174,9 @@ function getInitialScheduleDrafts(shadules: ShaduleType[] = []): ScheduleDraft[]
 function getAppointmentStatus(status: string): AppointmentStatus {
   const normalizedStatus = status.toLowerCase();
 
-  if (normalizedStatus.includes("отмен")) return "canceled";
+  if (normalizedStatus.includes("отмен") || normalizedStatus.includes("cancel")) {
+    return "canceled";
+  }
   if (normalizedStatus.includes("заверш") || normalizedStatus.includes("done")) return "done";
   if (normalizedStatus.includes("подтверж") || normalizedStatus.includes("confirm")) {
     return "confirmed";
@@ -209,6 +217,10 @@ function buildAppointmentsByDate(
   const servicesById = new Map(services.map((service) => [service.id, service]));
 
   return bookings.reduce<Record<string, Appointment[]>>((result, booking) => {
+    if (isBookingCanceled(booking)) {
+      return result;
+    }
+
     const service = servicesById.get(booking.serviziId);
     const startDate = new Date(booking.startTime);
     const dateKey = toDateKey(startDate);
@@ -460,6 +472,30 @@ export default function CalendarMasterPage() {
 
     void loadMasterCalendarData(masterId);
   }, [isInitialized, loadMasterCalendarData, masterId]);
+
+  useEffect(() => {
+    if (!isInitialized || !masterId) return;
+
+    const socket = io(API_ORIGIN, {
+      auth: { token: getAccessToken() },
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+    });
+
+    socket.on("booking:updated", (updatedBooking: BookingType) => {
+      if (updatedBooking.masterId !== masterId) return;
+
+      setBookings((currentBookings) =>
+        currentBookings.map((booking) =>
+          booking.id === updatedBooking.id ? updatedBooking : booking,
+        ),
+      );
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [isInitialized, masterId]);
 
   function changeMonth(direction: number) {
     setSelectedDate(

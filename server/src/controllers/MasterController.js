@@ -247,7 +247,13 @@ class MasterController {
         },
         order: [["startTime", "ASC"]],
       });
-      const plainBookings = bookings.map((booking) => booking.get());
+      const plainBookings = bookings
+        .map((booking) => booking.get())
+        .filter((booking) => {
+          const status = String(booking.status ?? "").toLowerCase();
+
+          return !status.includes("отмен") && !status.includes("cancel");
+        });
       const clientIds = [...new Set(plainBookings.map((booking) => booking.clientId).filter(Boolean))];
       const serviceIds = [...new Set(plainBookings.map((booking) => booking.serviziId).filter(Boolean))];
 
@@ -263,9 +269,15 @@ class MasterController {
         const service = serviceById.get(booking.serviziId);
 
         return {
-          id: String(booking.id),
+          id: booking.id,
+          clientId: booking.clientId,
+          masterId: booking.masterId,
+          serviziId: booking.serviziId,
           date: booking.date,
           startTime: booking.startTime,
+          endTime: booking.endTime,
+          status: booking.status,
+          clientComment: booking.clientComment,
           client: {
             name: client?.name ?? "",
             phone: client?.phone ?? "",
