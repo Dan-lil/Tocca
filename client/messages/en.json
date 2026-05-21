@@ -70,6 +70,10 @@
     "scrollLeft": "Scroll deals left",
     "scrollRight": "Scroll deals right"
   },
+  "privacyPolicy": {
+    "title": "Personal Data Processing Policy",
+    "footerLink": "Personal data processing policy"
+  },
   "profile": {
     "loadingMasterData": "Loading master data...",
     "clientTitle": "Client account",

@@ -1,4 +1,5 @@
 const { ProfileMaster, Servizi, User } = require("../db/models");
+const { withAutoServiceEnglish } = require("../utils/translate");
 
 // Подтягиваем автора услуги и его профиль, чтобы сразу отдавать имя и рейтинг мастера
 const SERVICE_INCLUDE = [
@@ -27,7 +28,8 @@ function mapServizi(servizi) {
 
 class ServiziService {
   static async create(ServiziData) {
-    const newServizi = await Servizi.create(ServiziData);
+    const serviziData = await withAutoServiceEnglish(ServiziData);
+    const newServizi = await Servizi.create(serviziData);
 
     const plainServizi = newServizi.get();
 
@@ -35,7 +37,8 @@ class ServiziService {
   }
 
   static async update(id, ServiziData) {
-    const [rows] = await Servizi.update(ServiziData, {
+    const serviziData = await withAutoServiceEnglish(ServiziData);
+    const [rows] = await Servizi.update(serviziData, {
       where: { id: id },
     });
 

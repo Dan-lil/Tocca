@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export default function AppFooter() {
+  const t = useTranslations("privacyPolicy");
+
   return (
     <footer className="site-footer">
       <div className="site-footer-shell glass-surface">
@@ -8,7 +11,7 @@ export default function AppFooter() {
           Tocca
         </p>
         <Link className="site-footer-link" href="/privacy-policy">
-          Политика обработки персональных данных
+          {t("footerLink")}
         </Link>
       </div>
     </footer>

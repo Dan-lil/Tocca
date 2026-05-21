@@ -169,6 +169,17 @@ function sortBookingsDesc(bookings: BookingType[]) {
   );
 }
 
+function getRecommendedMasterReason(master: RecommendedMasterType, locale: string) {
+  if (locale !== "en") return master.reason;
+  if (master.reasonEn?.trim()) return master.reasonEn;
+
+  if (master.categoryTitlesEn?.length) {
+    return `Matches your favorite categories: ${master.categoryTitlesEn.join(", ")}`;
+  }
+
+  return "Recommended by rating and popularity";
+}
+
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -903,7 +914,9 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <p className="recommended-master-card__reason">{master.reason}</p>
+                    <p className="recommended-master-card__reason">
+                      {getRecommendedMasterReason(master, locale)}
+                    </p>
                     <p className="recommended-master-card__description">
                       {getLocalizedDescription(master, locale) || t("recommendedDescription")}
                     </p>
