@@ -10,15 +10,14 @@ const {
   User,
 } = require("../db/models");
 
+// ==================== Helper Functions ====================
+
 function getUniqueNumberList(values) {
   return [...new Set(values.filter((value) => Number.isInteger(value)))];
 }
 
 function average(numbers) {
-  if (!numbers.length) {
-    return 0;
-  }
-
+  if (!numbers.length) return 0;
   return numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
 }
 
@@ -30,12 +29,15 @@ function rankMastersLocally(payload) {
     ? payload.candidateMasters
     : [];
 
-  const mastersToRank = candidateMasters.filter((master) => !bookedMasterIds.has(master.id));
+  const mastersToRank = candidateMasters.filter(
+    (master) => !bookedMasterIds.has(master.id),
+  );
 
   if (!bookedMasterIds.size) {
     return mastersToRank
       .sort((a, b) => {
-        if ((b.rating ?? 0) !== (a.rating ?? 0)) return (b.rating ?? 0) - (a.rating ?? 0);
+        if ((b.rating ?? 0) !== (a.rating ?? 0))
+          return (b.rating ?? 0) - (a.rating ?? 0);
         if ((b.reviewCount ?? 0) !== (a.reviewCount ?? 0)) {
           return (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
         }
@@ -50,7 +52,6 @@ function rankMastersLocally(payload) {
       const categoryMatch = (master.categoryIds ?? []).filter((categoryId) =>
         preferredCategoryIds.has(categoryId),
       ).length;
-
       return {
         ...master,
         score:
@@ -62,7 +63,8 @@ function rankMastersLocally(payload) {
     .filter((master) => master.score > 0)
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
-      if ((b.rating ?? 0) !== (a.rating ?? 0)) return (b.rating ?? 0) - (a.rating ?? 0);
+      if ((b.rating ?? 0) !== (a.rating ?? 0))
+        return (b.rating ?? 0) - (a.rating ?? 0);
       if ((b.reviewCount ?? 0) !== (a.reviewCount ?? 0)) {
         return (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
       }
@@ -74,11 +76,11 @@ function rankMastersLocally(payload) {
 
 function getTopMastersByRating(candidateMasters, bookedMasterIds, limit) {
   const bookedMasterIdSet = new Set(bookedMasterIds ?? []);
-
   return (candidateMasters ?? [])
     .filter((master) => !bookedMasterIdSet.has(master.id))
     .sort((a, b) => {
-      if ((b.rating ?? 0) !== (a.rating ?? 0)) return (b.rating ?? 0) - (a.rating ?? 0);
+      if ((b.rating ?? 0) !== (a.rating ?? 0))
+        return (b.rating ?? 0) - (a.rating ?? 0);
       if ((b.reviewCount ?? 0) !== (a.reviewCount ?? 0)) {
         return (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
       }
@@ -88,14 +90,12 @@ function getTopMastersByRating(candidateMasters, bookedMasterIds, limit) {
     .map((master) => master.id);
 }
 
+// ==================== AiService Class ====================
+
 class AiService {
   static async generateText(prompt) {
     const { title, text } = prompt;
-
-    const httpsAgent = new Agent({
-      rejectUnauthorized: false,
-    });
-
+    const httpsAgent = new Agent({ rejectUnauthorized: false });
     const client = new GigaChat({
       model: "GigaChat",
       credentials: process.env.GIGACHAT_API_KEY,
@@ -114,17 +114,14 @@ class AiService {
         },
       ],
     });
-
     return response.choices[0]?.message.content;
   }
 
   static async getMasterRecommendations(payload) {
     const pythonServiceUrl =
       process.env.PYTHON_RECOMMENDATION_URL || "http://localhost:8001";
-
     return new Promise((resolve, reject) => {
       const data = JSON.stringify(payload);
-
       const options = {
         hostname: new URL(pythonServiceUrl).hostname,
         port: new URL(pythonServiceUrl).port || 8001,
@@ -135,14 +132,9 @@ class AiService {
           "Content-Length": Buffer.byteLength(data),
         },
       };
-
       const req = http.request(options, (res) => {
         let body = "";
-
-        res.on("data", (chunk) => {
-          body += chunk;
-        });
-
+        res.on("data", (chunk) => (body += chunk));
         res.on("end", () => {
           try {
             const response = JSON.parse(body);
@@ -156,13 +148,47 @@ class AiService {
           }
         });
       });
-
       req.on("error", (error) => {
         reject(
           new Error(`Failed to connect to Python service: ${error.message}`),
         );
       });
+      req.write(data);
+      req.end();
+    });
+  }
 
+  static async getGeoSortedMasters(payload) {
+    const pythonServiceUrl =
+      process.env.PYTHON_RECOMMENDATION_URL || "http://localhost:8001";
+    const data = JSON.stringify(payload);
+    const options = {
+      hostname: new URL(pythonServiceUrl).hostname,
+      port: new URL(pythonServiceUrl).port || 8001,
+      path: "/geo-sort",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(data),
+      },
+    };
+    return new Promise((resolve, reject) => {
+      const req = http.request(options, (res) => {
+        let body = "";
+        res.on("data", (chunk) => (body += chunk));
+        res.on("end", () => {
+          try {
+            const parsed = JSON.parse(body);
+            if (res.statusCode === 200 && parsed.data) resolve(parsed.data);
+            else reject(new Error(parsed.message || `HTTP ${res.statusCode}`));
+          } catch (e) {
+            reject(new Error("Invalid JSON from Python service"));
+          }
+        });
+      });
+      req.on("error", (e) =>
+        reject(new Error(`Python service connection failed: ${e.message}`)),
+      );
       req.write(data);
       req.end();
     });
@@ -170,7 +196,6 @@ class AiService {
 
   static async getRecommendedMastersForClient(clientId, options = {}) {
     const limit = Number.parseInt(options.limit, 10) || 6;
-
     const [bookings, masters, profiles, services, reviews, categories] =
       await Promise.all([
         Booking.findAll({
@@ -191,16 +216,16 @@ class AiService {
             ["id", "ASC"],
           ],
         }),
-        Eco.findAll({
-          attributes: ["masterId", "rating"],
-        }),
-        Category.findAll({
-          attributes: ["id", "title"],
-        }),
+        Eco.findAll({ attributes: ["masterId", "rating"] }),
+        Category.findAll({ attributes: ["id", "title"] }),
       ]);
 
-    const bookedMasterIds = getUniqueNumberList(bookings.map((booking) => booking.masterId));
-    const bookedServiceIds = getUniqueNumberList(bookings.map((booking) => booking.serviziId));
+    const bookedMasterIds = getUniqueNumberList(
+      bookings.map((booking) => booking.masterId),
+    );
+    const bookedServiceIds = getUniqueNumberList(
+      bookings.map((booking) => booking.serviziId),
+    );
     const bookedServiceIdSet = new Set(bookedServiceIds);
     const preferredCategoryIds = getUniqueNumberList(
       services
@@ -208,7 +233,9 @@ class AiService {
         .map((service) => service.categoryId),
     );
 
-    const profileByMasterId = new Map(profiles.map((profile) => [profile.userId, profile.get()]));
+    const profileByMasterId = new Map(
+      profiles.map((profile) => [profile.userId, profile.get()]),
+    );
     const categoryTitleById = new Map(
       categories.map((category) => [category.id, category.title]),
     );
@@ -241,9 +268,7 @@ class AiService {
         const profileRating = Number(profile?.rating) || 0;
         const rating = calculatedRating || profileRating;
 
-        if (!masterServices.length) {
-          return null;
-        }
+        if (!masterServices.length) return null;
 
         return {
           id: plainMaster.id,
@@ -284,11 +309,12 @@ class AiService {
     };
 
     let recommendedIds = [];
-
     try {
       recommendedIds = await this.getMasterRecommendations(payload);
     } catch (error) {
-      console.log("==== AiService.getRecommendedMastersForClient fallback ==== ");
+      console.log(
+        "==== AiService.getRecommendedMastersForClient fallback ==== ",
+      );
       console.log(error.message);
       recommendedIds = rankMastersLocally(payload);
     }
@@ -300,7 +326,6 @@ class AiService {
         limit,
       );
     }
-
     if (!recommendedIds.length) {
       recommendedIds = getTopMastersByRating(
         payload.candidateMasters,
@@ -309,7 +334,9 @@ class AiService {
       );
     }
 
-    const candidateById = new Map(candidates.map((candidate) => [candidate.id, candidate]));
+    const candidateById = new Map(
+      candidates.map((candidate) => [candidate.id, candidate]),
+    );
 
     return recommendedIds
       .map((masterId) => candidateById.get(masterId))
@@ -318,7 +345,6 @@ class AiService {
         const matchedCategories = master.categoryIds.filter((categoryId) =>
           preferredCategoryIds.includes(categoryId),
         );
-
         return {
           ...master,
           reason:
