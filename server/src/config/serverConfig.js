@@ -19,7 +19,12 @@ const serverConfig = (app) => {
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
   app.use(express.json({ limit: "10mb" }));
   app.use(removeXPoweredHeader);
-  app.use(express.static(path.join(__dirname, "../public")));
+  app.use(
+    express.static(path.join(__dirname, "../public"), {
+      immutable: process.env.NODE_ENV === "production",
+      maxAge: process.env.NODE_ENV === "production" ? "7d" : 0,
+    }),
+  );
 };
 
 module.exports = serverConfig;
