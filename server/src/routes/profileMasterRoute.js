@@ -7,13 +7,17 @@ ProfileMasterRouter.get(
   verifyAccessToken,
   ProfileMasterController.getMyProfile,
 );
-
 ProfileMasterRouter.get("/:masterId", ProfileMasterController.getPublicProfile);
-
 ProfileMasterRouter.put(
   "/update",
   verifyAccessToken,
   ProfileMasterController.updateProfile,
+);
+
+ProfileMasterRouter.put(
+  "/location",
+  verifyAccessToken,
+  ProfileMasterController.updateMasterLocation,
 );
 
 module.exports = ProfileMasterRouter;

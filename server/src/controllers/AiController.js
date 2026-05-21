@@ -188,6 +188,57 @@ class AiController {
         );
     }
   }
+  static async getGeoSortedMasters(req, res) {
+    const {
+      clientLat,
+      clientLon,
+      radiusKm = 10,
+      categoryId = null, // ← ДОБАВИЛИ: извлекаем categoryId
+      masters = [],
+    } = req.body;
+
+    if (!Array.isArray(masters) || masters.length === 0) {
+      return res
+        .status(400)
+        .json(
+          formatResponse(
+            400,
+            "masters должен быть непустым массивом",
+            null,
+            "masters обязателен",
+          ),
+        );
+    }
+    try {
+      const payload = {
+        clientLat: clientLat ? parseFloat(clientLat) : null,
+        clientLon: clientLon ? parseFloat(clientLon) : null,
+        radiusKm: parseFloat(radiusKm) || 10,
+        categoryId: categoryId ? parseInt(categoryId) : null, // ← ДОБАВИЛИ: передаём categoryId
+        masters,
+      };
+
+      const result = await AiService.getGeoSortedMasters(payload);
+      return res
+        .status(200)
+        .json(
+          formatResponse(
+            200,
+            "Мастера отсортированы по геопозиции",
+            result,
+            null,
+          ),
+        );
+    } catch (error) {
+      console.log("==== AiController.getGeoSortedMasters ==== ");
+      console.log(error);
+      res
+        .status(500)
+        .json(
+          formatResponse(500, "Ошибка гео-сортировки", null, error.message),
+        );
+    }
+  }
 }
 
 module.exports = AiController;
