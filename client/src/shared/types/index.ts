@@ -68,6 +68,8 @@ export type PublicMasterProfileType = {
     category?: string | null;
     categoryEn?: string | null;
     rating?: number | null;
+    latitude?: number | null;
+    longitude?: number | null;
   } | null;
   portfolio: PublicMasterPortfolioItem[];
   socials?: MasterSocialType[];

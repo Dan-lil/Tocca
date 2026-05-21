@@ -23,6 +23,7 @@ import {
 import { updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
 import type { BookingToMaster } from "@/entities/master/model/index";
+import MasterGeoPicker from "@/features/master/ui/MasterGeoPicker/MasterGeoPicker";
 import { getBookingsByClient, updateBooking } from "@/shared/api/bookingApi";
 import { getCategories } from "@/shared/api/categoryApi";
 import { getMyMasterRecommendations } from "@/shared/api/aiApi";
@@ -32,7 +33,7 @@ import {
   deleteMasterSocial,
   getMyMasterSocials,
 } from "@/shared/api/masterSocialApi";
-import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
+import { getPublicMasterProfile, updateMasterLocation } from "@/shared/api/profileMasterApi";
 import { getServices } from "@/shared/api/serviziApi";
 import { axiosInstance, getAccessToken } from "@/shared/lib/axiosInstance";
 import {
@@ -66,6 +67,8 @@ type ProfileMaster = {
   category: string;
   categoryEn: string;
   rating: number;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 type UploadedImage = {
@@ -133,6 +136,8 @@ const emptyMasterProfile: ProfileMaster = {
   category: "",
   categoryEn: "",
   rating: 0,
+  latitude: null,
+  longitude: null,
 };
 const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
@@ -513,6 +518,27 @@ export default function ProfilePage() {
       setProfileError(t("errorSaveMasterProfile"));
     } finally {
       setIsProfileSaving(false);
+    }
+  }
+
+  async function handleMasterLocationChange(lat: number, lon: number) {
+    try {
+      setProfileError(null);
+      const location = await updateMasterLocation({
+        lat,
+        lon,
+        address: masterProfile.address,
+      });
+
+      setMasterProfile((profile) => ({
+        ...profile,
+        latitude: location.lat,
+        longitude: location.lon,
+      }));
+    } catch (error) {
+      setProfileError(
+        error instanceof Error ? error.message : "Не удалось сохранить локацию мастера",
+      );
     }
   }
 
@@ -1378,6 +1404,22 @@ export default function ProfilePage() {
                     placeholder={t("yourAddress")}
                   />
                 </label>
+              </div>
+
+              <div className="profile-location-picker">
+                <div>
+                  <strong>Точка на карте</strong>
+                  <span>
+                    Выберите место, где клиентам удобнее искать вас рядом с собой
+                  </span>
+                </div>
+                <MasterGeoPicker
+                  initialLat={masterProfile.latitude ?? 55.751244}
+                  initialLon={masterProfile.longitude ?? 37.618423}
+                  onChange={(lat, lon) => {
+                    void handleMasterLocationChange(lat, lon);
+                  }}
+                />
               </div>
 
               <div className="profile-form-row">
