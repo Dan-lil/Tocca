@@ -1,34 +1,51 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { getDailyPromotions } from "@/features/promotions/lib/promotionUtils";
+import type { PromotionItem } from "@/features/promotions/model/promotions.data";
+import { PromotionRedeemActions } from "@/features/promotions/ui/PromotionRedeemActions";
 import { logoutThunk } from "@/entities/user/api/UserApiThunk";
 import { getCategories } from "@/shared/api/categoryApi";
+import { getSales } from "@/shared/api/saleApi";
+import { getServices } from "@/shared/api/serviziApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
-import { CategoryType } from "@/shared/types";
+import { getLocalizedTitle } from "@/shared/lib/localized";
+import type { CategoryType } from "@/shared/types";
+import LanguageSwitcher from "@/shared/ui/LanguageSwitcher/LanguageSwitcher";
 
-const navigationItems = [
-  { href: "/", label: "Домашняя страница" },
-  { href: "#", label: "AI Помощник", action: "open-chat" as const },
-];
+type HeaderNavigationItem = {
+  href: string;
+  label: string;
+  action?: "open-chat";
+};
 
 export default function AppHeader() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAppSelector((state) => state.user);
+  const t = useTranslations();
+  const locale = useLocale();
   const isHomePage = pathname === "/";
+  const localizedNavigationItems: HeaderNavigationItem[] = [
+    { href: "/", label: t("header.home") },
+    { href: "#", label: t("header.aiAssistant"), action: "open-chat" },
+  ];
 
-  // Ref помогает закрывать dropdown кликом вне меню
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [categories, setCategories] = useState<CategoryType[]>([]);
+  const [dailyPromotions, setDailyPromotions] = useState<PromotionItem[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
 
+  // Эта кнопка открывает общий сценарий записи через AI модалку
   const handleOpenChat = () => {
     dispatchBookingModalOpen();
   };
@@ -38,6 +55,7 @@ export default function AppHeader() {
     router.push("/auth");
   };
 
+  // Загружаем категории для dropdown меню услуг
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -57,6 +75,27 @@ export default function AppHeader() {
     void loadCategories();
   }, []);
 
+  // На главной странице отдельно собираем две лучшие акции дня
+  useEffect(() => {
+    if (!isHomePage) return;
+
+    const loadDailyPromotions = async () => {
+      try {
+        const [servicesData, salesData] = await Promise.all([
+          getServices(),
+          getSales(),
+        ]);
+
+        setDailyPromotions(getDailyPromotions(salesData, servicesData));
+      } catch {
+        setDailyPromotions([]);
+      }
+    };
+
+    void loadDailyPromotions();
+  }, [isHomePage]);
+
+  // Закрываем dropdown, если пользователь кликнул вне него
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
       if (!dropdownRef.current?.contains(event.target as Node)) {
@@ -80,8 +119,8 @@ export default function AppHeader() {
     <header className="site-header">
       <div className="site-header-shell">
         <div className="site-header-content">
-          <nav className="top-nav glass-surface" aria-label="Основная навигация">
-            {navigationItems.map((item) =>
+          <nav className="top-nav glass-surface" aria-label={t("header.mainNavigation")}>
+            {localizedNavigationItems.map((item) =>
               item.action === "open-chat" ? (
                 <button
                   className="glass-button glass-button--compact top-nav-link"
@@ -102,15 +141,13 @@ export default function AppHeader() {
               ),
             )}
 
-            {/* Переход в профиль показываем только авторизованному пользователю */}
             {user ? (
               <Link className="glass-button glass-button--compact top-nav-link" href="/Profile">
-                Профиль
+                {t("header.profile")}
               </Link>
             ) : null}
 
             <div className="top-nav-dropdown" ref={dropdownRef}>
-              {/* Кнопка открывает список категорий услуг из базы */}
               <button
                 className="glass-button glass-button--compact top-nav-link top-nav-button"
                 type="button"
@@ -118,14 +155,13 @@ export default function AppHeader() {
                 aria-haspopup="menu"
                 onClick={() => setIsDropdownOpen((prev) => !prev)}
               >
-                Услуги
+                {t("header.services")}
               </button>
 
-              {/* По категории уходим на страницу категории, где показываются карточки мастеров */}
               {isDropdownOpen ? (
                 <div className="top-nav-dropdown-menu glass-surface" role="menu">
                   {isCategoriesLoading ? (
-                    <span className="top-nav-dropdown-state">Загрузка категорий</span>
+                    <span className="top-nav-dropdown-state">{t("header.categoriesLoading")}</span>
                   ) : null}
 
                   {categoriesError ? (
@@ -140,7 +176,7 @@ export default function AppHeader() {
                           key={`header-category-${category.id}`}
                           onClick={() => setIsDropdownOpen(false)}
                         >
-                          {category.title}
+                          {getLocalizedTitle(category, locale) ?? category.title}
                         </Link>
                       ))
                     : null}
@@ -154,27 +190,61 @@ export default function AppHeader() {
                 type="button"
                 onClick={handleLogout}
               >
-                Выйти
+                {t("header.logout")}
               </button>
             ) : (
               <Link className="glass-button glass-button--compact top-nav-link" href="/auth">
-                Регистрация/Вход
+                {t("header.auth")}
               </Link>
             )}
+
+            <LanguageSwitcher />
           </nav>
 
           {isHomePage ? (
             <div className="site-header-promo">
-              <div className="site-header-offer"></div>
+              <div className="site-header-promo-heading">
+                <span>{t("header.dailyPromotions")}</span>
+              </div>
 
-              <div className="site-header-actions">
-                <button
-                  className="glass-button site-header-button"
-                  type="button"
-                  onClick={handleOpenChat}
-                >
-                  Записаться
-                </button>
+              <div className="site-header-promotions-grid">
+                {dailyPromotions.map((promotion) => (
+                  // В шапке показываем только отобранные акции дня
+                  <article className="site-header-offer" key={`header-promo-${promotion.id}`}>
+                    <div className="site-header-offer-media">
+                      <Image src={promotion.image} alt={promotion.title} fill unoptimized />
+                    </div>
+
+                    <div className="site-header-offer-copy">
+                      <Link
+                        className="site-header-offer-master"
+                        href={`/masters/${promotion.masterId}`}
+                      >
+                        {t("header.master")} {promotion.masterName} ★ {promotion.masterRating.toFixed(1)}
+                      </Link>
+                      <PromotionRedeemActions
+                        promotion={promotion}
+                        triggerClassName="glass-button glass-button--compact promo-link"
+                        panelClassName="promo-code-panel"
+                        copyButtonClassName="glass-button glass-button--compact promo-copy-button"
+                        bookButtonClassName="glass-button glass-button--compact promo-book-button"
+                      />
+                    </div>
+                  </article>
+                ))}
+
+                {dailyPromotions.length === 0 ? (
+                  <div className="site-header-promo-empty glass-surface">
+                    <span>{t("header.promotionsLoading")}</span>
+                    <button
+                      className="glass-button site-header-button"
+                      type="button"
+                      onClick={handleOpenChat}
+                    >
+                      {t("header.book")}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : null}

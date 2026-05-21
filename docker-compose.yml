@@ -24,18 +24,39 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      HOST: 0.0.0.0
       DB_PROD: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      PYTHON_RECOMMENDATION_URL: http://ai-recommendation:8001
     depends_on:
       postgres:
         condition: service_healthy
+      ai-recommendation:
+        condition: service_started
     expose:
       - "3000"
+
+  ai-recommendation:
+    build: ./server/src/ai-recommendation
+    restart: unless-stopped
+    expose:
+      - "8001"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=2)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web:
     build:
       context: ./client
       args:
         NEXT_PUBLIC_API_URL: https://tocca-beauty.ru
+        NEXT_PUBLIC_TELEGRAM_BOT_USERNAME: tocca_beauty_bot
+        NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${NEXT_PUBLIC_YANDEX_MAPS_API_KEY}
     restart: unless-stopped
     expose:
       - "3000"

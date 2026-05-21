@@ -27,4 +27,6 @@ aiRouter.post(
   AiController.getMasterRecommendations,
 );
 
+aiRouter.post("/geo-sort", AiController.getGeoSortedMasters);
+
 module.exports = aiRouter;

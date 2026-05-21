@@ -8,6 +8,7 @@ export type ServerResponseType<T> = {
 export type CategoryType = {
   id: number;
   title: string;
+  titleEn?: string | null;
   photo: string | null;
   createdAt?: string;
   updatedAt?: string;
@@ -19,7 +20,9 @@ export type ServiziType = {
   masterName?: string | null;
   masterRating?: number;
   title: string;
+  titleEn?: string | null;
   description: string;
+  descriptionEn?: string | null;
   price: number;
   duration: number;
   categoryId: number;
@@ -56,12 +59,17 @@ export type PublicMasterProfileType = {
     id?: number;
     userId?: number;
     title?: string | null;
+    titleEn?: string | null;
     description?: string | null;
+    descriptionEn?: string | null;
     city?: string | null;
     address?: string | null;
     experience?: number | null;
     category?: string | null;
+    categoryEn?: string | null;
     rating?: number | null;
+    latitude?: number | null;
+    longitude?: number | null;
   } | null;
   portfolio: PublicMasterPortfolioItem[];
   socials?: MasterSocialType[];
@@ -71,27 +79,33 @@ export type RecommendedMasterType = {
   id: number;
   name: string;
   title: string;
+  titleEn?: string | null;
   avatar?: string | null;
   description?: string;
+  descriptionEn?: string | null;
   city?: string;
   address?: string;
   rating: number;
   reviewCount: number;
   categoryIds: number[];
   categoryTitles: string[];
+  categoryTitlesEn?: string[];
   services: Array<{
     id: number;
     title: string;
+    titleEn?: string | null;
     price: number;
     duration: number;
     categoryId: number;
   }>;
   reason: string;
+  reasonEn?: string | null;
 };
 
 export type BookingModalPayload = {
   categoryId: number;
   categoryTitle: string;
+  categoryTitleEn?: string | null;
   masterId: number;
   masterName?: string;
   services?: ServiziType[];
@@ -149,4 +163,55 @@ export type ShaduleType = {
   isWorkingDay: boolean;
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type ChatUserType = {
+  id: number;
+  name: string;
+  avatar?: string | null;
+  role: "client" | "master" | "admin";
+  ProfileMaster?: {
+    title?: string | null;
+    titleEn?: string | null;
+    city?: string | null;
+    category?: string | null;
+    categoryEn?: string | null;
+    rating?: number | null;
+  } | null;
+};
+
+export type ChatMessageType = {
+  id: number;
+  chatId: number;
+  senderId: number;
+  text: string;
+  sender?: ChatUserType;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export type ChatType = {
+  id: number;
+  clientId: number;
+  masterId: number;
+  bookingId?: number | null;
+  client?: ChatUserType;
+  master?: ChatUserType;
+  Booking?: {
+    id: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+    Servizi?: Pick<ServiziType, "id" | "title" | "titleEn" | "price" | "duration">;
+  };
+  ChatMessages?: ChatMessageType[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateChatPayload = {
+  clientId?: number;
+  masterId: number;
+  bookingId?: number | null;
 };

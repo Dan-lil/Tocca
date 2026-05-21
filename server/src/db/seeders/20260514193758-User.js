@@ -1,6 +1,9 @@
 "use strict";
 
 const bcrypt = require("bcrypt");
+
+const defaultAvatar = "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg";
+
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -14,8 +17,7 @@ module.exports = {
           email: "admin@mail.ru",
           password: hashedPassword,
           phone: "88005553535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: defaultAvatar,
           role: "admin",
         },
         {
@@ -23,8 +25,7 @@ module.exports = {
           email: "master@mail.ru",
           password: hashedPassword,
           phone: "88003553535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId2.jpg",
           role: "master",
         },
         {
@@ -32,8 +33,7 @@ module.exports = {
           email: "client@mail.ru",
           password: hashedPassword,
           phone: "88003583535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: defaultAvatar,
           role: "client",
         },
         {
@@ -41,8 +41,7 @@ module.exports = {
           email: "anna@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: defaultAvatar,
           role: "client",
         },
         {
@@ -50,8 +49,7 @@ module.exports = {
           email: "ivan@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: defaultAvatar,
           role: "client",
         },
         {
@@ -59,8 +57,7 @@ module.exports = {
           email: "maria@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId6.jpg",
           role: "master",
         },
         {
@@ -68,8 +65,7 @@ module.exports = {
           email: "petr@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId7.jpg",
           role: "master",
         },
         {
@@ -77,8 +73,7 @@ module.exports = {
           email: "svetlana@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId8.jpg",
           role: "master",
         },
         {
@@ -86,8 +81,7 @@ module.exports = {
           email: "mikhail@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId9.jpg",
           role: "master",
         },
         {
@@ -95,8 +89,7 @@ module.exports = {
           email: "elena@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId10.jpg",
           role: "master",
         },
         {
@@ -104,17 +97,15 @@ module.exports = {
           email: "aleksey@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId11.jpg",
           role: "master",
         },
         {
-          name: "Александра",
-          email: "aleksandra@mail.ru",
+          name: "Александр",
+          email: "aleksandr@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId12.jpg",
           role: "master",
         },
         {
@@ -122,22 +113,12 @@ module.exports = {
           email: "dmitry@mail.ru",
           password: hashedPassword,
           phone: "88003593535",
-          avatar:
-            "https://i.pinimg.com/1200x/8e/8e/1f/8e8e1fb952587e99fdb2fd9b09cd2cbb.jpg",
+          avatar: "/avatar/userId13.jpg",
           role: "master",
         },
       ],
       { returning: ["id"] },
     );
-    /**
-     * Add seed commands here.
-     *
-     * Example:
-     * await queryInterface.bulkInsert('People', [{
-     *   name: 'John Doe',
-     *   isBetaMember: false
-     * }], {});
-     */
   },
 
   async down(queryInterface, Sequelize) {
@@ -148,11 +129,5 @@ module.exports = {
     await queryInterface.bulkDelete("Bookings", null, {});
     await queryInterface.bulkDelete("Chats", null, {});
     await queryInterface.bulkDelete("Ecos", null, {});
-    /**
-     * Add commands to revert seed here.
-     *
-     * Example:
-     * await queryInterface.bulkDelete('People', null, {});
-     */
   },
 };

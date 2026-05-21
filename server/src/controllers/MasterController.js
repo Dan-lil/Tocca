@@ -1,9 +1,10 @@
-const crypto = require("crypto");
 const fs = require("fs/promises");
 const path = require("path");
 const { Op } = require("sequelize");
 const { Booking, MasterPortfolio, ProfileMaster, Servizi, User } = require("../db/models");
 const formatResponse = require("../utils/formatResponse");
+const { withAutoServiceEnglish } = require("../utils/translate");
+const { createSafeImageFileName, getImageExtension } = require("../utils/uploadFileName");
 
 function getMasterId(res) {
   return res.locals.user?.id;
@@ -32,15 +33,15 @@ async function savePortfolioImage(imageFile) {
     throw new Error("Invalid image payload");
   }
 
-  const extensionByType = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif",
-  };
-  const extension = extensionByType[imageFile.type] ?? "jpg";
+  const extension = getImageExtension(imageFile.type);
+  const allowedExtensions = new Set(["jpg", "png", "webp", "gif"]);
+
+  if (!allowedExtensions.has(extension)) {
+    throw new Error("Unsupported image file type");
+  }
+
   const uploadsDir = path.join(__dirname, "../public/uploads/portfolio");
-  const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const fileName = createSafeImageFileName(imageFile.type);
 
   await fs.mkdir(uploadsDir, { recursive: true });
   await fs.writeFile(path.join(uploadsDir, fileName), Buffer.from(base64Data, "base64"));
@@ -122,10 +123,11 @@ class MasterController {
     const masterId = getMasterId(res);
 
     try {
+      const serviceData = await withAutoServiceEnglish(req.body);
       const service = await Servizi.create({
-        ...req.body,
+        ...serviceData,
         masterId,
-        isActive: req.body.isActive ?? true,
+        isActive: serviceData.isActive ?? true,
       });
 
       return res.status(201).json(formatResponse(201, "Service created", service.get()));
@@ -141,7 +143,8 @@ class MasterController {
     const { id } = req.params;
 
     try {
-      const [rows] = await Servizi.update(req.body, { where: { id, masterId } });
+      const serviceData = await withAutoServiceEnglish(req.body);
+      const [rows] = await Servizi.update(serviceData, { where: { id, masterId } });
       if (rows === 0) {
         return res.status(404).json(formatResponse(404, "Service not found"));
       }
@@ -247,7 +250,13 @@ class MasterController {
         },
         order: [["startTime", "ASC"]],
       });
-      const plainBookings = bookings.map((booking) => booking.get());
+      const plainBookings = bookings
+        .map((booking) => booking.get())
+        .filter((booking) => {
+          const status = String(booking.status ?? "").toLowerCase();
+
+          return !status.includes("отмен") && !status.includes("cancel");
+        });
       const clientIds = [...new Set(plainBookings.map((booking) => booking.clientId).filter(Boolean))];
       const serviceIds = [...new Set(plainBookings.map((booking) => booking.serviziId).filter(Boolean))];
 
@@ -263,9 +272,15 @@ class MasterController {
         const service = serviceById.get(booking.serviziId);
 
         return {
-          id: String(booking.id),
+          id: booking.id,
+          clientId: booking.clientId,
+          masterId: booking.masterId,
+          serviziId: booking.serviziId,
           date: booking.date,
           startTime: booking.startTime,
+          endTime: booking.endTime,
+          status: booking.status,
+          clientComment: booking.clientComment,
           client: {
             name: client?.name ?? "",
             phone: client?.phone ?? "",

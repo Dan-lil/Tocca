@@ -1,40 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 
 import "./page.css";
 import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
-import { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shared/types";
-
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-function getMediaUrl(value?: string | null) {
-  if (!value) return "";
-
-  if (value.startsWith("http") || value.startsWith("data:") || value.startsWith("blob:")) {
-    return value;
-  }
-
-  if (value.startsWith("/")) {
-    return `${apiBaseUrl}${value}`;
-  }
-
-  return value;
-}
+import { useAppSelector } from "@/shared/hooks/useReduxHooks";
+import { getLocalizedDescription, getLocalizedTitle } from "@/shared/lib/localized";
+import { openDirectChat } from "@/shared/lib/openDirectChat";
+import { expandPortfolioItems, getMasterAvatarUrl, getMediaUrl } from "@/shared/lib/media";
+import type { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shared/types";
 
 export default function PublicMasterPage() {
+  const t = useTranslations("master");
+  const commonT = useTranslations("common");
+  const locale = useLocale();
+  const router = useRouter();
   const params = useParams<{ masterId: string }>();
   const masterId = params?.masterId;
+  const user = useAppSelector((state) => state.user.user);
 
   const [master, setMaster] = useState<PublicMasterProfileType | null>(null);
   const [services, setServices] = useState<ServiziType[]>([]);
   const [reviews, setReviews] = useState<EcoReviewType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOpeningChat, setIsOpeningChat] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!masterId) return;
@@ -54,27 +50,54 @@ export default function PublicMasterPage() {
         setServices(servicesData.filter((service) => service.isActive));
         setReviews(reviewsData);
       } catch (loadError) {
-        setError(
-          loadError instanceof Error ? loadError.message : "Не удалось загрузить профиль мастера",
-        );
+        setError(loadError instanceof Error ? loadError.message : t("loadError"));
       } finally {
         setIsLoading(false);
       }
     };
 
     void loadMaster();
-  }, [masterId]);
+  }, [masterId, t]);
 
   const masterName = useMemo(() => {
-    if (!master) return "Профиль мастера";
+    if (!master) return t("profile");
 
-    return master.profile?.title?.trim() || master.user.name || "Мастер";
-  }, [master]);
+    return getLocalizedTitle(master.profile ?? {}, locale)?.trim() || master.user.name || t("fallbackName");
+  }, [locale, master, t]);
+
+  const handleOpenDirectChat = async () => {
+    const numericMasterId = Number(masterId);
+
+    if (!user) {
+      router.push("/auth");
+      return;
+    }
+
+    if (!Number.isInteger(numericMasterId)) return;
+
+    try {
+      setIsOpeningChat(true);
+      setChatError(null);
+      await openDirectChat(router, numericMasterId);
+    } catch (openError) {
+      setChatError(openError instanceof Error ? openError.message : t("chatError"));
+    } finally {
+      setIsOpeningChat(false);
+    }
+  };
+
+  // На публичной странице мастера сначала пробуем локальный аватар из public/avatar
+  const resolvedMasterId = Number(masterId);
+  const avatarUrl =
+    master && !Number.isNaN(resolvedMasterId)
+      ? getMasterAvatarUrl(resolvedMasterId, master.user.avatar)
+      : "";
+  const portfolioItems = expandPortfolioItems(master?.portfolio ?? []);
 
   if (isLoading) {
     return (
       <main className="public-master-page">
-        <section className="public-master-state glass-surface">Загружаю профиль мастера...</section>
+        <section className="public-master-state glass-surface">{t("loading")}</section>
       </main>
     );
   }
@@ -83,11 +106,25 @@ export default function PublicMasterPage() {
     return (
       <main className="public-master-page">
         <section className="public-master-state glass-surface">
-          <p>{error ?? "Профиль мастера не найден"}</p>
-          <Link className="glass-button public-master-back" href="/">
-            На главную
-          </Link>
+          <p>{error ?? t("notFound")}</p>
+          <div className="public-master-actions">
+            <button
+              className="glass-button public-master-back"
+              disabled={isOpeningChat}
+              type="button"
+              onClick={() => {
+                void handleOpenDirectChat();
+              }}
+            >
+              {isOpeningChat ? commonT("opening") : commonT("write")}
+            </button>
+            <Link className="glass-button public-master-back" href="/">
+              {commonT("backHome")}
+            </Link>
+          </div>
         </section>
+
+        {chatError ? <p className="public-master-error">{chatError}</p> : null}
       </main>
     );
   }
@@ -96,13 +133,9 @@ export default function PublicMasterPage() {
     <main className="public-master-page">
       <div className="public-master-shell">
         <section className="public-master-hero glass-surface">
-          {master.user.avatar ? (
+          {avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              className="public-master-avatar"
-              src={getMediaUrl(master.user.avatar)}
-              alt="Фото мастера"
-            />
+            <img className="public-master-avatar" src={avatarUrl} alt={t("photoAlt")} />
           ) : (
             <div className="public-master-avatar public-master-avatar--empty">
               {masterName.slice(0, 1).toUpperCase()}
@@ -110,39 +143,53 @@ export default function PublicMasterPage() {
           )}
 
           <div className="public-master-hero-copy">
-            <span>Профиль мастера</span>
+            <span>{t("profile")}</span>
             <h1>{masterName}</h1>
-            <p>{master.profile?.description || "Мастер пока не добавил описание профиля."}</p>
+            <p>{getLocalizedDescription(master.profile ?? {}, locale) || t("descriptionEmpty")}</p>
           </div>
 
-          <Link className="glass-button public-master-back" href="/">
-            На главную
-          </Link>
+          <div className="public-master-actions">
+            <button
+              className="glass-button public-master-back"
+              disabled={isOpeningChat}
+              type="button"
+              onClick={() => {
+                void handleOpenDirectChat();
+              }}
+            >
+              {isOpeningChat ? commonT("opening") : commonT("write")}
+            </button>
+            <Link className="glass-button public-master-back" href="/">
+              {commonT("backHome")}
+            </Link>
+          </div>
         </section>
+
+        {chatError ? <p className="public-master-error">{chatError}</p> : null}
 
         <section className="public-master-summary">
           <div>
-            <span>Рейтинг</span>
+            <span>{t("rating")}</span>
             <strong>{Number(master.profile?.rating ?? 0).toFixed(1)}</strong>
           </div>
           <div>
-            <span>Город</span>
-            <strong>{master.profile?.city || "Не указан"}</strong>
+            <span>{t("city")}</span>
+            <strong>{master.profile?.city || commonT("notSpecifiedMale")}</strong>
           </div>
           <div>
-            <span>Адрес</span>
-            <strong>{master.profile?.address || "Не указан"}</strong>
+            <span>{t("address")}</span>
+            <strong>{master.profile?.address || commonT("notSpecifiedMale")}</strong>
           </div>
           <div>
-            <span>Опыт</span>
-            <strong>{master.profile?.experience ?? 0} лет</strong>
+            <span>{t("experience")}</span>
+            <strong>{master.profile?.experience ?? 0} {commonT("years")}</strong>
           </div>
         </section>
 
         <section className="public-master-section glass-surface">
-          <h2>Социальные сети</h2>
+          <h2>{t("socials")}</h2>
           {!master.socials || master.socials.length === 0 ? (
-            <p>Мастер пока не указал социальные сети.</p>
+            <p>{t("socialsEmpty")}</p>
           ) : (
             <div className="public-master-socials">
               {master.socials.map((social) => (
@@ -162,18 +209,18 @@ export default function PublicMasterPage() {
         </section>
 
         <section className="public-master-section glass-surface">
-          <h2>Услуги мастера</h2>
+          <h2>{t("services")}</h2>
           {services.length === 0 ? (
-            <p>У мастера пока нет активных услуг.</p>
+            <p>{t("servicesEmpty")}</p>
           ) : (
             <div className="public-master-services">
               {services.map((service) => (
                 <article className="public-master-service" key={service.id}>
                   <div>
-                    <strong>{service.title}</strong>
-                    <p>{service.description || "Описание услуги скоро появится."}</p>
+                    <strong>{getLocalizedTitle(service, locale) ?? service.title}</strong>
+                    <p>{getLocalizedDescription(service, locale) || t("serviceDescriptionEmpty")}</p>
                   </div>
-                  <span>{service.price.toLocaleString("ru-RU")} руб.</span>
+                  <span>{service.price.toLocaleString("ru-RU")} {commonT("currencyRub")}</span>
                 </article>
               ))}
             </div>
@@ -181,15 +228,15 @@ export default function PublicMasterPage() {
         </section>
 
         <section className="public-master-section glass-surface">
-          <h2>Отзывы</h2>
+          <h2>{t("reviews")}</h2>
           {reviews.length === 0 ? (
-            <p>У мастера пока нет отзывов.</p>
+            <p>{t("reviewsEmpty")}</p>
           ) : (
             <div className="public-master-reviews">
               {reviews.map((review) => (
                 <article className="public-master-review" key={review.id}>
                   <div className="public-master-review-head">
-                    <strong>Клиент #{review.clientId}</strong>
+                    <strong>{t("clientNumber", { id: review.clientId })}</strong>
                     <span>
                       {"★".repeat(review.rating)}
                       {"☆".repeat(Math.max(0, 5 - review.rating))}
@@ -203,15 +250,15 @@ export default function PublicMasterPage() {
         </section>
 
         <section className="public-master-section glass-surface">
-          <h2>Портфолио</h2>
-          {master.portfolio.length === 0 ? (
-            <p>Портфолио пока пусто.</p>
+          <h2>{t("portfolio")}</h2>
+          {portfolioItems.length === 0 ? (
+            <p>{t("portfolioEmpty")}</p>
           ) : (
             <div className="public-master-portfolio">
-              {master.portfolio.map((item) => (
+              {portfolioItems.map((item) => (
                 <article className="public-master-work" key={item.id}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={getMediaUrl(item.imageUrl)} alt={item.title || "Фото работы мастера"} />
+                  <img src={getMediaUrl(item.imageUrl)} alt={item.title || t("workPhoto")} />
                   {item.title ? <p>{item.title}</p> : null}
                 </article>
               ))}

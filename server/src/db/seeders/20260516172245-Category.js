@@ -6,22 +6,27 @@ module.exports = {
     await queryInterface.bulkInsert("Categories", [
       {
         title: "Ногти",
+        titleEn: "Nails",
         photo: "haircut.jpg",
       },
       {
         title: "Косметология",
+        titleEn: "Cosmetology",
         photo: "beard_trim.jpg",
       },
       {
         title: "Волосы",
+        titleEn: "Hair",
         photo: "beard_trim.jpg",
       },
       {
         title: "Массаж",
+        titleEn: "Massage",
         photo: "beard_trim.jpg",
       },
       {
         title: "Макияж",
+        titleEn: "Makeup",
         photo: "beard_trim.jpg",
       },
     ]);

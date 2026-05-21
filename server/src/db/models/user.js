@@ -39,13 +39,15 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "clientId",
       });
       this.hasMany(models.Chat, {
+        as: "masterChats",
         foreignKey: "masterId",
       });
       this.hasMany(models.Chat, {
+        as: "clientChats",
         foreignKey: "clientId",
       });
-      this.hasMany(models.Message, {
-        foreignKey: "userId",
+      this.hasMany(models.ChatMessage, {
+        foreignKey: "senderId",
       });
       // define association here
 
@@ -148,6 +150,9 @@ module.exports = (sequelize, DataTypes) => {
       phone: DataTypes.STRING,
       avatar: DataTypes.STRING,
       role: DataTypes.STRING,
+      telegramId: DataTypes.STRING,
+      telegramUsername: DataTypes.STRING,
+      authProvider: DataTypes.STRING,
     },
     {
       sequelize,

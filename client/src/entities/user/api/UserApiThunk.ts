@@ -1,6 +1,7 @@
 import { axiosInstance, setAccessToken } from "@/shared/lib/axiosInstance";
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import {
+    TelegramLoginPayload,
     UserLoginData,
     UserProfileUpdateData,
     UserRegisterData,
@@ -15,6 +16,7 @@ import { AxiosError } from "axios";
 const USER_THUNK_NAMES = {
     REGISTER: "user/register",
     LOGIN: "user/login",
+    TELEGRAM_LOGIN: "user/telegramLogin",
     REFRESH: "user/refresh",
     LOGOUT: "user/logout",
     UPDATE_PROFILE: "user/updateProfile",
@@ -25,6 +27,7 @@ const USER_THUNK_NAMES = {
 const USER_API_URLS = {
     REGISTER: "/auth/register",
     LOGIN: "/auth/login",
+    TELEGRAM_LOGIN: "/auth/telegram",
     REFRESH: "/auth/refresh",
     LOGOUT: "/auth/logout",
     UPDATE_PROFILE: "/auth/profile",
@@ -88,6 +91,27 @@ export const logoutThunk = createAsyncThunk<null, void, { rejectValue: string }>
         return rejectWithValue((error as AxiosError<ServerResponseType<null>>).response?.data?.message ?? 'Ошибка при выходе из приложения')
     }
 });
+
+export const telegramLoginThunk = createAsyncThunk<UserType, TelegramLoginPayload, { rejectValue: string }>(
+    USER_THUNK_NAMES.TELEGRAM_LOGIN,
+    async (telegramData, { rejectWithValue }) => {
+        try {
+            const { data } = await axiosInstance.post<ServerResponseType<UserWithTokenType>>(
+                USER_API_URLS.TELEGRAM_LOGIN,
+                telegramData,
+            );
+
+            if (data.statusCode === 200 && data.data?.user) {
+                setAccessToken(data.data?.accessToken ?? '');
+                return data.data?.user ?? null;
+            }
+
+            return rejectWithValue(data.message ?? 'Ошибка при входе через Telegram');
+        } catch (error) {
+            return rejectWithValue((error as AxiosError<ServerResponseType<null>>).response?.data?.message ?? 'Ошибка при входе через Telegram');
+        }
+    },
+);
 
 export const updateUserProfileThunk = createAsyncThunk<UserType, UserProfileUpdateData, { rejectValue: string }>(
     USER_THUNK_NAMES.UPDATE_PROFILE,

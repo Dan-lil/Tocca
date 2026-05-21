@@ -1,4 +1,8 @@
-tocca-beauty.ru, www.tocca-beauty.ru {
+www.tocca-beauty.ru {
+ redir https://tocca-beauty.ru{uri} permanent
+}
+
+tocca-beauty.ru {
  encode gzip
 
  @api path /api/*
@@ -8,6 +12,11 @@ tocca-beauty.ru, www.tocca-beauty.ru {
 
  @socket path /socket.io/*
  handle @socket {
+  reverse_proxy api:3000
+ }
+
+ @media path /avatar/* /home-services/* /img/* /portfolio/* /promotions/* /uploads/*
+ handle @media {
   reverse_proxy api:3000
  }
 

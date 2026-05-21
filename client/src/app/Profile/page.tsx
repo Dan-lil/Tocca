@@ -2,11 +2,13 @@
 
 import "./page.css";
 import Link from "next/link";
-import { type FormEvent, useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { io } from "socket.io-client";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { fetchUpcomingBookingsThunk } from "@/entities/booking/api/BookingApiThunk";
-import { fetchSalesForClientThunk } from "@/entities/sale/api/SaleApiThunk";
 import {
   addPortfolioItemThunk,
   addServiceThunk,
@@ -20,10 +22,9 @@ import {
 } from "@/entities/master/api/masterThunk";
 import { updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
-import type { BookingToMaster, PortfolioItem } from "@/entities/master/model/index";
-import type { Sale } from "@/entities/sale/model";
-import type { Booking } from "@/entities/booking/model";
-import { getBookingsByClient } from "@/shared/api/bookingApi";
+import type { BookingToMaster } from "@/entities/master/model/index";
+import MasterGeoPicker from "@/features/master/ui/MasterGeoPicker/MasterGeoPicker";
+import { getBookingsByClient, updateBooking } from "@/shared/api/bookingApi";
 import { getCategories } from "@/shared/api/categoryApi";
 import { getMyMasterRecommendations } from "@/shared/api/aiApi";
 import { createReview, getReviewsByClient, getReviewsByMaster } from "@/shared/api/ecoApi";
@@ -32,26 +33,42 @@ import {
   deleteMasterSocial,
   getMyMasterSocials,
 } from "@/shared/api/masterSocialApi";
-import { axiosInstance } from "@/shared/lib/axiosInstance";
+import { getPublicMasterProfile, updateMasterLocation } from "@/shared/api/profileMasterApi";
+import { getServices } from "@/shared/api/serviziApi";
+import { axiosInstance, getAccessToken } from "@/shared/lib/axiosInstance";
+import {
+  getLocalizedCategory,
+  getLocalizedDescription,
+  getLocalizedTitle,
+} from "@/shared/lib/localized";
+import { openBookingChat } from "@/shared/lib/openBookingChat";
+import { expandPortfolioItems, getMediaUrl } from "@/shared/lib/media";
 import type {
   BookingType,
   CategoryType,
   EcoReviewType,
   MasterSocialType,
+  PublicMasterProfileType,
   RecommendedMasterType,
   ServerResponseType,
+  ServiziType,
 } from "@/shared/types";
 
 type ProfileMaster = {
   id?: number;
   userId?: number;
   title: string;
+  titleEn: string;
   description: string;
+  descriptionEn: string;
   city: string;
   address: string;
   experience: number;
   category: string;
+  categoryEn: string;
   rating: number;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 type UploadedImage = {
@@ -110,29 +127,19 @@ function normalizeSocialContact(network: string, value: string) {
 
 const emptyMasterProfile: ProfileMaster = {
   title: "",
+  titleEn: "",
   description: "",
+  descriptionEn: "",
   city: "",
   address: "",
   experience: 0,
   category: "",
+  categoryEn: "",
   rating: 0,
+  latitude: null,
+  longitude: null,
 };
-
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-function getMediaUrl(value?: string | null) {
-  if (!value) return "";
-
-  if (value.startsWith("http") || value.startsWith("data:") || value.startsWith("blob:")) {
-    return value;
-  }
-
-  if (value.startsWith("/")) {
-    return `${apiBaseUrl}${value}`;
-  }
-
-  return value;
-}
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 function formatDateTime(value: string | number) {
   const date = new Date(value);
@@ -150,6 +157,29 @@ function formatDateTime(value: string | number) {
   });
 }
 
+function isClientBookingCanceled(booking: BookingType) {
+  const status = booking.status.toLowerCase();
+
+  return status.includes("отмен") || status.includes("cancel");
+}
+
+function sortBookingsDesc(bookings: BookingType[]) {
+  return [...bookings].sort(
+    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+  );
+}
+
+function getRecommendedMasterReason(master: RecommendedMasterType, locale: string) {
+  if (locale !== "en") return master.reason;
+  if (master.reasonEn?.trim()) return master.reasonEn;
+
+  if (master.categoryTitlesEn?.length) {
+    return `Matches your favorite categories: ${master.categoryTitlesEn.join(", ")}`;
+  }
+
+  return "Recommended by rating and popularity";
+}
+
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -161,12 +191,15 @@ function readFileAsDataUrl(file: File) {
 }
 
 export default function ProfilePage() {
+  const t = useTranslations("profile");
+  const commonT = useTranslations("common");
+  const locale = useLocale();
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { user } = useSelector((state: RootState) => state.user);
-  const { upcomingBookings } = useSelector((state: RootState) => state.booking);
-  const { salesForClient } = useSelector((state: RootState) => state.sale);
   const { stats, earnings, services, portfolio, upcomingBookings: masterBookings, loading } =
     useSelector((state: RootState) => state.master);
+  const expandedPortfolio = expandPortfolioItems(portfolio);
 
   const [showAddService, setShowAddService] = useState(false);
   const [showAddPhoto, setShowAddPhoto] = useState(false);
@@ -183,12 +216,20 @@ export default function ProfilePage() {
     avatarFile: null,
   });
   const [clientPastBookings, setClientPastBookings] = useState<BookingType[]>([]);
+  const [clientBookings, setClientBookings] = useState<BookingType[]>([]);
+  const [clientNowTimestamp, setClientNowTimestamp] = useState(0);
+  const [clientServices, setClientServices] = useState<ServiziType[]>([]);
+  const [clientMasterProfiles, setClientMasterProfiles] = useState<
+    Record<number, PublicMasterProfileType>
+  >({});
   const [clientReviews, setClientReviews] = useState<EcoReviewType[]>([]);
   const [recommendedMasters, setRecommendedMasters] = useState<RecommendedMasterType[]>([]);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, ReviewDraft>>({});
   const [reviewSavingId, setReviewSavingId] = useState<number | null>(null);
+  const [openingChatBookingId, setOpeningChatBookingId] = useState<number | string | null>(null);
+  const [cancelingBookingId, setCancelingBookingId] = useState<number | null>(null);
   const [clientHistoryError, setClientHistoryError] = useState<string | null>(null);
   const [masterReviews, setMasterReviews] = useState<EcoReviewType[]>([]);
   const [masterReviewsError, setMasterReviewsError] = useState<string | null>(null);
@@ -199,7 +240,9 @@ export default function ProfilePage() {
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [newService, setNewService] = useState({
     title: "",
+    titleEn: "",
     description: "",
+    descriptionEn: "",
     price: 0,
     duration: 60,
     categoryId: 1,
@@ -212,6 +255,16 @@ export default function ProfilePage() {
 
   const isMaster = user?.role === "master";
 
+  const clientUpcomingBookings = useMemo(() => {
+    return clientBookings
+      .filter(
+        (booking) =>
+          new Date(booking.endTime).getTime() >= clientNowTimestamp &&
+          !isClientBookingCanceled(booking),
+      )
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  }, [clientBookings, clientNowTimestamp]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -223,26 +276,54 @@ export default function ProfilePage() {
       dispatch(fetchUpcomingBookingsForMasterThunk());
     } else {
       dispatch(fetchUpcomingBookingsThunk());
-      dispatch(fetchSalesForClientThunk());
     }
   }, [dispatch, isMaster, user]);
 
   useEffect(() => {
     if (!user || isMaster) return;
 
-    const loadClientHistory = async () => {
+    const loadClientBookings = async () => {
       try {
         setClientHistoryError(null);
 
-        const [bookingsData, reviewsData] = await Promise.all([
+        const [bookingsData, reviewsData, servicesData] = await Promise.all([
           getBookingsByClient(user.id),
           getReviewsByClient(user.id),
+          getServices(),
         ]);
         const now = Date.now();
+        const uniqueMasterIds = Array.from(
+          new Set(bookingsData.map((booking) => booking.masterId)),
+        );
+        const masterProfilesEntries = await Promise.all(
+          uniqueMasterIds.map(async (masterId) => {
+            try {
+              const profile = await getPublicMasterProfile(masterId);
 
+              return [masterId, profile] as const;
+            } catch {
+              return null;
+            }
+          }),
+        );
+
+        setClientBookings(bookingsData);
+        setClientNowTimestamp(now);
+        setClientServices(servicesData);
+        setClientMasterProfiles(
+          Object.fromEntries(
+            masterProfilesEntries.filter(
+              (entry): entry is readonly [number, PublicMasterProfileType] => entry !== null,
+            ),
+          ),
+        );
         setClientPastBookings(
           bookingsData
-            .filter((booking) => new Date(booking.endTime).getTime() < now)
+            .filter(
+              (booking) =>
+                new Date(booking.endTime).getTime() < now ||
+                isClientBookingCanceled(booking),
+            )
             .sort(
               (a, b) =>
                 new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
@@ -251,13 +332,50 @@ export default function ProfilePage() {
         setClientReviews(reviewsData);
       } catch (error) {
         setClientHistoryError(
-          error instanceof Error ? error.message : "Не удалось загрузить прошлые записи",
+          error instanceof Error ? error.message : t("errorPastBookings"),
         );
       }
     };
 
-    void loadClientHistory();
-  }, [isMaster, user]);
+    void loadClientBookings();
+  }, [isMaster, t, user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const socket = io(API_ORIGIN, {
+      auth: { token: getAccessToken() },
+      transports: ["websocket", "polling"],
+      withCredentials: true,
+    });
+
+    socket.on("booking:updated", (updatedBooking: BookingType) => {
+      if (isMaster) {
+        void dispatch(fetchUpcomingBookingsForMasterThunk());
+        return;
+      }
+
+      setClientBookings((currentBookings) =>
+        currentBookings.map((booking) =>
+          booking.id === updatedBooking.id ? updatedBooking : booking,
+        ),
+      );
+      setClientPastBookings((currentBookings) => {
+        const nextBookings = currentBookings.filter(
+          (booking) => booking.id !== updatedBooking.id,
+        );
+        const isPastOrCanceled =
+          new Date(updatedBooking.endTime).getTime() < clientNowTimestamp ||
+          isClientBookingCanceled(updatedBooking);
+
+        return isPastOrCanceled ? sortBookingsDesc([updatedBooking, ...nextBookings]) : nextBookings;
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [clientNowTimestamp, dispatch, isMaster, user]);
 
   useEffect(() => {
     if (!user || isMaster) return;
@@ -272,7 +390,7 @@ export default function ProfilePage() {
         setRecommendedMasters(recommendations);
       } catch (error) {
         setRecommendationsError(
-          error instanceof Error ? error.message : "Не удалось загрузить рекомендации",
+          error instanceof Error ? error.message : t("errorRecommendations"),
         );
       } finally {
         setRecommendationsLoading(false);
@@ -280,7 +398,7 @@ export default function ProfilePage() {
     };
 
     void loadRecommendations();
-  }, [isMaster, user]);
+  }, [isMaster, t, user]);
 
   useEffect(() => {
     if (!isMaster) return;
@@ -302,12 +420,12 @@ export default function ProfilePage() {
             socialsData.find((social) => social.network === "instagram")?.contact ?? "",
         });
       } catch {
-        setProfileError("Не удалось загрузить профиль мастера");
+        setProfileError(t("errorMasterProfile"));
       }
     };
 
     void loadMasterProfile();
-  }, [isMaster]);
+  }, [isMaster, t]);
 
   useEffect(() => {
     if (!user || !isMaster) return;
@@ -320,13 +438,13 @@ export default function ProfilePage() {
         setMasterReviews(reviewsData);
       } catch (error) {
         setMasterReviewsError(
-          error instanceof Error ? error.message : "Не удалось загрузить отзывы",
+          error instanceof Error ? error.message : t("errorReviews"),
         );
       }
     };
 
     void loadMasterReviews();
-  }, [isMaster, user]);
+  }, [isMaster, t, user]);
 
   useEffect(() => {
     if (!user || !isMaster) return;
@@ -343,19 +461,19 @@ export default function ProfilePage() {
         }));
       } catch (error) {
         setCategoriesError(
-          error instanceof Error ? error.message : "Не удалось загрузить категории",
+          error instanceof Error ? error.message : t("errorCategories"),
         );
       }
     };
 
     void loadCategories();
-  }, [isMaster, user]);
+  }, [isMaster, t, user]);
 
   async function handleSaveMasterProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!user) {
-      setProfileError("Не удалось определить пользователя");
+      setProfileError(t("errorUser"));
       return;
     }
 
@@ -397,9 +515,30 @@ export default function ProfilePage() {
       dispatch(fetchMasterStatsThunk());
       setIsProfileModalOpen(false);
     } catch {
-      setProfileError("Не удалось сохранить профиль мастера");
+      setProfileError(t("errorSaveMasterProfile"));
     } finally {
       setIsProfileSaving(false);
+    }
+  }
+
+  async function handleMasterLocationChange(lat: number, lon: number) {
+    try {
+      setProfileError(null);
+      const location = await updateMasterLocation({
+        lat,
+        lon,
+        address: masterProfile.address,
+      });
+
+      setMasterProfile((profile) => ({
+        ...profile,
+        latitude: location.lat,
+        longitude: location.lon,
+      }));
+    } catch (error) {
+      setProfileError(
+        error instanceof Error ? error.message : "Не удалось сохранить локацию мастера",
+      );
     }
   }
 
@@ -443,7 +582,7 @@ export default function ProfilePage() {
       ).unwrap();
       setIsClientProfileModalOpen(false);
     } catch (error) {
-      setProfileError(typeof error === "string" ? error : "Не удалось сохранить профиль");
+      setProfileError(typeof error === "string" ? error : t("errorSaveProfile"));
     } finally {
       setIsProfileSaving(false);
     }
@@ -453,7 +592,7 @@ export default function ProfilePage() {
     const draft = reviewDrafts[booking.id] ?? { rating: 5, text: "" };
 
     if (!draft.text.trim()) {
-      setClientHistoryError("Напишите текст отзыва");
+      setClientHistoryError(t("errorReviewText"));
       return;
     }
 
@@ -475,15 +614,100 @@ export default function ProfilePage() {
       }));
     } catch (error) {
       setClientHistoryError(
-        error instanceof Error ? error.message : "Не удалось сохранить отзыв",
+        error instanceof Error ? error.message : t("errorSaveReview"),
       );
     } finally {
       setReviewSavingId(null);
     }
   }
 
-  if (!user) return <div className="profile-page">Загрузка...</div>;
-  if (isMaster && loading) return <div className="profile-page">Загрузка данных мастера...</div>;
+  function getBookingService(booking: BookingType) {
+    return clientServices.find((service) => service.id === booking.serviziId) ?? null;
+  }
+
+  function getBookingMasterName(booking: BookingType) {
+    const profile = clientMasterProfiles[booking.masterId];
+    const service = getBookingService(booking);
+
+    return (
+      getLocalizedTitle(profile?.profile ?? {}, locale)?.trim() ||
+      profile?.user.name ||
+      service?.masterName?.trim() ||
+      t("masterNumber", { id: booking.masterId })
+    );
+  }
+
+  async function handleOpenBookingChat(booking: BookingType) {
+    try {
+      setOpeningChatBookingId(booking.id);
+      setClientHistoryError(null);
+      await openBookingChat(router, booking);
+    } catch (error) {
+      setClientHistoryError(error instanceof Error ? error.message : t("chatError"));
+    } finally {
+      setOpeningChatBookingId(null);
+    }
+  }
+
+  async function handleOpenMasterBookingChat(booking: BookingToMaster) {
+    try {
+      setOpeningChatBookingId(booking.id);
+      setProfileError(null);
+      await openBookingChat(router, {
+        id: booking.id,
+        clientId: booking.clientId,
+        masterId: booking.masterId,
+        serviziId: booking.serviziId,
+        date: booking.date,
+        startTime: booking.startTime,
+        endTime: booking.endTime,
+        status: booking.status,
+        clientComment: booking.clientComment,
+      });
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : t("chatError"));
+    } finally {
+      setOpeningChatBookingId(null);
+    }
+  }
+
+  async function handleCancelClientBooking(booking: BookingType) {
+    const shouldCancel = window.confirm(t("cancelBookingConfirm"));
+
+    if (!shouldCancel) return;
+
+    try {
+      setCancelingBookingId(booking.id);
+      setClientHistoryError(null);
+
+      const updatedBooking = await updateBooking(booking.id, {
+        status: "Отменена клиентом",
+        cancelReason: "Отменено клиентом",
+      });
+
+      setClientBookings((currentBookings) =>
+        currentBookings.map((currentBooking) =>
+          currentBooking.id === updatedBooking.id ? updatedBooking : currentBooking,
+        ),
+      );
+      setClientPastBookings((currentBookings) => {
+        const nextBookings = currentBookings.filter(
+          (currentBooking) => currentBooking.id !== updatedBooking.id,
+        );
+
+        return [updatedBooking, ...nextBookings].sort(
+          (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime(),
+        );
+      });
+    } catch (error) {
+      setClientHistoryError(error instanceof Error ? error.message : t("cancelBookingError"));
+    } finally {
+      setCancelingBookingId(null);
+    }
+  }
+
+  if (!user) return <div className="profile-page">{commonT("loading")}</div>;
+  if (isMaster && loading) return <div className="profile-page">{t("loadingMasterData")}</div>;
 
   if (!isMaster) {
     return (
@@ -491,15 +715,18 @@ export default function ProfilePage() {
         <div className="profile-container">
           <div className="profile-header">
             <div>
-              <h1>Личный кабинет</h1>
+              <h1>{t("clientTitle")}</h1>
               <p>{user.name}</p>
             </div>
             {user.avatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img className="profile-avatar" src={getMediaUrl(user.avatar)} alt="Фото профиля" />
+              <img className="profile-avatar" src={getMediaUrl(user.avatar)} alt={t("profilePhoto")} />
             ) : null}
+            <Link className="profile-link-button" href="/messages">
+              {commonT("chat")}
+            </Link>
             <button type="button" onClick={handleOpenClientProfileModal}>
-              Редактировать
+              {commonT("edit")}
             </button>
           </div>
 
@@ -507,37 +734,66 @@ export default function ProfilePage() {
 
           <div className="client-profile-summary">
             <div>
-              <span>Имя</span>
-              <strong>{user.name || "Не указано"}</strong>
+              <span>{t("name")}</span>
+              <strong>{user.name || commonT("notSpecified")}</strong>
             </div>
             <div>
               <span>Email</span>
-              <strong>{user.email || "Не указан"}</strong>
+              <strong>{user.email || commonT("notSpecifiedMale")}</strong>
             </div>
             <div>
-              <span>Телефон</span>
-              <strong>{user.phone || "Не указан"}</strong>
+              <span>{t("phone")}</span>
+              <strong>{user.phone || commonT("notSpecifiedMale")}</strong>
             </div>
           </div>
 
           <section className="profile-section">
-            <h2>Ближайшие записи</h2>
-            {upcomingBookings.length === 0 ? (
-              <p>Вы еще не записаны</p>
+            <h2>{t("upcomingBookings")}</h2>
+            {clientHistoryError ? <p className="profile-error">{clientHistoryError}</p> : null}
+            {clientUpcomingBookings.length === 0 ? (
+              <p>{t("noUpcomingBookings")}</p>
             ) : (
-              upcomingBookings.map((booking: Booking) => (
-                <div key={booking.id} className="booking-card">
-                  {formatDateTime(booking.startTime)}
-                </div>
-              ))
+              <div className="client-history-list">
+                {clientUpcomingBookings.map((booking) => {
+                  const service = getBookingService(booking);
+                  const masterName = getBookingMasterName(booking);
+
+                  return (
+                    <article key={booking.id} className="booking-card booking-card--detailed">
+                      <div className="booking-card__info">
+                        <strong>{getLocalizedTitle(service ?? {}, locale) ?? t("serviceNumber", { id: booking.serviziId })}</strong>
+                        <span>{masterName}</span>
+                        <time>{formatDateTime(booking.startTime)}</time>
+                        <small>{booking.status}</small>
+                      </div>
+                      <div className="booking-card__actions">
+                        <button
+                          type="button"
+                          disabled={openingChatBookingId === booking.id}
+                          onClick={() => void handleOpenBookingChat(booking)}
+                        >
+                          {openingChatBookingId === booking.id ? commonT("opening") : commonT("chat")}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={cancelingBookingId === booking.id}
+                          onClick={() => void handleCancelClientBooking(booking)}
+                        >
+                          {cancelingBookingId === booking.id ? commonT("saving") : commonT("cancel")}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
             )}
           </section>
 
           <section className="profile-section">
-            <h2>Прошлые записи</h2>
+            <h2>{t("pastBookings")}</h2>
             {clientHistoryError ? <p className="profile-error">{clientHistoryError}</p> : null}
             {clientPastBookings.length === 0 ? (
-              <p>Прошлых записей пока нет</p>
+              <p>{t("noPastBookings")}</p>
             ) : (
               <div className="client-history-list">
                 {clientPastBookings.map((booking) => {
@@ -550,10 +806,14 @@ export default function ProfilePage() {
                     <article className="client-history-card" key={booking.id}>
                       <div className="client-history-card__top">
                         <div>
-                          <strong>Мастер #{booking.masterId}</strong>
+                          <strong>
+                            {getLocalizedTitle(getBookingService(booking) ?? {}, locale) ??
+                              t("serviceNumber", { id: booking.serviziId })}
+                          </strong>
+                          <span>{getBookingMasterName(booking)}</span>
                           <span>{formatDateTime(booking.startTime)}</span>
                         </div>
-                        <span>Услуга #{booking.serviziId}</span>
+                        <span>{booking.status}</span>
                       </div>
 
                       {existingReview ? (
@@ -564,7 +824,7 @@ export default function ProfilePage() {
                       ) : (
                         <div className="client-review-form">
                           <label>
-                            <span>Оценка</span>
+                            <span>{t("reviewRating")}</span>
                             <select
                               value={draft.rating}
                               onChange={(event) =>
@@ -585,7 +845,7 @@ export default function ProfilePage() {
                             </select>
                           </label>
                           <label>
-                            <span>Отзыв</span>
+                            <span>{t("review")}</span>
                             <textarea
                               value={draft.text}
                               onChange={(event) =>
@@ -597,7 +857,7 @@ export default function ProfilePage() {
                                   },
                                 }))
                               }
-                              placeholder="Расскажите, как прошла запись"
+                              placeholder={t("reviewPlaceholder")}
                               rows={3}
                             />
                           </label>
@@ -606,7 +866,7 @@ export default function ProfilePage() {
                             disabled={reviewSavingId === booking.id}
                             onClick={() => void handleCreateReview(booking)}
                           >
-                            {reviewSavingId === booking.id ? "Сохранение..." : "Оставить отзыв"}
+                            {reviewSavingId === booking.id ? commonT("saving") : t("leaveReview")}
                           </button>
                         </div>
                       )}
@@ -618,25 +878,12 @@ export default function ProfilePage() {
           </section>
 
           <section className="profile-section">
-            <h2>Акции для вас</h2>
-            {salesForClient.length === 0 ? (
-              <p>Нет активных акций</p>
-            ) : (
-              salesForClient.map((sale: Sale) => (
-                <div key={sale.id} className="sale-card">
-                  Скидка {sale.discount}% {sale.comment}
-                </div>
-              ))
-            )}
-          </section>
-
-          <section className="profile-section">
-            <h2>Рекомендованные мастера</h2>
+            <h2>{t("recommendedMasters")}</h2>
             {recommendationsError ? <p className="profile-error">{recommendationsError}</p> : null}
             {recommendationsLoading ? (
-              <p>Подбираем мастеров для вас...</p>
+              <p>{t("recommendationsLoading")}</p>
             ) : recommendedMasters.length === 0 ? (
-              <p>Пока не удалось подобрать рекомендации</p>
+              <p>{t("recommendationsEmpty")}</p>
             ) : (
               <div className="recommended-masters-list">
                 {recommendedMasters.map((master) => (
@@ -647,34 +894,42 @@ export default function ProfilePage() {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={getMediaUrl(master.avatar)}
-                            alt={master.title || master.name}
+                            alt={getLocalizedTitle(master, locale) || master.name}
                           />
                         ) : (
                           <div className="recommended-master-card__avatar-fallback">
-                            {(master.title || master.name).slice(0, 1).toUpperCase()}
+                            {(getLocalizedTitle(master, locale) || master.name).slice(0, 1).toUpperCase()}
                           </div>
                         )}
 
                         <div>
-                          <strong>{master.title || master.name}</strong>
-                          <span>{master.city || "Город не указан"}</span>
+                          <strong>{getLocalizedTitle(master, locale) || master.name}</strong>
+                          <span>{master.city || t("cityMissing")}</span>
                         </div>
                       </div>
 
                       <div className="recommended-master-card__rating">
                         <strong>{master.rating.toFixed(1)}</strong>
-                        <span>{master.reviewCount} отзывов</span>
+                        <span>{t("reviewsCount", { count: master.reviewCount })}</span>
                       </div>
                     </div>
 
-                    <p className="recommended-master-card__reason">{master.reason}</p>
+                    <p className="recommended-master-card__reason">
+                      {getRecommendedMasterReason(master, locale)}
+                    </p>
                     <p className="recommended-master-card__description">
-                      {master.description || "Мастер пока не добавил описание, но уже подходит вам по профилю услуг."}
+                      {getLocalizedDescription(master, locale) || t("recommendedDescription")}
                     </p>
 
-                    {master.categoryTitles.length > 0 ? (
+                    {(locale === "en" && master.categoryTitlesEn?.length
+                      ? master.categoryTitlesEn
+                      : master.categoryTitles
+                    ).length > 0 ? (
                       <div className="recommended-master-card__tags">
-                        {master.categoryTitles.map((categoryTitle) => (
+                        {(locale === "en" && master.categoryTitlesEn?.length
+                          ? master.categoryTitlesEn
+                          : master.categoryTitles
+                        ).map((categoryTitle) => (
                           <span key={`${master.id}-${categoryTitle}`}>{categoryTitle}</span>
                         ))}
                       </div>
@@ -684,9 +939,9 @@ export default function ProfilePage() {
                       <div className="recommended-master-card__services">
                         {master.services.map((service) => (
                           <div key={service.id}>
-                            <strong>{service.title}</strong>
+                            <strong>{getLocalizedTitle(service, locale) ?? service.title}</strong>
                             <span>
-                              {service.price.toLocaleString("ru-RU")} руб. • {service.duration} мин
+                              {service.price.toLocaleString("ru-RU")} {commonT("currencyRub")} • {service.duration} {commonT("minutes")}
                             </span>
                           </div>
                         ))}
@@ -694,7 +949,7 @@ export default function ProfilePage() {
                     ) : null}
 
                     <Link className="profile-link-button" href={`/masters/${master.id}`}>
-                      Открыть профиль мастера
+                      {t("openMasterProfile")}
                     </Link>
                   </article>
                 ))}
@@ -706,24 +961,24 @@ export default function ProfilePage() {
             <div className="profile-modal-backdrop" role="presentation">
               <form className="profile-modal" onSubmit={handleSaveClientProfile}>
                 <div className="modal-header">
-                  <h2>Профиль клиента</h2>
+                  <h2>{t("clientProfile")}</h2>
                   <button
                     type="button"
                     onClick={() => setIsClientProfileModalOpen(false)}
-                    aria-label="Закрыть"
+                    aria-label={commonT("close")}
                   >
                     x
                   </button>
                 </div>
 
                 <label>
-                  <span>Имя</span>
+                  <span>{t("name")}</span>
                   <input
                     value={clientProfile.name}
                     onChange={(event) =>
                       setClientProfile((profile) => ({ ...profile, name: event.target.value }))
                     }
-                    placeholder="Ваше имя"
+                    placeholder={t("yourName")}
                   />
                 </label>
 
@@ -740,7 +995,7 @@ export default function ProfilePage() {
                 </label>
 
                 <label>
-                  <span>Телефон</span>
+                  <span>{t("phone")}</span>
                   <input
                     value={clientProfile.phone}
                     onChange={(event) =>
@@ -751,7 +1006,7 @@ export default function ProfilePage() {
                 </label>
 
                 <label>
-                  <span>Фото профиля</span>
+                  <span>{t("profilePhotoInput")}</span>
                   <input
                     accept="image/*"
                     type="file"
@@ -773,7 +1028,7 @@ export default function ProfilePage() {
                     }}
                   />
                   <p className="file-note">
-                    {clientProfile.avatarFile?.name || "Выберите фото с компьютера"}
+                    {clientProfile.avatarFile?.name || t("choosePhoto")}
                   </p>
                 </label>
 
@@ -782,17 +1037,17 @@ export default function ProfilePage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={clientProfile.avatarFile?.data || getMediaUrl(clientProfile.avatar)}
-                      alt="Предпросмотр фото профиля"
+                      alt={t("previewProfilePhoto")}
                     />
                   </div>
                 ) : null}
 
                 <div className="modal-actions">
                   <button type="submit" disabled={isProfileSaving}>
-                    {isProfileSaving ? "Сохранение..." : "Сохранить"}
+                    {isProfileSaving ? commonT("saving") : commonT("save")}
                   </button>
                   <button type="button" onClick={() => setIsClientProfileModalOpen(false)}>
-                    Отмена
+                    {commonT("cancel")}
                   </button>
                 </div>
               </form>
@@ -808,18 +1063,21 @@ export default function ProfilePage() {
       <div className="profile-container">
         <div className="profile-header">
           <div>
-            <h1>Личный кабинет мастера</h1>
-            <p>{masterProfile.title || user.name}</p>
+            <h1>{t("masterTitle")}</h1>
+            <p>{getLocalizedTitle(masterProfile, locale) || user.name}</p>
           </div>
           {user.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="profile-avatar" src={getMediaUrl(user.avatar)} alt="Фото профиля" />
+            <img className="profile-avatar" src={getMediaUrl(user.avatar)} alt={t("profilePhoto")} />
           ) : null}
           <Link className="profile-link-button" href="/calendarMaster">
-            Посмотреть календарь
+            {t("viewCalendar")}
+          </Link>
+          <Link className="profile-link-button" href="/messages">
+            {commonT("chat")}
           </Link>
           <button type="button" onClick={handleOpenMasterProfileModal}>
-            Редактировать
+            {commonT("edit")}
           </button>
         </div>
 
@@ -827,27 +1085,27 @@ export default function ProfilePage() {
 
         <div className="master-profile-summary">
           <div>
-            <span>Город</span>
-            <strong>{masterProfile.city || "Не указан"}</strong>
+            <span>{t("city")}</span>
+            <strong>{masterProfile.city || commonT("notSpecifiedMale")}</strong>
           </div>
           <div>
-            <span>Адрес</span>
-            <strong>{masterProfile.address || "Не указан"}</strong>
+            <span>{t("address")}</span>
+            <strong>{masterProfile.address || commonT("notSpecifiedMale")}</strong>
           </div>
           <div>
-            <span>Категория</span>
-            <strong>{masterProfile.category || "Не указана"}</strong>
+            <span>{t("category")}</span>
+            <strong>{getLocalizedCategory(masterProfile, locale) || commonT("notSpecifiedFemale")}</strong>
           </div>
           <div>
-            <span>Опыт</span>
-            <strong>{masterProfile.experience || 0} лет</strong>
+            <span>{t("experience")}</span>
+            <strong>{masterProfile.experience || 0} {commonT("years")}</strong>
           </div>
         </div>
 
         <section className="profile-section">
-          <h2>Социальные сети</h2>
+          <h2>{t("socials")}</h2>
           {masterSocials.length === 0 ? (
-            <p>Социальные сети пока не указаны</p>
+            <p>{t("socialsEmpty")}</p>
           ) : (
             <div className="master-social-list">
               {masterSocials.map((social) => (
@@ -867,46 +1125,66 @@ export default function ProfilePage() {
         </section>
 
         <div className="stats-grid">
-          <div className="stat-card">{earnings?.total || 0} руб.</div>
-          <div className="stat-card">{stats?.totalBookings || 0} записей</div>
-          <div className="stat-card">{stats?.rating || 0} рейтинг</div>
-          <div className="stat-card">{services.length} услуг</div>
-          <div className="stat-card">{portfolio.length} фото</div>
+          <div className="stat-card">{earnings?.total || 0} {commonT("currencyRub")}</div>
+          <div className="stat-card">{t("totalBookings", { count: stats?.totalBookings || 0 })}</div>
+          <div className="stat-card">{t("ratingStat", { value: stats?.rating || 0 })}</div>
+          <div className="stat-card">{t("servicesStat", { count: services.length })}</div>
+          <div className="stat-card">{t("photosStat", { count: expandedPortfolio.length })}</div>
         </div>
 
         <section className="profile-section">
-          <h2>Ближайшие записи</h2>
+          <h2>{t("upcomingBookings")}</h2>
           {masterBookings.length === 0 ? (
-            <p>Пока нет записей</p>
+            <p>{t("noMasterBookings")}</p>
           ) : (
-            masterBookings.map((booking: BookingToMaster) => (
-              <div key={booking.id} className="booking-card">
-                {formatDateTime(booking.startTime)} - {booking.client.name} -{" "}
-                {booking.service?.title ?? "Услуга"} ({booking.totalPrice} руб.)
-              </div>
-            ))
+            <div className="client-history-list">
+              {masterBookings.map((booking: BookingToMaster) => (
+                <article key={booking.id} className="booking-card booking-card--detailed">
+                  <div className="booking-card__info">
+                    <strong>{getLocalizedTitle(booking.service ?? {}, locale) ?? t("serviceFallback")}</strong>
+                    <span>{booking.client.name || t("clientNumber", { id: booking.clientId })}</span>
+                    <time>{formatDateTime(booking.startTime)}</time>
+                    <small>
+                      {booking.client.phone
+                        ? `${t("phone")}: ${booking.client.phone}`
+                        : commonT("notSpecifiedMale")}
+                    </small>
+                    <small>{booking.status}</small>
+                  </div>
+                  <div className="booking-card__actions">
+                    <button
+                      type="button"
+                      disabled={openingChatBookingId === booking.id}
+                      onClick={() => void handleOpenMasterBookingChat(booking)}
+                    >
+                      {openingChatBookingId === booking.id ? commonT("opening") : commonT("chat")}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
           )}
         </section>
 
         <section className="profile-section profile-section--services">
           <div className="section-header">
-            <h2>Мои услуги</h2>
+            <h2>{t("myServices")}</h2>
             <button type="button" onClick={() => setShowAddService(true)}>
-              Добавить услугу
+              {t("addService")}
             </button>
           </div>
 
           {services.length === 0 ? (
-            <p>У вас пока нет услуг</p>
+            <p>{t("noServices")}</p>
           ) : (
             <div className="services-list">
               {services.map((service: Servizi) => (
                 <div key={service.id} className="service-card">
                   <span>
-                    {service.title} - {service.price} руб. ({service.duration} мин)
+                    {getLocalizedTitle(service, locale) ?? service.title} - {service.price} {commonT("currencyRub")} ({service.duration} {commonT("minutes")})
                   </span>
                   <button type="button" onClick={() => dispatch(deleteServiceThunk(service.id))}>
-                    Удалить
+                    {commonT("delete")}
                   </button>
                 </div>
               ))}
@@ -915,16 +1193,16 @@ export default function ProfilePage() {
         </section>
 
         <section className="profile-section">
-          <h2>Отзывы клиентов</h2>
+          <h2>{t("clientReviews")}</h2>
           {masterReviewsError ? <p className="profile-error">{masterReviewsError}</p> : null}
           {masterReviews.length === 0 ? (
-            <p>Отзывов пока нет</p>
+            <p>{t("noReviews")}</p>
           ) : (
             <div className="master-reviews-list">
               {masterReviews.map((review) => (
                 <article className="master-review-card" key={review.id}>
                   <div className="master-review-card__head">
-                    <strong>Клиент #{review.clientId}</strong>
+                    <strong>{t("clientNumber", { id: review.clientId })}</strong>
                     <span>
                       {"★".repeat(review.rating)}
                       {"☆".repeat(Math.max(0, 5 - review.rating))}
@@ -939,27 +1217,27 @@ export default function ProfilePage() {
 
         <section className="profile-section">
           <div className="section-header">
-            <h2>Портфолио</h2>
+            <h2>{t("portfolio")}</h2>
             <button type="button" onClick={() => setShowAddPhoto(true)}>
-              Добавить фото
+              {t("addPhoto")}
             </button>
           </div>
 
           <div className="portfolio-grid">
-            {portfolio.length === 0 ? (
-              <p>Портфолио пусто</p>
+            {expandedPortfolio.length === 0 ? (
+              <p>{t("portfolioEmpty")}</p>
             ) : (
-              portfolio.map((item: PortfolioItem) => (
+              expandedPortfolio.map((item) => (
                 <div key={item.id} className="portfolio-item">
                   {item.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={getMediaUrl(item.imageUrl)} alt={item.title || "Фото портфолио"} />
+                    <img src={getMediaUrl(item.imageUrl)} alt={item.title || t("portfolioPhoto")} />
                   ) : (
-                    <div className="portfolio-placeholder">Нет фото</div>
+                    <div className="portfolio-placeholder">{t("noPhoto")}</div>
                   )}
                   <p>{item.title}</p>
-                  <button type="button" onClick={() => dispatch(deletePortfolioItemThunk(item.id))}>
-                    Удалить
+                  <button type="button" onClick={() => dispatch(deletePortfolioItemThunk(item.sourceId))}>
+                    {commonT("delete")}
                   </button>
                 </div>
               ))
@@ -971,37 +1249,63 @@ export default function ProfilePage() {
           <div className="profile-modal-backdrop" role="presentation">
             <form className="profile-modal" onSubmit={handleSaveMasterProfile}>
               <div className="modal-header">
-                <h2>Профиль мастера</h2>
-                <button type="button" onClick={() => setIsProfileModalOpen(false)} aria-label="Закрыть">
+                <h2>{t("masterProfile")}</h2>
+                <button type="button" onClick={() => setIsProfileModalOpen(false)} aria-label={commonT("close")}>
                   x
                 </button>
               </div>
 
               <label>
-                <span>Имя и фамилия / название профиля</span>
+                <span>{t("masterNameLabel")}</span>
                 <input
                   value={masterProfile.title}
                   onChange={(event) =>
                     setMasterProfile((profile) => ({ ...profile, title: event.target.value }))
                   }
-                  placeholder="Ваше имя"
+                  placeholder={t("yourName")}
                 />
               </label>
 
               <label>
-                <span>Описание</span>
+                <span>{t("masterNameEnLabel")}</span>
+                <input
+                  value={masterProfile.titleEn}
+                  onChange={(event) =>
+                    setMasterProfile((profile) => ({ ...profile, titleEn: event.target.value }))
+                  }
+                  placeholder={t("masterNameEnPlaceholder")}
+                />
+              </label>
+
+              <label>
+                <span>{t("description")}</span>
                 <textarea
                   value={masterProfile.description}
                   onChange={(event) =>
                     setMasterProfile((profile) => ({ ...profile, description: event.target.value }))
                   }
-                  placeholder="Расскажите о себе, опыте и подходе к клиентам"
+                  placeholder={t("masterDescriptionPlaceholder")}
                   rows={4}
                 />
               </label>
 
               <label>
-                <span>Фото профиля</span>
+                <span>{t("descriptionEn")}</span>
+                <textarea
+                  value={masterProfile.descriptionEn}
+                  onChange={(event) =>
+                    setMasterProfile((profile) => ({
+                      ...profile,
+                      descriptionEn: event.target.value,
+                    }))
+                  }
+                  placeholder={t("masterDescriptionEnPlaceholder")}
+                  rows={4}
+                />
+              </label>
+
+              <label>
+                <span>{t("profilePhotoInput")}</span>
                 <input
                   accept="image/*"
                   type="file"
@@ -1023,7 +1327,7 @@ export default function ProfilePage() {
                   }}
                 />
                 <p className="file-note">
-                  {clientProfile.avatarFile?.name || "Выберите фото с компьютера"}
+                  {clientProfile.avatarFile?.name || t("choosePhoto")}
                 </p>
               </label>
 
@@ -1032,7 +1336,7 @@ export default function ProfilePage() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={clientProfile.avatarFile?.data || getMediaUrl(clientProfile.avatar)}
-                    alt="Предпросмотр фото профиля"
+                    alt={t("previewProfilePhoto")}
                   />
                 </div>
               ) : null}
@@ -1080,31 +1384,47 @@ export default function ProfilePage() {
 
               <div className="profile-form-row">
                 <label>
-                  <span>Город</span>
+                  <span>{t("city")}</span>
                   <input
                     value={masterProfile.city}
                     onChange={(event) =>
                       setMasterProfile((profile) => ({ ...profile, city: event.target.value }))
                     }
-                    placeholder="Ваш город"
+                    placeholder={t("yourCity")}
                   />
                 </label>
 
                 <label>
-                  <span>Адрес</span>
+                  <span>{t("address")}</span>
                   <input
                     value={masterProfile.address}
                     onChange={(event) =>
                       setMasterProfile((profile) => ({ ...profile, address: event.target.value }))
                     }
-                    placeholder="Ваш адрес"
+                    placeholder={t("yourAddress")}
                   />
                 </label>
               </div>
 
+              <div className="profile-location-picker">
+                <div>
+                  <strong>Точка на карте</strong>
+                  <span>
+                    Выберите место, где клиентам удобнее искать вас рядом с собой
+                  </span>
+                </div>
+                <MasterGeoPicker
+                  initialLat={masterProfile.latitude ?? 55.751244}
+                  initialLon={masterProfile.longitude ?? 37.618423}
+                  onChange={(lat, lon) => {
+                    void handleMasterLocationChange(lat, lon);
+                  }}
+                />
+              </div>
+
               <div className="profile-form-row">
                 <label>
-                  <span>Опыт, лет</span>
+                  <span>{t("experienceYears")}</span>
                   <input
                     min={0}
                     step={0.5}
@@ -1120,19 +1440,30 @@ export default function ProfilePage() {
                 </label>
 
                 <label>
-                  <span>Категория</span>
+                  <span>{t("category")}</span>
                   <input
                     value={masterProfile.category}
                     onChange={(event) =>
                       setMasterProfile((profile) => ({ ...profile, category: event.target.value }))
                     }
-                    placeholder="Ваши услуги"
+                    placeholder={t("yourServices")}
+                  />
+                </label>
+
+                <label>
+                  <span>{t("categoryEn")}</span>
+                  <input
+                    value={masterProfile.categoryEn}
+                    onChange={(event) =>
+                      setMasterProfile((profile) => ({ ...profile, categoryEn: event.target.value }))
+                    }
+                    placeholder={t("yourServicesEn")}
                   />
                 </label>
               </div>
 
               <label>
-                <span>Рейтинг</span>
+                <span>{t("rating")}</span>
                 <input
                   min={0}
                   max={5}
@@ -1147,10 +1478,10 @@ export default function ProfilePage() {
 
               <div className="modal-actions">
                 <button type="submit" disabled={isProfileSaving}>
-                  {isProfileSaving ? "Сохранение..." : "Сохранить"}
+                  {isProfileSaving ? commonT("saving") : commonT("save")}
                 </button>
                 <button type="button" onClick={() => setIsProfileModalOpen(false)}>
-                  Отмена
+                  {commonT("cancel")}
                 </button>
               </div>
             </form>
@@ -1160,9 +1491,9 @@ export default function ProfilePage() {
         {showAddService && (
           <div className="profile-modal-backdrop" role="presentation">
             <div className="profile-modal">
-              <h2>Добавить услугу</h2>
+              <h2>{t("addService")}</h2>
               <label>
-                <span>Категория</span>
+                <span>{t("category")}</span>
                 <select
                   value={newService.categoryId}
                   disabled={categories.length === 0}
@@ -1176,38 +1507,56 @@ export default function ProfilePage() {
                   {categories.length > 0 ? (
                     categories.map((category) => (
                       <option key={category.id} value={category.id}>
-                        {category.title}
+                        {getLocalizedTitle(category, locale) ?? category.title}
                       </option>
                     ))
                   ) : (
                     <option value={newService.categoryId}>
-                      {categoriesError ? "Категории не загрузились" : "Загрузка категорий..."}
+                      {categoriesError ? t("categoriesNotLoaded") : t("categoriesLoading")}
                     </option>
                   )}
                 </select>
                 {categoriesError ? <p className="file-note">{categoriesError}</p> : null}
               </label>
               <label>
-                <span>Название услуги</span>
+                <span>{t("serviceTitle")}</span>
                 <input
-                  placeholder="Маникюр с покрытием"
+                  placeholder={t("serviceTitlePlaceholder")}
                   value={newService.title}
                   onChange={(event) => setNewService({ ...newService, title: event.target.value })}
                 />
               </label>
               <label>
-                <span>Описание услуги</span>
+                <span>{t("serviceTitleEn")}</span>
+                <input
+                  placeholder={t("serviceTitleEnPlaceholder")}
+                  value={newService.titleEn}
+                  onChange={(event) => setNewService({ ...newService, titleEn: event.target.value })}
+                />
+              </label>
+              <label>
+                <span>{t("serviceDescription")}</span>
                 <textarea
-                  placeholder="Что входит в процедуру"
+                  placeholder={t("serviceDescriptionPlaceholder")}
                   value={newService.description}
                   onChange={(event) => setNewService({ ...newService, description: event.target.value })}
                 />
               </label>
+              <label>
+                <span>{t("serviceDescriptionEn")}</span>
+                <textarea
+                  placeholder={t("serviceDescriptionEnPlaceholder")}
+                  value={newService.descriptionEn}
+                  onChange={(event) =>
+                    setNewService({ ...newService, descriptionEn: event.target.value })
+                  }
+                />
+              </label>
               <div className="profile-form-row">
                 <label>
-                  <span>Сумма, руб.</span>
+                  <span>{t("priceRub")}</span>
                   <input
-                    placeholder="Например, 2500"
+                    placeholder={t("pricePlaceholder")}
                     type="number"
                     value={newService.price || ""}
                     onChange={(event) =>
@@ -1219,9 +1568,9 @@ export default function ProfilePage() {
                   />
                 </label>
                 <label>
-                  <span>Длительность процедуры, мин.</span>
+                  <span>{t("durationMinutes")}</span>
                   <input
-                    placeholder="Например, 90"
+                    placeholder={t("durationPlaceholder")}
                     type="number"
                     value={newService.duration || ""}
                     onChange={(event) =>
@@ -1243,17 +1592,19 @@ export default function ProfilePage() {
                     setShowAddService(false);
                     setNewService({
                       title: "",
+                      titleEn: "",
                       description: "",
+                      descriptionEn: "",
                       price: 0,
                       duration: 60,
                       categoryId: categories[0]?.id || 1,
                     });
                   }}
                 >
-                  Сохранить
+                  {commonT("save")}
                 </button>
                 <button type="button" onClick={() => setShowAddService(false)}>
-                  Отмена
+                  {commonT("cancel")}
                 </button>
               </div>
             </div>
@@ -1263,9 +1614,9 @@ export default function ProfilePage() {
         {showAddPhoto && (
           <div className="profile-modal-backdrop" role="presentation">
             <div className="profile-modal">
-              <h2>Добавить фото</h2>
+              <h2>{t("addPhotoTitle")}</h2>
               <label>
-                <span>Фото с компьютера</span>
+                <span>{t("photoFromComputer")}</span>
                 <input
                   accept="image/*"
                   type="file"
@@ -1290,20 +1641,20 @@ export default function ProfilePage() {
                 />
               </label>
               {newPhoto.imageFile ? (
-                <p className="file-note">Выбрано: {newPhoto.imageFile.name}</p>
+                <p className="file-note">{t("selectedFile")} {newPhoto.imageFile.name}</p>
               ) : null}
               <label>
-                <span>Название фото</span>
+                <span>{t("photoTitle")}</span>
                 <input
-                  placeholder="Работа после процедуры"
+                  placeholder={t("photoTitlePlaceholder")}
                   value={newPhoto.title}
                   onChange={(event) => setNewPhoto({ ...newPhoto, title: event.target.value })}
                 />
               </label>
               <label>
-                <span>Описание фото</span>
+                <span>{t("photoDescription")}</span>
                 <textarea
-                  placeholder="Короткое описание результата"
+                  placeholder={t("photoDescriptionPlaceholder")}
                   value={newPhoto.description}
                   onChange={(event) => setNewPhoto({ ...newPhoto, description: event.target.value })}
                 />
@@ -1322,10 +1673,10 @@ export default function ProfilePage() {
                     setNewPhoto({ imageFile: null, title: "", description: "" });
                   }}
                 >
-                  Сохранить
+                  {commonT("save")}
                 </button>
                 <button type="button" onClick={() => setShowAddPhoto(false)}>
-                  Отмена
+                  {commonT("cancel")}
                 </button>
               </div>
             </div>

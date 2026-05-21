@@ -5,6 +5,7 @@ import {
     logoutThunk,
     refreshTokenThunk,
     registerThunk,
+    telegramLoginThunk,
     updateUserProfileThunk,
 } from '../api/UserApiThunk';
 
@@ -83,6 +84,23 @@ const userSlice = createSlice({
             state.isLoading = false;
             state.isInitialized = true;
             state.error = action.payload ?? 'Ошибка при выходе из приложения'
+        })
+
+        // Telegram login
+        builder.addCase(telegramLoginThunk.pending, (state) => {
+            state.error = null;
+            state.isLoading = true
+        })
+        builder.addCase(telegramLoginThunk.fulfilled, (state, action) => {
+            state.isLoading = false;
+            state.isInitialized = true;
+            state.user = action.payload
+            state.error = null;
+        })
+        builder.addCase(telegramLoginThunk.rejected, (state, action) => {
+            state.isLoading = false;
+            state.isInitialized = true;
+            state.error = action.payload ?? 'Ошибка при входе через Telegram'
         })
 
         // Update profile

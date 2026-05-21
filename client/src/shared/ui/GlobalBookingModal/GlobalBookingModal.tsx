@@ -3,6 +3,7 @@
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 
 import { refreshTokenThunk } from "@/entities/user/api/UserApiThunk";
 import { confirmAIBooking, searchAIBookingOptions } from "@/shared/api/aiApi";
@@ -11,6 +12,9 @@ import { getServicesByMaster } from "@/shared/api/serviziApi";
 import { getShadulesByMaster } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { BOOKING_MODAL_EVENT, dispatchBookingModalClose } from "@/shared/lib/bookingEvents";
+import { openBookingChat } from "@/shared/lib/openBookingChat";
+import { getMasterAvatarUrl } from "@/shared/lib/media";
+import { getLocalizedTitle } from "@/shared/lib/localized";
 import { BookingModalPayload, BookingType, ServiziType, ShaduleType } from "@/shared/types";
 import { quickPrompts, type MasterItem } from "./booking.data";
 
@@ -26,11 +30,7 @@ type DirectBookingFormState = {
   comment: string;
 };
 
-// Тексты вынесены в константы
-const DEFAULT_DRAFT = "Хочу маникюр завтра после 18:00";
-const DEFAULT_AI_MESSAGE = "Напишите запрос, например «хочу маникюр на завтра»";
 const initialDirectBookingForm: DirectBookingFormState = { comment: "" };
-const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 function toDateKey(date: Date) {
   const year = date.getFullYear();
@@ -142,12 +142,15 @@ function getCategoryServices(services: ServiziType[], categoryId: number) {
 }
 
 export default function GlobalBookingModal() {
+  const t = useTranslations("bookingModal");
+  const commonT = useTranslations("common");
+  const locale = useLocale();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user, isInitialized } = useAppSelector((state) => state.user);
 
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [draft, setDraft] = useState(DEFAULT_DRAFT);
+  const [draft, setDraft] = useState(() => t("defaultDraft"));
   const [pendingOpen, setPendingOpen] = useState(false);
   const [presetBooking, setPresetBooking] = useState<BookingModalPayload | null>(null);
   const [step, setStep] = useState<BookingFlowStep>("idle");
@@ -156,7 +159,7 @@ export default function GlobalBookingModal() {
   const [options, setOptions] = useState<MasterItem[]>([]);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: 1, text: DEFAULT_AI_MESSAGE, role: "ai", placement: "top" },
+    { id: 1, text: t("defaultAiMessage"), role: "ai", placement: "top" },
   ]);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [confirmedOption, setConfirmedOption] = useState<MasterItem | null>(null);
@@ -165,6 +168,8 @@ export default function GlobalBookingModal() {
   const [isDirectDataLoading, setIsDirectDataLoading] = useState(false);
   const [directBookingError, setDirectBookingError] = useState<string | null>(null);
   const [directBookingSuccess, setDirectBookingSuccess] = useState<string | null>(null);
+  const [directCreatedBooking, setDirectCreatedBooking] = useState<BookingType | null>(null);
+  const [isOpeningDirectChat, setIsOpeningDirectChat] = useState(false);
   const [directBookingStep, setDirectBookingStep] = useState<DirectBookingStep>("service");
   const [directServices, setDirectServices] = useState<ServiziType[]>([]);
   const [directShadules, setDirectShadules] = useState<ShaduleType[]>([]);
@@ -212,8 +217,8 @@ export default function GlobalBookingModal() {
     setError(null);
     setOptions([]);
     setSelectedOptionId(null);
-    setDraft(DEFAULT_DRAFT);
-    setChatMessages([{ id: 1, text: DEFAULT_AI_MESSAGE, role: "ai", placement: "top" }]);
+    setDraft(t("defaultDraft"));
+    setChatMessages([{ id: 1, text: t("defaultAiMessage"), role: "ai", placement: "top" }]);
     setBookingConfirmed(false);
     setConfirmedOption(null);
     setPresetBooking(null);
@@ -222,6 +227,8 @@ export default function GlobalBookingModal() {
     setIsDirectDataLoading(false);
     setDirectBookingError(null);
     setDirectBookingSuccess(null);
+    setDirectCreatedBooking(null);
+    setIsOpeningDirectChat(false);
     setDirectBookingStep("service");
     setDirectServices([]);
     setDirectShadules([]);
@@ -230,25 +237,13 @@ export default function GlobalBookingModal() {
     setSelectedDate(new Date());
     setSelectedSlot("");
     nextMessageIdRef.current = 2;
-  }, []);
+  }, [t]);
 
   const closeModal = useCallback(() => {
     setIsChatOpen(false);
     resetModalState();
     dispatchBookingModalClose();
   }, [resetModalState]);
-
-  useEffect(() => {
-    if (!directBookingSuccess) return;
-
-    const closeTimer = window.setTimeout(() => {
-      closeModal();
-    }, 3000);
-
-    return () => {
-      window.clearTimeout(closeTimer);
-    };
-  }, [closeModal, directBookingSuccess]);
 
   useEffect(() => {
     if (!pendingOpen || !isInitialized) return;
@@ -319,7 +314,7 @@ export default function GlobalBookingModal() {
     const prompt = draft.trim();
 
     if (!prompt) {
-      setError("Введите запрос для подбора");
+      setError(t("enterPrompt"));
       return;
     }
 
@@ -329,7 +324,7 @@ export default function GlobalBookingModal() {
     setOptions([]);
     setSelectedOptionId(null);
     pushChatMessage(prompt, "user");
-    pushChatMessage("Подбираю доступные варианты, это займет пару секунд", "ai");
+    pushChatMessage(t("searching"), "ai");
 
     try {
       const found = await searchAIBookingOptions(prompt, 6);
@@ -513,7 +508,7 @@ export default function GlobalBookingModal() {
       setDirectBookingError(null);
       setDirectBookingSuccess(null);
 
-      await createBooking({
+      const createdBooking = await createBooking({
         clientId: user.id,
         masterId: presetBooking.masterId,
         serviziId: selectedDirectService.id,
@@ -524,7 +519,8 @@ export default function GlobalBookingModal() {
         clientComment: directBookingForm.comment.trim() || undefined,
       });
 
-      setDirectBookingSuccess("Запись отправлена мастеру");
+      setDirectCreatedBooking(createdBooking);
+      setDirectBookingSuccess(t("directSuccess"));
       setDirectBookings((currentBookings) => [
         ...currentBookings,
         {
@@ -545,10 +541,25 @@ export default function GlobalBookingModal() {
       setDirectBookingError(
         submitError instanceof Error
           ? submitError.message
-          : "Не удалось отправить запись",
+          : t("directError"),
       );
     } finally {
       setIsDirectBookingLoading(false);
+    }
+  };
+
+  const handleOpenDirectChat = async () => {
+    if (!directCreatedBooking) return;
+
+    try {
+      setIsOpeningDirectChat(true);
+      setDirectBookingError(null);
+      await openBookingChat(router, directCreatedBooking);
+      closeModal();
+    } catch (error) {
+      setDirectBookingError(error instanceof Error ? error.message : t("chatError"));
+    } finally {
+      setIsOpeningDirectChat(false);
     }
   };
 
@@ -565,6 +576,9 @@ export default function GlobalBookingModal() {
   const topMessages = chatMessages.filter((message) => message.placement === "top");
   const bottomMessages = chatMessages.filter((message) => message.placement === "bottom");
   const isPresetMode = !!presetBooking;
+  const weekDays = t.raw("weekDays") as string[];
+  // В прямой записи показываем тот же локальный аватар мастера, что и в остальных карточках
+  const presetMasterAvatarUrl = presetBooking ? getMasterAvatarUrl(presetBooking.masterId) : "";
 
   if (!isChatOpen) return null;
 
@@ -574,26 +588,35 @@ export default function GlobalBookingModal() {
         {isPresetMode ? (
           <div className="booking-direct-mode">
             <div className="booking-intro glass-surface">
-              <p>Вы выбрали услугу и можете сразу отправить заявку мастеру</p>
+              <p>{t("directIntro")}</p>
             </div>
 
             {/* Этот сценарий открывается из карточек услуг, а не из AI поиска */}
             <article className="booking-direct-card glass-surface">
               <div className="booking-direct-card-head">
-                <span className="master-avatar">{presetBooking.masterId}</span>
+                {presetMasterAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img className="master-avatar master-avatar-image" src={presetMasterAvatarUrl} alt="" />
+                ) : (
+                  <span className="master-avatar">{presetBooking.masterId}</span>
+                )}
                 <div className="master-head">
-                  <strong>{presetBooking.masterName ?? `Мастер #${presetBooking.masterId}`}</strong>
-                  <span>{presetBooking.categoryTitle}</span>
+                  <strong>{presetBooking.masterName ?? t("masterNumber", { id: presetBooking.masterId })}</strong>
+                  <span>
+                    {locale === "en" && presetBooking.categoryTitleEn
+                      ? presetBooking.categoryTitleEn
+                      : presetBooking.categoryTitle}
+                  </span>
                 </div>
               </div>
 
               <p className="booking-direct-description">
-                Выберите услугу мастера, затем день и свободное время для записи.
+                {t("directHint")}
               </p>
             </article>
 
             <div className="booking-direct-form glass-surface">
-              {isDirectDataLoading ? <p className="booking-direct-description">Загружаю услуги и расписание</p> : null}
+              {isDirectDataLoading ? <p className="booking-direct-description">{t("loadingDirect")}</p> : null}
 
               {directBookingError ? (
                 <p className="booking-direct-feedback booking-direct-feedback--error">
@@ -602,14 +625,31 @@ export default function GlobalBookingModal() {
               ) : null}
 
               {directBookingSuccess ? (
-                <p className="booking-direct-feedback booking-direct-feedback--success">
-                  {directBookingSuccess}
-                </p>
+                <div className="booking-direct-success-actions">
+                  <p className="booking-direct-feedback booking-direct-feedback--success">
+                    {directBookingSuccess}
+                  </p>
+                  <button
+                    className="booking-confirm-button"
+                    type="button"
+                    disabled={!directCreatedBooking || isOpeningDirectChat}
+                    onClick={() => void handleOpenDirectChat()}
+                  >
+                    {isOpeningDirectChat ? t("openingChat") : t("writeMaster")}
+                  </button>
+                  <button
+                    className="booking-confirm-button"
+                    type="button"
+                    onClick={closeModal}
+                  >
+                    Закрыть
+                  </button>
+                </div>
               ) : null}
 
               {!isDirectDataLoading && directServices.length === 0 ? (
                 <p className="booking-direct-feedback booking-direct-feedback--error">
-                  У мастера пока нет активных услуг для записи.
+                  {t("noServices")}
                 </p>
               ) : null}
 
@@ -625,9 +665,9 @@ export default function GlobalBookingModal() {
                       disabled={!!directBookingSuccess}
                       onClick={() => handleDirectServiceSelect(service.id)}
                     >
-                      <strong>{service.title}</strong>
+                      <strong>{getLocalizedTitle(service, locale) ?? service.title}</strong>
                       <span>
-                        {service.duration} мин · {service.price.toLocaleString("ru-RU")} ₽
+                        {service.duration} {commonT("minutes")} · {service.price.toLocaleString(locale)} ₽
                       </span>
                     </button>
                   ))}
@@ -640,7 +680,7 @@ export default function GlobalBookingModal() {
                     <button
                       type="button"
                       onClick={() => handleDirectMonthChange(-1)}
-                      aria-label="Предыдущий месяц"
+                      aria-label={t("prevMonth")}
                     >
                       ‹
                     </button>
@@ -648,7 +688,7 @@ export default function GlobalBookingModal() {
                     <button
                       type="button"
                       onClick={() => handleDirectMonthChange(1)}
-                      aria-label="Следующий месяц"
+                      aria-label={t("nextMonth")}
                     >
                       ›
                     </button>
@@ -685,7 +725,7 @@ export default function GlobalBookingModal() {
                           }}
                         >
                           <span>{date.getDate()}</span>
-                          {slotsCount > 0 ? <small>{slotsCount} окон</small> : null}
+                          {slotsCount > 0 ? <small>{t("slotsCount", { count: slotsCount })}</small> : null}
                         </button>
                       );
                     })}
@@ -693,7 +733,7 @@ export default function GlobalBookingModal() {
 
                   <div className="booking-direct-slots">
                     <h3>
-                      {selectedDate.toLocaleDateString("ru-RU", {
+                      {selectedDate.toLocaleDateString(locale, {
                         day: "numeric",
                         month: "long",
                       })}
@@ -712,18 +752,18 @@ export default function GlobalBookingModal() {
                           </button>
                         ))
                       ) : (
-                        <p>На этот день свободных окон нет.</p>
+                        <p>{t("noSlots")}</p>
                       )}
                     </div>
                   </div>
 
                   <label className="booking-direct-field">
-                    <span>Комментарий</span>
+                    <span>{t("comment")}</span>
                     <textarea
                       className="booking-direct-textarea"
                       value={directBookingForm.comment}
                       onChange={(event) => handleDirectBookingCommentChange(event.target.value)}
-                      placeholder="Напишите пожелания к визиту"
+                      placeholder={t("commentPlaceholder")}
                       rows={4}
                       disabled={!!directBookingSuccess}
                     />
@@ -742,7 +782,7 @@ export default function GlobalBookingModal() {
                 }
                 onClick={() => void handleDirectBookingSubmit()}
               >
-                {isDirectBookingLoading ? "Отправляю" : "Отправить запись"}
+                {isDirectBookingLoading ? t("sending") : t("sendBooking")}
               </button>
             </div>
           </div>
@@ -792,7 +832,7 @@ export default function GlobalBookingModal() {
 
             {shouldShowReview ? (
               <div className="booking-confirm">
-                <p className="booking-confirm-title">Проверьте выбранный вариант</p>
+                <p className="booking-confirm-title">{t("checkOption")}</p>
 
                 <article className="booking-summary-card glass-surface">
                   <div className="master-topline">
@@ -819,7 +859,7 @@ export default function GlobalBookingModal() {
 
             {shouldShowConfirmedCard ? (
               <div className="booking-confirm">
-                <p className="booking-confirm-title">Подтвержденная запись</p>
+                <p className="booking-confirm-title">{t("confirmedTitle")}</p>
 
                 <article className="booking-summary-card glass-surface">
                   <div className="master-topline">
@@ -852,8 +892,8 @@ export default function GlobalBookingModal() {
               <div className="booking-ai-head">
                 <div className="assistant-badge booking-ai-badge">AI</div>
                 <div className="booking-ai-copy">
-                  <strong>AI - помощник</strong>
-                  <span>Опишите, что вы хотите, а я подберу варианты</span>
+                  <strong>{t("aiTitle")}</strong>
+                  <span>{t("aiSubtitle")}</span>
                 </div>
               </div>
 
@@ -867,7 +907,7 @@ export default function GlobalBookingModal() {
                     setDraft(event.target.value);
                   }}
                   onKeyDown={handleInputKeyDown}
-                  placeholder={DEFAULT_DRAFT}
+                  placeholder={t("defaultDraft")}
                   disabled={bookingConfirmed}
                 />
                 <button
@@ -876,7 +916,7 @@ export default function GlobalBookingModal() {
                   onClick={() => void handleSubmitDraft()}
                   disabled={isLoading || bookingConfirmed}
                 >
-                  {isLoading ? "Ищу" : "Подобрать"}
+                  {isLoading ? t("searchingButton") : t("searchButton")}
                 </button>
               </div>
 

@@ -3,7 +3,7 @@ import { AxiosError } from "axios";
 import { axiosInstance } from "@/shared/lib/axiosInstance";
 import { ServerResponseType, ServiziType } from "@/shared/types";
 
-// Здесь лежат адреса запросов к услугам
+// адреса запросов к услугам
 const SERVIZI_API_URLS = {
   findAll: "/servizi/findAll",
   findByCategory: (categoryId: number | string) =>

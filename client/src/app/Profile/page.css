@@ -17,8 +17,7 @@
 .profile-header,
 .section-header,
 .service-card,
-.booking-card,
-.sale-card {
+.booking-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -201,7 +200,6 @@
 
 .service-card,
 .booking-card,
-.sale-card,
 .client-history-card,
 .portfolio-item {
   padding: 14px;
@@ -216,6 +214,33 @@
 .client-history-list {
   display: grid;
   gap: 12px;
+}
+
+.booking-card--detailed {
+  align-items: flex-start;
+}
+
+.booking-card__info {
+  display: grid;
+  gap: 5px;
+}
+
+.booking-card__info strong {
+  color: #754846;
+}
+
+.booking-card__info span,
+.booking-card__info time,
+.booking-card__info small {
+  color: rgba(122, 77, 75, 0.72);
+  font-size: 14px;
+}
+
+.booking-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .recommended-masters-list {
@@ -612,6 +637,31 @@
   object-fit: cover;
 }
 
+.profile-location-picker {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(122, 77, 75, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.profile-location-picker > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-location-picker strong {
+  color: #754846;
+  font-size: 15px;
+}
+
+.profile-location-picker span {
+  color: rgba(122, 77, 75, 0.72);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .profile-form-row,
 .modal-actions {
   display: grid;
@@ -630,7 +680,6 @@
   .section-header,
   .service-card,
   .booking-card,
-  .sale-card,
   .recommended-master-card__head,
   .recommended-master-card__identity,
   .client-history-card__top {

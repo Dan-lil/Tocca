@@ -15,7 +15,8 @@ serverConfig(app);
 app.use("/api", apiRouter);
 
 const server = http.createServer(app);
-initChatSocket(server);
+const io = initChatSocket(server);
+app.set("io", io);
 
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE") {
