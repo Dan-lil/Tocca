@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { io, Socket } from "socket.io-client";
@@ -43,6 +44,41 @@ function formatBookingDate(date: string | undefined, locale: string, fallback: s
 
 function getAvatarLetter(user?: ChatUserType | null) {
   return user?.name?.trim()?.[0]?.toUpperCase() ?? "T";
+}
+
+function getCompanionProfileHref(user?: ChatUserType | null) {
+  return user?.role === "master" ? `/masters/${user.id}` : null;
+}
+
+function MessengerAvatar({
+  className = "",
+  user,
+}: {
+  className?: string;
+  user?: ChatUserType | null;
+}) {
+  const content = user?.avatar ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={user.avatar} alt="" />
+  ) : (
+    <span>{getAvatarLetter(user)}</span>
+  );
+  const profileHref = getCompanionProfileHref(user);
+  const avatarClassName = `messenger-avatar ${className}`.trim();
+
+  if (!profileHref) {
+    return <div className={avatarClassName}>{content}</div>;
+  }
+
+  return (
+    <Link
+      aria-label={`Открыть профиль ${user?.name ?? "мастера"}`}
+      className={`${avatarClassName} messenger-avatar-link`}
+      href={profileHref}
+    >
+      {content}
+    </Link>
+  );
 }
 
 function MessagesPageContent() {
@@ -204,14 +240,7 @@ function MessagesPageContent() {
         <div className="messenger-main">
           <header className="messenger-chat-head">
             <div className="messenger-peer">
-              <div className="messenger-avatar">
-                {activeCompanion?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={activeCompanion.avatar} alt="" />
-                ) : (
-                  <span>{getAvatarLetter(activeCompanion)}</span>
-                )}
-              </div>
+              <MessengerAvatar user={activeCompanion} />
               <div>
                 <h1>{activeCompanion?.name ?? t("selectChat")}</h1>
                 <p>
@@ -293,26 +322,21 @@ function MessagesPageContent() {
               const isActive = chat.id === activeChatId;
 
               return (
-                <button
+                <article
                   className={`messenger-chat-card ${isActive ? "is-active" : ""}`}
                   key={chat.id}
-                  onClick={() => setActiveChatId(chat.id)}
-                  type="button"
                 >
-                  <div className="messenger-avatar messenger-avatar--small">
-                    {companion?.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={companion.avatar} alt="" />
-                    ) : (
-                      <span>{getAvatarLetter(companion)}</span>
-                    )}
-                  </div>
-                  <div>
+                  <MessengerAvatar className="messenger-avatar--small" user={companion} />
+                  <button
+                    className="messenger-chat-card-content"
+                    onClick={() => setActiveChatId(chat.id)}
+                    type="button"
+                  >
                     <strong>{companion?.name ?? t("user")}</strong>
                     <span>{getLocalizedTitle(chat.Booking?.Servizi ?? {}, locale) ?? t("privateChat")}</span>
                     <p>{lastMessage?.text ?? t("emptyMessages")}</p>
-                  </div>
-                </button>
+                  </button>
+                </article>
               );
             })}
           </div>
