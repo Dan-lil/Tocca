@@ -1,4 +1,5 @@
 const { MasterPortfolio, MasterSocial, ProfileMaster, User } = require("../db/models");
+const { withAutoProfileEnglish } = require("../utils/translate");
 
 function mapPortfolioItem(item) {
   return {
@@ -10,7 +11,8 @@ function mapPortfolioItem(item) {
 
 class ProfileMasterService {
   static async create(ProfileData) {
-    const newProfile = await ProfileMaster.create(ProfileData);
+    const profileData = await withAutoProfileEnglish(ProfileData);
+    const newProfile = await ProfileMaster.create(profileData);
 
     const plainProfile = newProfile.get();
 
@@ -53,18 +55,20 @@ class ProfileMasterService {
   }
 
   static async update(id, ProfileData) {
+    const profileData = await withAutoProfileEnglish(ProfileData);
+
     const [profile] = await ProfileMaster.findOrCreate({
       where: { userId: id },
       defaults: {
-        ...ProfileData,
+        ...profileData,
         userId: id,
-        rating: ProfileData.rating ?? 0,
+        rating: profileData.rating ?? 0,
       },
     });
 
     if (!profile.isNewRecord) {
       await profile.update({
-        ...ProfileData,
+        ...profileData,
         userId: id,
       });
     }

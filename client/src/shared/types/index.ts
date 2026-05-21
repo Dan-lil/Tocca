@@ -97,6 +97,7 @@ export type RecommendedMasterType = {
     categoryId: number;
   }>;
   reason: string;
+  reasonEn?: string | null;
 };
 
 export type BookingModalPayload = {

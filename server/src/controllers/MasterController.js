@@ -3,6 +3,7 @@ const path = require("path");
 const { Op } = require("sequelize");
 const { Booking, MasterPortfolio, ProfileMaster, Servizi, User } = require("../db/models");
 const formatResponse = require("../utils/formatResponse");
+const { withAutoServiceEnglish } = require("../utils/translate");
 const { createSafeImageFileName, getImageExtension } = require("../utils/uploadFileName");
 
 function getMasterId(res) {
@@ -122,10 +123,11 @@ class MasterController {
     const masterId = getMasterId(res);
 
     try {
+      const serviceData = await withAutoServiceEnglish(req.body);
       const service = await Servizi.create({
-        ...req.body,
+        ...serviceData,
         masterId,
-        isActive: req.body.isActive ?? true,
+        isActive: serviceData.isActive ?? true,
       });
 
       return res.status(201).json(formatResponse(201, "Service created", service.get()));
@@ -141,7 +143,8 @@ class MasterController {
     const { id } = req.params;
 
     try {
-      const [rows] = await Servizi.update(req.body, { where: { id, masterId } });
+      const serviceData = await withAutoServiceEnglish(req.body);
+      const [rows] = await Servizi.update(serviceData, { where: { id, masterId } });
       if (rows === 0) {
         return res.status(404).json(formatResponse(404, "Service not found"));
       }
