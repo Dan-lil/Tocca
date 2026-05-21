@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRef, useState } from "react";
 
 import type { PromotionItem } from "@/features/promotions/model/promotions.data";
@@ -16,6 +17,7 @@ type PromotionsSectionProps = {
 const PROMOTION_IMAGE_FALLBACK = "/акция_дня.jpeg";
 
 export function PromotionsSection({ promotions }: PromotionsSectionProps) {
+  const t = useTranslations("promotions");
   const promotionsRef = useRef<HTMLDivElement | null>(null);
   const promoCardsRef = useRef<Array<HTMLElement | null>>([]);
   const dragProxyRef = useRef<HTMLDivElement | null>(null);
@@ -34,12 +36,12 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
       <section className="promotions-section">
         <div className="promo-header">
           <div className="section-heading promotions-heading">
-            <span>Акции</span>
+            <span>{t("title")}</span>
           </div>
         </div>
 
         <div className="promo-empty-state">
-          <p>Скоро здесь появятся актуальные предложения</p>
+          <p>{t("empty")}</p>
         </div>
       </section>
     );
@@ -49,7 +51,7 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
     <section className="promotions-section">
       <div className="promo-header">
         <div className="section-heading promotions-heading">
-          <span>Акции</span>
+          <span>{t("title")}</span>
         </div>
       </div>
 
@@ -80,13 +82,13 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
                     <>
                       <p>{promotion.comment}</p>
                       <span className="promo-date">
-                        Акция действует до {promotion.expiresAt}
+                        {t("validUntil")} {promotion.expiresAt}
                       </span>
                       <Link
                         className="promo-master promo-master-link"
                         href={`/masters/${promotion.masterId}`}
                       >
-                        Мастер {promotion.masterName} ★ {promotion.masterRating.toFixed(1)}
+                        {t("master")} {promotion.masterName} ★ {promotion.masterRating.toFixed(1)}
                       </Link>
                     </>
                   ) : null}
@@ -116,7 +118,7 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
           className="promo-scroll-button"
           type="button"
           onClick={() => promotionsApiRef.current?.prev()}
-          aria-label="Прокрутить акции влево"
+          aria-label={t("scrollLeft")}
         >
           &lsaquo;
         </button>
@@ -124,7 +126,7 @@ export function PromotionsSection({ promotions }: PromotionsSectionProps) {
           className="promo-scroll-button"
           type="button"
           onClick={() => promotionsApiRef.current?.next()}
-          aria-label="Прокрутить акции вправо"
+          aria-label={t("scrollRight")}
         >
           &rsaquo;
         </button>

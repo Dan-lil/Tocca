@@ -1,9 +1,9 @@
-const crypto = require("crypto");
 const fs = require("fs/promises");
 const path = require("path");
 const { Op } = require("sequelize");
 const { Booking, MasterPortfolio, ProfileMaster, Servizi, User } = require("../db/models");
 const formatResponse = require("../utils/formatResponse");
+const { createSafeImageFileName, getImageExtension } = require("../utils/uploadFileName");
 
 function getMasterId(res) {
   return res.locals.user?.id;
@@ -32,15 +32,15 @@ async function savePortfolioImage(imageFile) {
     throw new Error("Invalid image payload");
   }
 
-  const extensionByType = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif",
-  };
-  const extension = extensionByType[imageFile.type] ?? "jpg";
+  const extension = getImageExtension(imageFile.type);
+  const allowedExtensions = new Set(["jpg", "png", "webp", "gif"]);
+
+  if (!allowedExtensions.has(extension)) {
+    throw new Error("Unsupported image file type");
+  }
+
   const uploadsDir = path.join(__dirname, "../public/uploads/portfolio");
-  const fileName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
+  const fileName = createSafeImageFileName(imageFile.type);
 
   await fs.mkdir(uploadsDir, { recursive: true });
   await fs.writeFile(path.join(uploadsDir, fileName), Buffer.from(base64Data, "base64"));

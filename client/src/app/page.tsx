@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getMediaUrl } from "@/shared/lib/media";
@@ -22,6 +23,7 @@ function getServiceImageSrc(service: ServiziType) {
 }
 
 export default function HomePage() {
+  const t = useTranslations();
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [services, setServices] = useState<ServiziType[]>([]);
   const [promotions, setPromotions] = useState<PromotionItem[]>([]);
@@ -49,7 +51,7 @@ export default function HomePage() {
         setPromotions(mapSalesToPromotions(salesData, servicesData));
       } catch (error) {
         const message =
-          error instanceof Error ? error.message : "Не удалось загрузить данные";
+          error instanceof Error ? error.message : t("home.loadError");
 
         setServicesError(message);
         setPromotionsError(message);
@@ -57,7 +59,7 @@ export default function HomePage() {
     };
 
     void loadHomeData();
-  }, []);
+  }, [t]);
 
   const visibleServices = useMemo(() => {
     const activeServices = services.filter((service) => service.isActive);
@@ -91,16 +93,16 @@ export default function HomePage() {
           <div className="hero-assistant-card">
             <div className="assistant-badge">AI</div>
             <div className="assistant-copy">
-              <strong>AI - помощник</strong>
-              <span>Опишите, что вы хотите - я найду подходящих мастеров</span>
+              <strong>{t("home.aiTitle")}</strong>
+              <span>{t("home.aiDescription")}</span>
             </div>
             <button className="small-button" type="button" onClick={handleAiClick}>
-              Записаться
+              {t("home.book")}
             </button>
           </div>
 
           <div className="section-heading">
-            <span>Услуги</span>
+            <span>{t("home.services")}</span>
           </div>
 
           {servicesError ? <p className="service-load-error">{servicesError}</p> : null}
@@ -128,7 +130,7 @@ export default function HomePage() {
                     className="card-button glass-button glass-button--compact"
                     href={`/services/${service.categoryId}`}
                   >
-                    Записаться
+                    {t("home.book")}
                   </Link>
                 </div>
               </article>
