@@ -8,7 +8,7 @@ class BookingController {
     const { user } = res.locals;
 
     try {
-      const newBooking = await BookingService.create(bookingData);
+      const newBooking = await BookingService.create(bookingData, user);
       return res
         .status(201)
         .json(formatResponse(201, "Бронирование успешно создано!", newBooking));
@@ -17,7 +17,14 @@ class BookingController {
       console.log(error);
       return res
         .status(500)
-        .json(formatResponse(500, "Ошибка сервера при создании бронирования"));
+        .json(
+          formatResponse(
+            500,
+            "Ошибка сервера при создании бронирования",
+            null,
+            error.message,
+          ),
+        );
     }
   }
 

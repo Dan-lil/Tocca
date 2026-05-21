@@ -7,6 +7,7 @@ const {
   Eco,
   ProfileMaster,
   Servizi,
+  Shadule,
   User,
 } = require("../db/models");
 
@@ -19,6 +20,57 @@ function getUniqueNumberList(values) {
 function average(numbers) {
   if (!numbers.length) return 0;
   return numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
+}
+
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getMinutesFromDate(value) {
+  const date = new Date(value);
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function formatTime(totalMinutes) {
+  const hours = `${Math.floor(totalMinutes / 60)}`.padStart(2, "0");
+  const minutes = `${totalMinutes % 60}`.padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+}
+
+function buildDateFromKeyAndMinutes(dateKey, totalMinutes) {
+  const [hours, minutes] = formatTime(totalMinutes).split(":").map(Number);
+  const date = new Date(`${dateKey}T00:00:00`);
+  date.setHours(hours, minutes, 0, 0);
+
+  return date;
+}
+
+function getRussianWeekdayLabel(day) {
+  const labels = [
+    "Воскресенье",
+    "Понедельник",
+    "Вторник",
+    "Среда",
+    "Четверг",
+    "Пятница",
+    "Суббота",
+  ];
+
+  return labels[day] ?? "";
+}
+
+function getShortInitials(name) {
+  return String(name ?? "")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 function rankMastersLocally(payload) {
@@ -90,7 +142,77 @@ function getTopMastersByRating(candidateMasters, bookedMasterIds, limit) {
     .map((master) => master.id);
 }
 
-// ==================== AiService Class ====================
+function extractPromptPreferences(prompt) {
+  const text = String(prompt ?? "").trim().toLowerCase();
+
+  return {
+    text,
+    isTomorrow: /завтр/.test(text),
+    isWeekend: /выходн|суббот|воскрес/.test(text),
+    wantsMorning: /утр|до\s*12/.test(text),
+    wantsAfternoon: /дн[её]м|после\s*12|после\s*13|после\s*14|после\s*15|после\s*16/.test(text),
+    wantsEvening: /вечер|после\s*17|после\s*18|после\s*19/.test(text),
+    explicitHour: (() => {
+      const match = text.match(/(\d{1,2})[:.](\d{2})|после\s*(\d{1,2})/);
+
+      if (!match) return null;
+      if (match[1]) return Number.parseInt(match[1], 10) * 60 + Number.parseInt(match[2], 10);
+      return Number.parseInt(match[3], 10) * 60;
+    })(),
+  };
+}
+
+function textIncludesCategory(service, categoryTitle, promptText) {
+  const haystack = [
+    service.title,
+    service.description,
+    categoryTitle,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (!promptText) {
+    return true;
+  }
+
+  const keywords = promptText
+    .split(/[\s,!.?;:]+/)
+    .map((part) => part.trim())
+    .filter((part) => part.length >= 4);
+
+  if (!keywords.length) {
+    return true;
+  }
+
+  return keywords.some((keyword) => haystack.includes(keyword));
+}
+
+function scoreTimePreference(slotStartMinutes, preferences, date) {
+  let score = 0;
+
+  if (preferences.explicitHour !== null) {
+    score += Math.max(0, 30 - Math.abs(slotStartMinutes - preferences.explicitHour) / 10);
+  }
+
+  if (preferences.wantsEvening && slotStartMinutes >= 17 * 60) score += 10;
+  if (preferences.wantsAfternoon && slotStartMinutes >= 12 * 60 && slotStartMinutes < 17 * 60) {
+    score += 8;
+  }
+  if (preferences.wantsMorning && slotStartMinutes < 12 * 60) score += 8;
+  if (preferences.isTomorrow) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (toDateKey(tomorrow) === toDateKey(date)) score += 16;
+  }
+  if (preferences.isWeekend && [0, 6].includes(date.getDay())) score += 16;
+
+  return score;
+}
+
+function buildOptionId(serviceId, dateKey, slotStartMinutes) {
+  return `${serviceId}-${dateKey}-${slotStartMinutes}`;
+}
 
 class AiService {
   static async generateText(prompt) {
@@ -106,7 +228,8 @@ class AiService {
       messages: [
         {
           role: "system",
-          content: `Ты - полезный помощник, помоги пользователю создать план выполнения задачи по пунктам. Описание задачи будет в сообщении пользователя. В ответе следуй формату markdown.`,
+          content:
+            "Ты - полезный помощник, помоги пользователю создать план выполнения задачи по пунктам. Описание задачи будет в сообщении пользователя. В ответе следуй формату markdown.",
         },
         {
           role: "user",
@@ -369,6 +492,204 @@ class AiService {
               : "Рекомендуем по рейтингу и популярности",
         };
       });
+  }
+
+  static async searchBookingOptions(prompt, clientId, options = {}) {
+    const limit = Number.parseInt(options.limit, 10) || 6;
+    const preferences = extractPromptPreferences(prompt);
+
+    const [masters, profiles, services, categories, shadules, bookings, reviews] =
+      await Promise.all([
+        User.findAll({
+          where: { role: "master" },
+          attributes: ["id", "name", "avatar"],
+          order: [["id", "ASC"]],
+        }),
+        ProfileMaster.findAll(),
+        Servizi.findAll({
+          where: { isActive: true },
+          order: [
+            ["masterId", "ASC"],
+            ["id", "ASC"],
+          ],
+        }),
+        Category.findAll({
+          attributes: ["id", "title"],
+        }),
+        Shadule.findAll({
+          where: { isWorkingDay: true },
+        }),
+        Booking.findAll(),
+        Eco.findAll({
+          attributes: ["masterId", "rating"],
+        }),
+      ]);
+
+    const categoryTitleById = new Map(
+      categories.map((category) => [category.id, category.title]),
+    );
+    const profileByMasterId = new Map(
+      profiles.map((profile) => [profile.userId, profile.get()]),
+    );
+    const masterById = new Map(masters.map((master) => [master.id, master.get()]));
+
+    const reviewsByMasterId = new Map();
+    for (const review of reviews) {
+      const current = reviewsByMasterId.get(review.masterId) ?? [];
+      current.push(Number(review.rating) || 0);
+      reviewsByMasterId.set(review.masterId, current);
+    }
+
+    const shadulesByMasterId = new Map();
+    for (const shadule of shadules) {
+      const current = shadulesByMasterId.get(shadule.masterId) ?? [];
+      current.push(shadule.get());
+      shadulesByMasterId.set(shadule.masterId, current);
+    }
+
+    const activeBookingsByMasterId = new Map();
+    for (const booking of bookings) {
+      const plainBooking = booking.get();
+
+      if (String(plainBooking.status ?? "").toLowerCase().includes("отмен")) {
+        continue;
+      }
+
+      const current = activeBookingsByMasterId.get(plainBooking.masterId) ?? [];
+      current.push(plainBooking);
+      activeBookingsByMasterId.set(plainBooking.masterId, current);
+    }
+
+    const recommendedMasters = await this.getRecommendedMastersForClient(clientId, {
+      limit: 20,
+    });
+    const recommendedMasterIdScore = new Map(
+      recommendedMasters.map((master, index) => [master.id, Math.max(1, 20 - index * 2)]),
+    );
+
+    const optionsFound = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (const service of services) {
+      const plainService = service.get();
+      const master = masterById.get(plainService.masterId);
+
+      if (!master) {
+        continue;
+      }
+
+      const profile = profileByMasterId.get(plainService.masterId);
+      const categoryTitle = categoryTitleById.get(plainService.categoryId) ?? "";
+      const masterShadules = shadulesByMasterId.get(plainService.masterId) ?? [];
+      const masterBookings = activeBookingsByMasterId.get(plainService.masterId) ?? [];
+      const masterRatings = reviewsByMasterId.get(plainService.masterId) ?? [];
+      const rating = average(masterRatings) || Number(profile?.rating) || 0;
+
+      if (!textIncludesCategory(plainService, categoryTitle, preferences.text)) {
+        continue;
+      }
+
+      for (let dayIndex = 0; dayIndex < 21; dayIndex += 1) {
+        const currentDate = new Date(today);
+        currentDate.setDate(today.getDate() + dayIndex);
+
+        if (preferences.isTomorrow && dayIndex !== 1) {
+          continue;
+        }
+
+        if (preferences.isWeekend && ![0, 6].includes(currentDate.getDay())) {
+          continue;
+        }
+
+        const dateKey = toDateKey(currentDate);
+        const dayShadules = masterShadules.filter(
+          (item) => item.dayOdWeek === currentDate.getDay(),
+        );
+
+        if (!dayShadules.length) {
+          continue;
+        }
+
+        const dayBookings = masterBookings.filter(
+          (booking) => toDateKey(new Date(booking.startTime)) === dateKey,
+        );
+
+        for (const shadule of dayShadules) {
+          const workStart = getMinutesFromDate(shadule.startTime);
+          const workEnd = getMinutesFromDate(shadule.endTime);
+          const duration = Number(plainService.duration) || 0;
+
+          for (
+            let slotStartMinutes = workStart;
+            slotStartMinutes + duration <= workEnd;
+            slotStartMinutes += duration
+          ) {
+            const slotStart = buildDateFromKeyAndMinutes(dateKey, slotStartMinutes);
+            const slotEnd = new Date(slotStart);
+            slotEnd.setMinutes(slotEnd.getMinutes() + duration);
+
+            if (slotStart <= new Date()) {
+              continue;
+            }
+
+            const hasConflict = dayBookings.some((booking) => {
+              const bookingStart = new Date(booking.startTime);
+              const bookingEnd = new Date(booking.endTime);
+
+              return slotStart < bookingEnd && slotEnd > bookingStart;
+            });
+
+            if (hasConflict) {
+              continue;
+            }
+
+            const timeScore = scoreTimePreference(
+              slotStartMinutes,
+              preferences,
+              currentDate,
+            );
+            const recommendationScore =
+              recommendedMasterIdScore.get(plainService.masterId) ?? 0;
+            const textScore = preferences.text ? 10 : 0;
+            const totalScore =
+              recommendationScore +
+              rating * 5 +
+              timeScore +
+              textScore -
+              (Number(plainService.price) || 0) / 10000;
+
+            optionsFound.push({
+              id: buildOptionId(plainService.id, dateKey, slotStartMinutes),
+              masterId: plainService.masterId,
+              serviziId: plainService.id,
+              initials: getShortInitials(profile?.title || master.name),
+              name: profile?.title || master.name,
+              meta: `${categoryTitle || "Услуга"} · рейтинг ${rating.toFixed(1)}`,
+              service: plainService.title,
+              price: `${Number(plainService.price || 0).toLocaleString("ru-RU")} ₽ • ${Number(plainService.duration || 0)} мин`,
+              slot: `${getRussianWeekdayLabel(currentDate.getDay())}, ${currentDate.toLocaleDateString("ru-RU", {
+                day: "numeric",
+                month: "long",
+              })} ${formatTime(slotStartMinutes)}`,
+              date: buildDateFromKeyAndMinutes(dateKey, 0).toISOString(),
+              startTime: slotStart.toISOString(),
+              endTime: slotEnd.toISOString(),
+              serviceTitle: plainService.title,
+              score: totalScore,
+            });
+          }
+        }
+      }
+    }
+
+    return optionsFound
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      })
+      .slice(0, limit)
+      .map(({ score, ...option }) => option);
   }
 }
 
