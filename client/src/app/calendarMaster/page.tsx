@@ -741,41 +741,47 @@ export default function CalendarMasterPage() {
       setScheduleMessage(null);
 
       const existingShadules = await getShadulesByMaster(masterId).catch(() => []);
-      const existingByKey = new Map<string, ShaduleType>();
-      const duplicateExistingIds: number[] = [];
-
-      existingShadules.forEach((shadule) => {
-        const key = getScheduleSlotKey(shadule.dayOdWeek, getTimeValue(shadule.startTime));
-
-        if (existingByKey.has(key)) {
-          duplicateExistingIds.push(shadule.id);
-          return;
-        }
-
-        existingByKey.set(key, shadule);
-      });
+      const existingById = new Map(existingShadules.map((shadule) => [shadule.id, shadule]));
+      const usedExistingIds = new Set<number>();
+      const desiredSlotKeys = new Set<string>();
 
       const desiredSlots = scheduleDrafts.flatMap((draft) =>
         draft.isWorkingDay
-          ? draft.slots.map((slot) => ({
-              dayOdWeek: draft.dayOdWeek,
-              label: draft.label,
-              time: slot.time,
-              key: getScheduleSlotKey(draft.dayOdWeek, slot.time),
-            }))
+          ? draft.slots
+              .map((slot) => {
+                const normalizedTime = normalizeSlotTime(slot.time);
+
+                return {
+                  id: slot.id,
+                  dayOdWeek: draft.dayOdWeek,
+                  label: draft.label,
+                  time: normalizedTime,
+                  key: getScheduleSlotKey(draft.dayOdWeek, normalizedTime),
+                };
+              })
+              .filter((slot) => {
+                if (desiredSlotKeys.has(slot.key)) {
+                  return false;
+                }
+
+                desiredSlotKeys.add(slot.key);
+                return true;
+              })
           : [],
       );
-      const desiredKeys = new Set(desiredSlots.map((slot) => slot.key));
 
       for (const slot of desiredSlots) {
-        const existingSlot = existingByKey.get(slot.key);
         const startTime = getScheduleDate(slot.dayOdWeek, slot.time);
         const endTime = getScheduleEndDate(slot.dayOdWeek, slot.time);
+        const existingSlot = slot.id ? existingById.get(slot.id) : undefined;
 
         if (existingSlot) {
-          const expectedEndTime = getTimeValue(endTime);
+          usedExistingIds.add(existingSlot.id);
+
           const shouldNormalizeSlot =
-            getTimeValue(existingSlot.endTime) !== expectedEndTime ||
+            existingSlot.dayOdWeek !== slot.dayOdWeek ||
+            getTimeValue(existingSlot.startTime) !== slot.time ||
+            getTimeValue(existingSlot.endTime) !== getTimeValue(endTime) ||
             !existingSlot.isWorkingDay;
 
           if (shouldNormalizeSlot) {
@@ -792,13 +798,14 @@ export default function CalendarMasterPage() {
         }
 
         try {
-          await createShadule({
+          const createdSlot = await createShadule({
             masterId,
             dayOdWeek: slot.dayOdWeek,
             startTime,
             endTime,
             isWorkingDay: true,
           });
+          usedExistingIds.add(createdSlot.id);
         } catch (error) {
           throw new Error(
             t("saveSlotError", {
@@ -811,14 +818,10 @@ export default function CalendarMasterPage() {
       }
 
       const obsoleteIds = existingShadules
-        .filter((shadule) => {
-          const key = getScheduleSlotKey(shadule.dayOdWeek, getTimeValue(shadule.startTime));
-
-          return !desiredKeys.has(key);
-        })
+        .filter((shadule) => !usedExistingIds.has(shadule.id))
         .map((shadule) => shadule.id);
 
-      for (const id of [...new Set([...obsoleteIds, ...duplicateExistingIds])]) {
+      for (const id of obsoleteIds) {
         await deleteShadule(id);
       }
 
