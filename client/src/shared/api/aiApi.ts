@@ -50,17 +50,26 @@ export async function getMyMasterRecommendations(limit = 6) {
 
 export async function searchAIBookingOptions(
   prompt: string,
-  limit = 6,
+  limit?: number,
   options?: { useAI?: boolean },
 ) {
   try {
+    const payload: {
+      prompt: string;
+      useAI?: boolean;
+      limit?: number;
+    } = {
+      prompt,
+      useAI: options?.useAI,
+    };
+
+    if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
+      payload.limit = limit;
+    }
+
     const { data } = await axiosInstance.post<ServerResponseType<AIBookingOption[]>>(
       AI_API_URLS.searchBookingOptions,
-      {
-        prompt,
-        limit,
-        useAI: options?.useAI,
-      },
+      payload,
     );
 
     return data.data ?? [];

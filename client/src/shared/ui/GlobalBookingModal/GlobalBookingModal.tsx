@@ -167,7 +167,7 @@ function buildSearchSuggestions(options: AIBookingOption[]) {
       id: `${option.masterId}-${option.serviziId}-${index}`,
       title,
       prompt: title,
-      meta: `${option.price} · ${option.slot}`,
+      meta: `${option.price} · ${option.startTime}`,
       masterId: option.masterId,
       order: index,
     });
@@ -200,6 +200,18 @@ function buildSearchSuggestions(options: AIBookingOption[]) {
     prompt,
     meta,
   }));
+}
+
+function formatOptionSlot(startTime: string, locale: string) {
+  const date = new Date(startTime);
+
+  return date.toLocaleString(locale === "en" ? "en-US" : "ru-RU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function GlobalBookingModal() {
@@ -405,9 +417,13 @@ export default function GlobalBookingModal() {
     pushChatMessage(t("searching"), "ai");
 
     try {
-      const found = await searchAIBookingOptions(prompt, 6);
+      const found = await searchAIBookingOptions(prompt);
+      const localizedFound = found.map((option) => ({
+        ...option,
+        slot: formatOptionSlot(option.startTime, locale),
+      }));
 
-      if (found.length === 0) {
+      if (localizedFound.length === 0) {
         pushChatMessage(
           "Пока не нашлось свободных слотов по такому запросу. Попробуйте изменить время или услугу.",
           "ai",
@@ -416,10 +432,10 @@ export default function GlobalBookingModal() {
         return;
       }
 
-      setOptions(found);
+      setOptions(localizedFound);
       setStep("options");
       pushChatMessage(
-        `По запросу «${prompt}» найдено ${found.length} вариантов, выберите подходящий`,
+        `По запросу «${prompt}» найдено ${localizedFound.length} вариантов, выберите подходящий`,
         "ai",
       );
     } catch (searchError) {
@@ -663,7 +679,14 @@ export default function GlobalBookingModal() {
         try {
           const found = await searchAIBookingOptions(query, 4, { useAI: false });
           if (suggestionRequestIdRef.current !== currentRequestId) return;
-          setSuggestions(buildSearchSuggestions(found));
+          setSuggestions(
+            buildSearchSuggestions(
+              found.map((option) => ({
+                ...option,
+                startTime: formatOptionSlot(option.startTime, locale),
+              })),
+            ),
+          );
         } catch {
           if (suggestionRequestIdRef.current !== currentRequestId) return;
           setSuggestions([]);
@@ -680,7 +703,7 @@ export default function GlobalBookingModal() {
     return () => {
       window.clearTimeout(debounceTimer);
     };
-  }, [bookingConfirmed, draft, isChatOpen, presetBooking]);
+  }, [bookingConfirmed, draft, isChatOpen, locale, presetBooking]);
 
   const shouldShowOptions = step === "options" || step === "confirmed";
   const shouldShowReview = step === "options" && !!selectedOption;
