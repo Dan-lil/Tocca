@@ -1,6 +1,5 @@
 "use client";
 
-import "./page.css";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
