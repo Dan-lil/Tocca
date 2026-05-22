@@ -191,14 +191,28 @@ class BookingService {
         { transaction },
       );
 
-      const chat = await Chat.create(
-        {
+      const [chat] = await Chat.findOrCreate({
+        where: {
+          clientId,
+          masterId,
+        },
+        defaults: {
           clientId,
           masterId,
           bookingId: newBooking.id,
         },
-        { transaction },
-      );
+        transaction,
+      });
+
+      if (chat.bookingId !== newBooking.id) {
+        await chat.update(
+          {
+            bookingId: newBooking.id,
+            updatedAt: new Date(),
+          },
+          { transaction },
+        );
+      }
 
       await transaction.commit();
 
