@@ -11,6 +11,9 @@ const {
   User,
 } = require("../db/models");
 
+const aiPromptExtractionCache = new Map();
+const aiRerankCache = new Map();
+
 // ==================== Helper Functions ====================
 
 function getUniqueNumberList(values) {
@@ -162,7 +165,7 @@ function extractPromptPreferences(prompt) {
   };
 }
 
-function textIncludesCategory(service, categoryTitle, promptText) {
+function textIncludesCategory(service, categoryTitle, promptText, extraTerms = []) {
   const haystack = [
     service.title,
     service.description,
@@ -176,10 +179,13 @@ function textIncludesCategory(service, categoryTitle, promptText) {
     return true;
   }
 
-  const keywords = promptText
-    .split(/[\s,!.?;:]+/)
-    .map((part) => part.trim())
-    .filter((part) => part.length >= 4);
+  const keywords = [
+    ...promptText
+      .split(/[\s,!.?;:]+/)
+      .map((part) => part.trim())
+      .filter((part) => part.length >= 4),
+    ...extraTerms,
+  ];
 
   if (!keywords.length) {
     return true;
@@ -214,7 +220,322 @@ function buildOptionId(serviceId, dateKey, slotStartMinutes) {
   return `${serviceId}-${dateKey}-${slotStartMinutes}`;
 }
 
+function parseBooleanEnv(value, fallback = false) {
+  if (value === undefined || value === null || value === "") return fallback;
+  return String(value).toLowerCase() === "true";
+}
+
+function getAIBookingAssistantEnabled() {
+  return (
+    parseBooleanEnv(process.env.AI_BOOKING_ASSISTANT_ENABLED, true) &&
+    Boolean(process.env.GIGACHAT_API_KEY)
+  );
+}
+
+function getAIBookingAssistantModel() {
+  return process.env.AI_BOOKING_ASSISTANT_MODEL || "GigaChat";
+}
+
+function getAIBookingAssistantTimeoutMs() {
+  const parsed = Number.parseInt(process.env.AI_BOOKING_ASSISTANT_TIMEOUT_MS, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 15000;
+}
+
+function getAIBookingCandidatesLimit() {
+  const parsed = Number.parseInt(process.env.AI_BOOKING_CANDIDATES_LIMIT, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 24;
+}
+
+function getAIBookingCacheTtlMs() {
+  const parsed = Number.parseInt(process.env.AI_BOOKING_CACHE_TTL_MS, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 120000;
+}
+
+function getAIBookingMinPromptWords() {
+  const parsed = Number.parseInt(process.env.AI_BOOKING_MIN_PROMPT_WORDS, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+}
+
+function getAIBookingMinPromptChars() {
+  const parsed = Number.parseInt(process.env.AI_BOOKING_MIN_PROMPT_CHARS, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 18;
+}
+
+function getAIBookingSlotStepMinutes() {
+  const parsed = Number.parseInt(process.env.AI_BOOKING_SLOT_STEP_MINUTES, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return 15;
+  return Math.min(parsed, 120);
+}
+
+function isAIBookingLogsEnabled() {
+  return parseBooleanEnv(process.env.AI_BOOKING_ASSISTANT_LOGS, false);
+}
+
+function logAIBooking(message, payload) {
+  if (!isAIBookingLogsEnabled()) return;
+  if (payload === undefined) {
+    console.log(`[AI_BOOKING] ${message}`);
+    return;
+  }
+  console.log(`[AI_BOOKING] ${message} ${JSON.stringify(payload)}`);
+}
+
+function getPromptKey(prompt) {
+  return String(prompt ?? "").trim().toLowerCase();
+}
+
+function shouldUseLlmForPrompt(prompt) {
+  const key = getPromptKey(prompt);
+  if (!key) return false;
+
+  const words = key.split(/\s+/).filter(Boolean);
+  if (words.length >= getAIBookingMinPromptWords()) return true;
+
+  return key.length >= getAIBookingMinPromptChars();
+}
+
+function getCachedValue(cache, key) {
+  const item = cache.get(key);
+  if (!item) return null;
+  if (Date.now() - item.createdAt > getAIBookingCacheTtlMs()) {
+    cache.delete(key);
+    return null;
+  }
+  return item.value;
+}
+
+function setCachedValue(cache, key, value) {
+  cache.set(key, { value, createdAt: Date.now() });
+}
+
+function withTimeout(promise, timeoutMs, timeoutMessage) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+    }),
+  ]);
+}
+
+function normalizeTerms(terms) {
+  if (!Array.isArray(terms)) return [];
+  return [
+    ...new Set(
+      terms
+        .map((term) => String(term ?? "").trim().toLowerCase())
+        .filter((term) => term.length >= 2),
+    ),
+  ];
+}
+
+function extractJsonObject(content) {
+  const text = String(content ?? "").trim();
+  if (!text) {
+    throw new Error("Empty AI response");
+  }
+
+  const fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fencedMatch?.[1]) {
+    return fencedMatch[1].trim();
+  }
+
+  const objectStart = text.indexOf("{");
+  const objectEnd = text.lastIndexOf("}");
+  if (objectStart === -1 || objectEnd === -1 || objectEnd <= objectStart) {
+    throw new Error("AI response does not contain valid JSON object");
+  }
+
+  return text.slice(objectStart, objectEnd + 1);
+}
+
 class AiService {
+  static createGigaChatClient() {
+    return new GigaChat({
+      model: getAIBookingAssistantModel(),
+      credentials: process.env.GIGACHAT_API_KEY,
+      httpsAgent: new Agent({ rejectUnauthorized: false }),
+    });
+  }
+
+  static async callGigaChatJson(systemPrompt, userPrompt) {
+    const client = this.createGigaChatClient();
+    logAIBooking("LLM request started");
+
+    const response = await withTimeout(
+      client.chat({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+      getAIBookingAssistantTimeoutMs(),
+      "AI assistant timed out",
+    );
+    logAIBooking("LLM request completed");
+
+    const content = response?.choices?.[0]?.message?.content;
+    const jsonText = extractJsonObject(content);
+    const parsed = JSON.parse(jsonText);
+    return parsed;
+  }
+
+  static async extractBookingPromptDetails(prompt) {
+    if (!getAIBookingAssistantEnabled()) return null;
+    if (!shouldUseLlmForPrompt(prompt)) {
+      logAIBooking("LLM extraction skipped by short prompt");
+      return null;
+    }
+
+    const cacheKey = getPromptKey(prompt);
+    const cached = getCachedValue(aiPromptExtractionCache, cacheKey);
+    if (cached) {
+      logAIBooking("LLM extraction cache hit");
+      return cached;
+    }
+
+    const systemPrompt = `Ты анализируешь пользовательский запрос на запись в бьюти-сервис.
+Верни только JSON-объект без пояснений.
+Формат:
+{
+  "serviceHints": string[],
+  "categoryHints": string[],
+  "keywords": string[],
+  "isTomorrow": boolean|null,
+  "isWeekend": boolean|null,
+  "wantsMorning": boolean|null,
+  "wantsAfternoon": boolean|null,
+  "wantsEvening": boolean|null,
+  "explicitHour": number|null,
+  "maxPrice": number|null
+}`;
+
+    const userPrompt = `Запрос клиента: "${prompt}".
+Извлеки семантические признаки и временные предпочтения.`;
+
+    try {
+      const parsed = await this.callGigaChatJson(systemPrompt, userPrompt);
+
+      const normalized = {
+        serviceHints: normalizeTerms(parsed?.serviceHints),
+        categoryHints: normalizeTerms(parsed?.categoryHints),
+        keywords: normalizeTerms(parsed?.keywords),
+        isTomorrow:
+          typeof parsed?.isTomorrow === "boolean" ? parsed.isTomorrow : null,
+        isWeekend:
+          typeof parsed?.isWeekend === "boolean" ? parsed.isWeekend : null,
+        wantsMorning:
+          typeof parsed?.wantsMorning === "boolean" ? parsed.wantsMorning : null,
+        wantsAfternoon:
+          typeof parsed?.wantsAfternoon === "boolean"
+            ? parsed.wantsAfternoon
+            : null,
+        wantsEvening:
+          typeof parsed?.wantsEvening === "boolean" ? parsed.wantsEvening : null,
+        explicitHour:
+          parsed?.explicitHour !== null &&
+          parsed?.explicitHour !== undefined &&
+          Number.isFinite(Number(parsed?.explicitHour)) &&
+          Number(parsed?.explicitHour) >= 0 &&
+          Number(parsed?.explicitHour) <= 23
+            ? Number(parsed.explicitHour) * 60
+            : null,
+        maxPrice:
+          parsed?.maxPrice !== null &&
+          parsed?.maxPrice !== undefined &&
+          Number.isFinite(Number(parsed?.maxPrice)) &&
+          Number(parsed?.maxPrice) > 0
+            ? Number(parsed.maxPrice)
+            : null,
+      };
+      setCachedValue(aiPromptExtractionCache, cacheKey, normalized);
+      return normalized;
+    } catch (error) {
+      console.log("==== AiService.extractBookingPromptDetails fallback ==== ");
+      console.log(error.message);
+      logAIBooking("LLM extraction failed, fallback enabled");
+      return null;
+    }
+  }
+
+  static async rerankBookingOptions(prompt, candidates, limit) {
+    if (!getAIBookingAssistantEnabled()) return null;
+    if (!Array.isArray(candidates) || candidates.length === 0) return null;
+    if (!shouldUseLlmForPrompt(prompt)) return null;
+
+    const topCandidates = candidates.slice(0, getAIBookingCandidatesLimit());
+    if (topCandidates.length <= limit) {
+      return null;
+    }
+
+    const cacheKey = `${getPromptKey(prompt)}::${limit}::${topCandidates.map((candidate) => candidate.id).join(",")}`;
+    const cached = getCachedValue(aiRerankCache, cacheKey);
+    if (cached) {
+      logAIBooking("LLM rerank cache hit");
+      return cached;
+    }
+
+    const modelCandidates = topCandidates.map((candidate) => ({
+      id: candidate.id,
+      service: candidate.service,
+      slotStart: candidate.startTime,
+      slotEnd: candidate.endTime,
+      priceRub: Number(String(candidate.price).replace(/[^\d]/g, "")) || 0,
+      rating: Number(candidate.masterRating || 0),
+    }));
+
+    const systemPrompt = `Ты ранжируешь варианты записи по релевантности запросу клиента.
+Верни только JSON-объект без пояснений.
+Формат:
+{
+  "orderedOptionIds": string[]
+}
+В orderedOptionIds укажи id только из переданных кандидатов.`;
+
+    const userPrompt = `Запрос клиента: "${prompt}".
+Лимит: ${limit}.
+Кандидаты:
+${JSON.stringify(modelCandidates)}`;
+
+    try {
+      const parsed = await this.callGigaChatJson(systemPrompt, userPrompt);
+      const orderedIds = Array.isArray(parsed?.orderedOptionIds)
+        ? parsed.orderedOptionIds.map((id) => String(id))
+        : [];
+
+      if (!orderedIds.length) {
+        return null;
+      }
+
+      const candidateById = new Map(topCandidates.map((candidate) => [candidate.id, candidate]));
+      const selected = [];
+      const usedIds = new Set();
+
+      orderedIds.forEach((id) => {
+        const candidate = candidateById.get(id);
+        if (candidate && !usedIds.has(id)) {
+          selected.push(candidate);
+          usedIds.add(id);
+        }
+      });
+
+      const rest = topCandidates.filter((candidate) => !usedIds.has(candidate.id));
+      const unseen = candidates.slice(getAIBookingCandidatesLimit());
+
+      if (!selected.length) {
+        return null;
+      }
+
+      const merged = [...selected, ...rest, ...unseen];
+      setCachedValue(aiRerankCache, cacheKey, merged);
+      return merged;
+    } catch (error) {
+      console.log("==== AiService.rerankBookingOptions fallback ==== ");
+      console.log(error.message);
+      logAIBooking("LLM rerank failed, fallback enabled");
+      return null;
+    }
+  }
+
   static async generateText(prompt) {
     const { title, text } = prompt;
     const httpsAgent = new Agent({ rejectUnauthorized: false });
@@ -266,7 +587,7 @@ class AiService {
             } else {
               reject(new Error(response.message || `HTTP ${res.statusCode}`));
             }
-          } catch (error) {
+          } catch {
             reject(new Error("Invalid JSON response from Python service"));
           }
         });
@@ -304,7 +625,7 @@ class AiService {
             const parsed = JSON.parse(body);
             if (res.statusCode === 200 && parsed.data) resolve(parsed.data);
             else reject(new Error(parsed.message || `HTTP ${res.statusCode}`));
-          } catch (e) {
+          } catch {
             reject(new Error("Invalid JSON from Python service"));
           }
         });
@@ -444,7 +765,7 @@ class AiService {
       limit,
     };
 
-    let recommendedIds = [];
+    let recommendedIds;
     try {
       recommendedIds = await this.getMasterRecommendations(payload);
     } catch (error) {
@@ -496,7 +817,25 @@ class AiService {
 
   static async searchBookingOptions(prompt, clientId, options = {}) {
     const limit = Number.parseInt(options.limit, 10) || 6;
-    const preferences = extractPromptPreferences(prompt);
+    const isLlmEnabledForRequest = options.useAI !== false;
+    const heuristicPreferences = extractPromptPreferences(prompt);
+    const aiPromptDetails = isLlmEnabledForRequest
+      ? await this.extractBookingPromptDetails(prompt)
+      : null;
+    const preferences = {
+      ...heuristicPreferences,
+      isTomorrow: aiPromptDetails?.isTomorrow ?? heuristicPreferences.isTomorrow,
+      isWeekend: aiPromptDetails?.isWeekend ?? heuristicPreferences.isWeekend,
+      wantsMorning: aiPromptDetails?.wantsMorning ?? heuristicPreferences.wantsMorning,
+      wantsAfternoon: aiPromptDetails?.wantsAfternoon ?? heuristicPreferences.wantsAfternoon,
+      wantsEvening: aiPromptDetails?.wantsEvening ?? heuristicPreferences.wantsEvening,
+      explicitHour: aiPromptDetails?.explicitHour ?? heuristicPreferences.explicitHour,
+    };
+    const aiSearchTerms = normalizeTerms([
+      ...(aiPromptDetails?.serviceHints ?? []),
+      ...(aiPromptDetails?.categoryHints ?? []),
+      ...(aiPromptDetails?.keywords ?? []),
+    ]);
 
     const [masters, profiles, services, categories, shadules, bookings, reviews] =
       await Promise.all([
@@ -568,6 +907,7 @@ class AiService {
     );
 
     const optionsFound = [];
+    const slotStepMinutes = getAIBookingSlotStepMinutes();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -586,7 +926,18 @@ class AiService {
       const masterRatings = reviewsByMasterId.get(plainService.masterId) ?? [];
       const rating = average(masterRatings) || Number(profile?.rating) || 0;
 
-      if (!textIncludesCategory(plainService, categoryTitle, preferences.text)) {
+      if (
+        !textIncludesCategory(
+          plainService,
+          categoryTitle,
+          preferences.text,
+          aiSearchTerms,
+        )
+      ) {
+        continue;
+      }
+
+      if (masterShadules.length === 0) {
         continue;
       }
 
@@ -619,11 +970,16 @@ class AiService {
           const workStart = getMinutesFromDate(shadule.startTime);
           const workEnd = getMinutesFromDate(shadule.endTime);
           const duration = Number(plainService.duration) || 0;
+          const windowMinutes = workEnd - workStart;
+
+          if (windowMinutes < duration) {
+            continue;
+          }
 
           for (
             let slotStartMinutes = workStart;
             slotStartMinutes + duration <= workEnd;
-            slotStartMinutes += duration
+            slotStartMinutes += slotStepMinutes
           ) {
             const slotStart = buildDateFromKeyAndMinutes(dateKey, slotStartMinutes);
             const slotEnd = new Date(slotStart);
@@ -652,12 +1008,18 @@ class AiService {
             const recommendationScore =
               recommendedMasterIdScore.get(plainService.masterId) ?? 0;
             const textScore = preferences.text ? 10 : 0;
+            const price = Number(plainService.price) || 0;
+            const budgetPenalty =
+              aiPromptDetails?.maxPrice && price > aiPromptDetails.maxPrice
+                ? Math.min(20, (price - aiPromptDetails.maxPrice) / 500)
+                : 0;
             const totalScore =
               recommendationScore +
               rating * 5 +
               timeScore +
               textScore -
-              (Number(plainService.price) || 0) / 10000;
+              price / 10000 -
+              budgetPenalty;
 
             optionsFound.push({
               id: buildOptionId(plainService.id, dateKey, slotStartMinutes),
@@ -676,6 +1038,8 @@ class AiService {
               startTime: slotStart.toISOString(),
               endTime: slotEnd.toISOString(),
               serviceTitle: plainService.title,
+              duration: Number(plainService.duration || 0),
+              masterRating: rating,
               score: totalScore,
             });
           }
@@ -683,13 +1047,30 @@ class AiService {
       }
     }
 
-    return optionsFound
+    const deterministicRankedOptions = optionsFound
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
-      })
+      });
+
+    const aiRankedOptions = isLlmEnabledForRequest
+      ? await this.rerankBookingOptions(
+          prompt,
+          deterministicRankedOptions,
+          limit,
+        )
+      : null;
+    const rankedOptions = aiRankedOptions ?? deterministicRankedOptions;
+
+    return rankedOptions
       .slice(0, limit)
-      .map(({ score, ...option }) => option);
+      .map((option) => {
+        const cleanOption = { ...option };
+        delete cleanOption.score;
+        delete cleanOption.duration;
+        delete cleanOption.masterRating;
+        return cleanOption;
+      });
   }
 }
 

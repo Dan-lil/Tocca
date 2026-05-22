@@ -360,6 +360,8 @@
     "confirmedTitle": "Confirmed booking",
     "aiTitle": "AI Assistant",
     "aiSubtitle": "Describe what you want and I will suggest options",
+    "suggestionsTitle": "Suggestions for your query",
+    "suggestionsLoading": "Suggesting...",
     "searchButton": "Find",
     "searchingButton": "Searching"
   }

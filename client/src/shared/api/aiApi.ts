@@ -48,13 +48,18 @@ export async function getMyMasterRecommendations(limit = 6) {
   }
 }
 
-export async function searchAIBookingOptions(prompt: string, limit = 6) {
+export async function searchAIBookingOptions(
+  prompt: string,
+  limit = 6,
+  options?: { useAI?: boolean },
+) {
   try {
     const { data } = await axiosInstance.post<ServerResponseType<AIBookingOption[]>>(
       AI_API_URLS.searchBookingOptions,
       {
         prompt,
         limit,
+        useAI: options?.useAI,
       },
     );
 
