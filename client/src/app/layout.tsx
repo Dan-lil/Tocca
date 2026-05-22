@@ -9,8 +9,11 @@ import AppFooter from "@/shared/ui/AppFooter/AppFooter";
 import GlobalBookingModal from "@/shared/ui/GlobalBookingModal/GlobalBookingModal";
 
 export const metadata: Metadata = {
-  title: "Tocca",
-  description: "Tocca",
+  title: {
+    default: "Главная | Tocca Beauty",
+    template: "%s | Tocca Beauty",
+  },
+  description: "Онлайн-запись к мастерам beauty-индустрии",
 };
 
 export default async function RootLayout({

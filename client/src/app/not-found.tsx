@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import "./not-found.css";
@@ -125,6 +125,10 @@ export default function NotFoundPage() {
   const [stickers, setStickers] = useState<StickerItem[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    document.title = "Страница не найдена | Tocca Beauty";
+  }, []);
 
   const getStickerPosition = (stickerIndex: number) => {
     if (!containerRef.current) return { left: "50%", top: "50%" };
