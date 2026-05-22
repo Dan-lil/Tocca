@@ -261,12 +261,6 @@ function getAIBookingMinPromptChars() {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 18;
 }
 
-function getAIBookingSlotStepMinutes() {
-  const parsed = Number.parseInt(process.env.AI_BOOKING_SLOT_STEP_MINUTES, 10);
-  if (!Number.isFinite(parsed) || parsed <= 0) return 15;
-  return Math.min(parsed, 120);
-}
-
 function isAIBookingLogsEnabled() {
   return parseBooleanEnv(process.env.AI_BOOKING_ASSISTANT_LOGS, false);
 }
@@ -907,7 +901,6 @@ ${JSON.stringify(modelCandidates)}`;
     );
 
     const optionsFound = [];
-    const slotStepMinutes = getAIBookingSlotStepMinutes();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -966,83 +959,91 @@ ${JSON.stringify(modelCandidates)}`;
           (booking) => toDateKey(new Date(booking.startTime)) === dateKey,
         );
 
-        for (const shadule of dayShadules) {
-          const workStart = getMinutesFromDate(shadule.startTime);
-          const workEnd = getMinutesFromDate(shadule.endTime);
-          const duration = Number(plainService.duration) || 0;
-          const windowMinutes = workEnd - workStart;
+        const daySlotRows = dayShadules
+          .map((shadule) => ({
+            start: getMinutesFromDate(shadule.startTime),
+            unit: Math.max(
+              1,
+              getMinutesFromDate(shadule.endTime) - getMinutesFromDate(shadule.startTime),
+            ),
+          }))
+          .sort((a, b) => a.start - b.start);
+        const daySlotStartSet = new Set(daySlotRows.map((slot) => slot.start));
+        const duration = Number(plainService.duration) || 0;
 
-          if (windowMinutes < duration) {
+        for (const daySlot of daySlotRows) {
+          const slotStartMinutes = daySlot.start;
+          const requiredSlotCount = Math.max(1, Math.ceil(duration / daySlot.unit));
+          const hasContinuousCoverage = Array.from(
+            { length: requiredSlotCount },
+            (_, index) => slotStartMinutes + index * daySlot.unit,
+          ).every((requiredStart) => daySlotStartSet.has(requiredStart));
+
+          if (!hasContinuousCoverage) {
             continue;
           }
 
-          for (
-            let slotStartMinutes = workStart;
-            slotStartMinutes + duration <= workEnd;
-            slotStartMinutes += slotStepMinutes
-          ) {
-            const slotStart = buildDateFromKeyAndMinutes(dateKey, slotStartMinutes);
-            const slotEnd = new Date(slotStart);
-            slotEnd.setMinutes(slotEnd.getMinutes() + duration);
+          const slotStart = buildDateFromKeyAndMinutes(dateKey, slotStartMinutes);
+          const slotEnd = new Date(slotStart);
+          slotEnd.setMinutes(slotEnd.getMinutes() + duration);
 
-            if (slotStart <= new Date()) {
-              continue;
-            }
-
-            const hasConflict = dayBookings.some((booking) => {
-              const bookingStart = new Date(booking.startTime);
-              const bookingEnd = new Date(booking.endTime);
-
-              return slotStart < bookingEnd && slotEnd > bookingStart;
-            });
-
-            if (hasConflict) {
-              continue;
-            }
-
-            const timeScore = scoreTimePreference(
-              slotStartMinutes,
-              preferences,
-              currentDate,
-            );
-            const recommendationScore =
-              recommendedMasterIdScore.get(plainService.masterId) ?? 0;
-            const textScore = preferences.text ? 10 : 0;
-            const price = Number(plainService.price) || 0;
-            const budgetPenalty =
-              aiPromptDetails?.maxPrice && price > aiPromptDetails.maxPrice
-                ? Math.min(20, (price - aiPromptDetails.maxPrice) / 500)
-                : 0;
-            const totalScore =
-              recommendationScore +
-              rating * 5 +
-              timeScore +
-              textScore -
-              price / 10000 -
-              budgetPenalty;
-
-            optionsFound.push({
-              id: buildOptionId(plainService.id, dateKey, slotStartMinutes),
-              masterId: plainService.masterId,
-              serviziId: plainService.id,
-              initials: getShortInitials(profile?.title || master.name),
-              name: profile?.title || master.name,
-              meta: `${categoryTitle || "Услуга"} · рейтинг ${rating.toFixed(1)}`,
-              service: plainService.title,
-              price: `${Number(plainService.price || 0).toLocaleString("ru-RU")} ₽ • ${Number(plainService.duration || 0)} мин`,
-              slot: `${getRussianWeekdayLabel(currentDate.getDay())}, ${currentDate.toLocaleDateString("ru-RU", {
-                day: "numeric",
-                month: "long",
-              })} ${formatTime(slotStartMinutes)}`,
-              date: buildDateFromKeyAndMinutes(dateKey, 0).toISOString(),
-              startTime: slotStart.toISOString(),
-              endTime: slotEnd.toISOString(),
-              serviceTitle: plainService.title,
-              duration: Number(plainService.duration || 0),
-              masterRating: rating,
-              score: totalScore,
-            });
+          if (slotStart <= new Date()) {
+            continue;
           }
+
+          const hasConflict = dayBookings.some((booking) => {
+            const bookingStart = new Date(booking.startTime);
+            const bookingEnd = new Date(booking.endTime);
+
+            return slotStart < bookingEnd && slotEnd > bookingStart;
+          });
+
+          if (hasConflict) {
+            continue;
+          }
+
+          const timeScore = scoreTimePreference(
+            slotStartMinutes,
+            preferences,
+            currentDate,
+          );
+          const recommendationScore =
+            recommendedMasterIdScore.get(plainService.masterId) ?? 0;
+          const textScore = preferences.text ? 10 : 0;
+          const price = Number(plainService.price) || 0;
+          const budgetPenalty =
+            aiPromptDetails?.maxPrice && price > aiPromptDetails.maxPrice
+              ? Math.min(20, (price - aiPromptDetails.maxPrice) / 500)
+              : 0;
+          const totalScore =
+            recommendationScore +
+            rating * 5 +
+            timeScore +
+            textScore -
+            price / 10000 -
+            budgetPenalty;
+
+          optionsFound.push({
+            id: buildOptionId(plainService.id, dateKey, slotStartMinutes),
+            masterId: plainService.masterId,
+            serviziId: plainService.id,
+            initials: getShortInitials(profile?.title || master.name),
+            name: profile?.title || master.name,
+            meta: `${categoryTitle || "Услуга"} · рейтинг ${rating.toFixed(1)}`,
+            service: plainService.title,
+            price: `${Number(plainService.price || 0).toLocaleString("ru-RU")} ₽ • ${Number(plainService.duration || 0)} мин`,
+            slot: `${getRussianWeekdayLabel(currentDate.getDay())}, ${currentDate.toLocaleDateString("ru-RU", {
+              day: "numeric",
+              month: "long",
+            })} ${formatTime(slotStartMinutes)}`,
+            date: buildDateFromKeyAndMinutes(dateKey, 0).toISOString(),
+            startTime: slotStart.toISOString(),
+            endTime: slotEnd.toISOString(),
+            serviceTitle: plainService.title,
+            duration: Number(plainService.duration || 0),
+            masterRating: rating,
+            score: totalScore,
+          });
         }
       }
     }
