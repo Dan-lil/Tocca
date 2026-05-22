@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
 import { AppDispatch, RootState } from "@/app/store/store";
@@ -268,6 +268,7 @@ export default function ProfilePage() {
   const [isAccountDeleting, setIsAccountDeleting] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [masterProfile, setMasterProfile] = useState<ProfileMaster>(emptyMasterProfile);
+  const pendingMasterLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const [clientProfile, setClientProfile] = useState<ClientProfileForm>({
     name: "",
     email: "",
@@ -616,16 +617,19 @@ export default function ProfilePage() {
         }),
       ).unwrap();
 
+      const pendingLocation = pendingMasterLocationRef.current;
       const response = await axiosInstance.put<ServerResponseType<ProfileMaster>>(
         "/profile/update",
         {
           ...masterProfile,
+          ...(pendingLocation ?? {}),
           rating: undefined,
         },
       );
 
       if (response.data.data) {
         setMasterProfile(response.data.data);
+        pendingMasterLocationRef.current = null;
       }
 
       await Promise.all(masterSocials.map((social) => deleteMasterSocial(social.id)));
@@ -650,6 +654,20 @@ export default function ProfilePage() {
   }
 
   async function handleMasterLocationChange(lat: number, lon: number) {
+    pendingMasterLocationRef.current = {
+      latitude: lat,
+      longitude: lon,
+    };
+    setMasterProfile((profile) => ({
+      ...profile,
+      latitude: lat,
+      longitude: lon,
+    }));
+
+    if (!masterProfile.id) {
+      return;
+    }
+
     try {
       setProfileError(null);
       const location = await updateMasterLocation({
@@ -658,6 +676,7 @@ export default function ProfilePage() {
         address: masterProfile.address,
       });
 
+      pendingMasterLocationRef.current = null;
       setMasterProfile((profile) => ({
         ...profile,
         latitude: location.lat,
