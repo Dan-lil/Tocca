@@ -2,6 +2,32 @@ const formatResponse = require("../utils/formatResponse");
 const AiService = require("../services/AiService");
 const BookingService = require("../services/BookingService");
 
+function getBookingErrorStatus(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  const name = String(error?.name ?? "").toLowerCase();
+
+  if (name.includes("validation") || name.includes("unique")) {
+    return 400;
+  }
+
+  if (message.includes("занято")) {
+    return 409;
+  }
+
+  if (
+    message.includes("обяз") ||
+    message.includes("некоррект") ||
+    message.includes("не найден") ||
+    message.includes("не принадлежит") ||
+    message.includes("недоступна") ||
+    message.includes("позже времени начала")
+  ) {
+    return 400;
+  }
+
+  return 500;
+}
+
 class AiController {
   static async getAiResponse(req, res) {
     const { title, text } = req.body;
@@ -354,12 +380,15 @@ class AiController {
     } catch (error) {
       console.log("==== AiController.createBookingFromAssistant ==== ");
       console.log(error);
+      const statusCode = getBookingErrorStatus(error);
       return res
-        .status(500)
+        .status(statusCode)
         .json(
           formatResponse(
-            500,
-            "Ошибка при создании записи через AI-помощника",
+            statusCode,
+            statusCode === 500
+              ? "Ошибка при создании записи через AI-помощника"
+              : "Не удалось создать запись через AI-помощника",
             null,
             error.message,
           ),

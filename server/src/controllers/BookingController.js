@@ -2,6 +2,32 @@ const BookingService = require("../services/BookingService");
 const formatResponse = require("../utils/formatResponse");
 const { userRoomName } = require("../ws/chatSocket");
 
+function getBookingErrorStatus(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  const name = String(error?.name ?? "").toLowerCase();
+
+  if (name.includes("validation") || name.includes("unique")) {
+    return 400;
+  }
+
+  if (message.includes("занято")) {
+    return 409;
+  }
+
+  if (
+    message.includes("обяз") ||
+    message.includes("некоррект") ||
+    message.includes("не найден") ||
+    message.includes("не принадлежит") ||
+    message.includes("недоступна") ||
+    message.includes("позже времени начала")
+  ) {
+    return 400;
+  }
+
+  return 500;
+}
+
 class BookingController {
   static async create(req, res) {
     const bookingData = req.body;
@@ -15,12 +41,15 @@ class BookingController {
     } catch (error) {
       console.log("======== BookingController.create =========");
       console.log(error);
+      const statusCode = getBookingErrorStatus(error);
       return res
-        .status(500)
+        .status(statusCode)
         .json(
           formatResponse(
-            500,
-            "Ошибка сервера при создании бронирования",
+            statusCode,
+            statusCode === 500
+              ? "Ошибка сервера при создании бронирования"
+              : "Не удалось создать бронирование",
             null,
             error.message,
           ),
