@@ -13,6 +13,44 @@ const {
 
 const aiPromptExtractionCache = new Map();
 const aiRerankCache = new Map();
+const PROMPT_STOP_WORDS = new Set([
+  "записаться",
+  "запись",
+  "хочу",
+  "нужно",
+  "надо",
+  "можно",
+  "найди",
+  "подбери",
+  "пожалуйста",
+  "мастер",
+  "мастера",
+  "мастеру",
+  "рядом",
+  "ближайшее",
+  "ближайший",
+  "сегодня",
+  "завтра",
+  "послезавтра",
+  "утром",
+  "утро",
+  "днем",
+  "днём",
+  "день",
+  "вечером",
+  "вечер",
+  "вечера",
+  "после",
+  "выходные",
+  "выходных",
+  "субботу",
+  "воскресенье",
+  "время",
+  "свободное",
+  "свободный",
+  "окошко",
+  "окно",
+]);
 
 // ==================== Helper Functions ====================
 
@@ -240,9 +278,10 @@ function textIncludesCategory(service, categoryTitle, promptText, extraTerms = [
     ...promptText
       .split(/[\s,!.?;:]+/)
       .map((part) => part.trim())
-      .filter((part) => part.length >= 4),
+      .filter((part) => part.length >= 4)
+      .filter((part) => !PROMPT_STOP_WORDS.has(part)),
     ...extraTerms,
-  ];
+  ].filter((part) => !PROMPT_STOP_WORDS.has(part));
 
   if (!keywords.length) {
     return true;
@@ -947,7 +986,12 @@ ${JSON.stringify(modelCandidates)}`;
     for (const booking of bookings) {
       const plainBooking = booking.get();
 
-      if (String(plainBooking.status ?? "").toLowerCase().includes("отмен")) {
+      const normalizedStatus = String(plainBooking.status ?? "").toLowerCase();
+
+      if (
+        normalizedStatus.includes("отмен") ||
+        normalizedStatus.includes("cancel")
+      ) {
         continue;
       }
 
@@ -1025,27 +1069,12 @@ ${JSON.stringify(modelCandidates)}`;
         const daySlotRows = dayShadules
           .map((shadule) => ({
             start: getMinutesFromDate(shadule.startTime),
-            unit: Math.max(
-              1,
-              getMinutesFromDate(shadule.endTime) - getMinutesFromDate(shadule.startTime),
-            ),
           }))
           .sort((a, b) => a.start - b.start);
-        const daySlotStartSet = new Set(daySlotRows.map((slot) => slot.start));
         const duration = Number(plainService.duration) || 0;
 
         for (const daySlot of daySlotRows) {
           const slotStartMinutes = daySlot.start;
-          const requiredSlotCount = Math.max(1, Math.ceil(duration / daySlot.unit));
-          const hasContinuousCoverage = Array.from(
-            { length: requiredSlotCount },
-            (_, index) => slotStartMinutes + index * daySlot.unit,
-          ).every((requiredStart) => daySlotStartSet.has(requiredStart));
-
-          if (!hasContinuousCoverage) {
-            continue;
-          }
-
           const slotStart = buildDateFromKeyAndMinutes(dateKey, slotStartMinutes);
           const slotEnd = new Date(slotStart);
           slotEnd.setMinutes(slotEnd.getMinutes() + duration);
