@@ -154,7 +154,10 @@ export type BookingType = CreateBookingPayload & {
     phone?: string | null;
   };
   service?: ServiziType | null;
+  sale?: SaleType | null;
   totalPrice?: number;
+  finalPrice?: number;
+  actualPrice?: number;
   cancelReason?: string;
   createdAt?: string;
   updatedAt?: string;

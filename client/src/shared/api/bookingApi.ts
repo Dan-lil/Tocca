@@ -36,7 +36,7 @@ export async function createBooking(payload: CreateBookingPayload) {
 
 export async function updateBooking(
   id: number | string,
-  payload: Partial<CreateBookingPayload & Pick<BookingType, "cancelReason">>,
+  payload: Partial<CreateBookingPayload & Pick<BookingType, "cancelReason" | "finalPrice" | "actualPrice">>,
 ) {
   try {
     const { data } = await axiosInstance.put<ServerResponseType<BookingType>>(

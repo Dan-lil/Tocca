@@ -20,6 +20,7 @@ import {
   fetchMasterServicesThunk,
   fetchMasterStatsThunk,
   fetchUpcomingBookingsForMasterThunk,
+  updateServiceThunk,
 } from "@/entities/master/api/masterThunk";
 import { deleteAccountThunk, updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
@@ -216,6 +217,34 @@ function readFileAsDataUrl(file: File) {
   });
 }
 
+function getDistinctServiceField(value: string | null | undefined, title: string | null | undefined) {
+  const fieldValue = value?.trim() ?? "";
+  const titleValue = title?.trim() ?? "";
+  const normalize = (text: string) =>
+    text
+      .normalize("NFKC")
+      .replace(/\s+/g, "")
+      .toLowerCase();
+
+  if (!fieldValue) return "";
+
+  return titleValue && normalize(fieldValue) === normalize(titleValue) ? "" : fieldValue;
+}
+
+function sanitizeServiceDraft<T extends {
+  title: string;
+  titleEn?: string | null;
+  description: string;
+  descriptionEn?: string | null;
+}>(service: T) {
+  return {
+    ...service,
+    titleEn: getDistinctServiceField(service.titleEn, service.title),
+    description: getDistinctServiceField(service.description, service.title),
+    descriptionEn: getDistinctServiceField(service.descriptionEn, service.title),
+  };
+}
+
 export default function ProfilePage() {
   const t = useTranslations("profile");
   const commonT = useTranslations("common");
@@ -228,6 +257,7 @@ export default function ProfilePage() {
   const expandedPortfolio = expandPortfolioItems(portfolio);
 
   const [showAddService, setShowAddService] = useState(false);
+  const [editingServiceId, setEditingServiceId] = useState<number | null>(null);
   const [showAddPhoto, setShowAddPhoto] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isClientProfileModalOpen, setIsClientProfileModalOpen] = useState(false);
@@ -281,6 +311,44 @@ export default function ProfilePage() {
   });
 
   const isMaster = user?.role === "master";
+
+  function getEmptyServiceDraft() {
+    return {
+      title: "",
+      titleEn: "",
+      description: "",
+      descriptionEn: "",
+      price: 0,
+      duration: 60,
+      categoryId: categories[0]?.id || 1,
+    };
+  }
+
+  function handleOpenAddServiceModal() {
+    setEditingServiceId(null);
+    setNewService(getEmptyServiceDraft());
+    setShowAddService(true);
+  }
+
+  function handleOpenEditServiceModal(service: Servizi) {
+    setEditingServiceId(service.id);
+    setNewService(sanitizeServiceDraft({
+      title: service.title ?? "",
+      titleEn: service.titleEn ?? "",
+      description: service.description ?? "",
+      descriptionEn: service.descriptionEn ?? "",
+      price: Number(service.price) || 0,
+      duration: Number(service.duration) || 60,
+      categoryId: service.categoryId || categories[0]?.id || 1,
+    }));
+    setShowAddService(true);
+  }
+
+  function handleCloseServiceModal() {
+    setShowAddService(false);
+    setEditingServiceId(null);
+    setNewService(getEmptyServiceDraft());
+  }
 
   const clientUpcomingBookings = useMemo(() => {
     return clientBookings
@@ -1244,7 +1312,7 @@ export default function ProfilePage() {
         <section className="profile-section profile-section--services">
           <div className="section-header">
             <h2>{t("myServices")}</h2>
-            <button type="button" onClick={() => setShowAddService(true)}>
+            <button type="button" onClick={handleOpenAddServiceModal}>
               {t("addService")}
             </button>
           </div>
@@ -1258,9 +1326,14 @@ export default function ProfilePage() {
                   <span>
                     {getLocalizedTitle(service, locale) ?? service.title} - {service.price} {commonT("currencyRub")} ({service.duration} {commonT("minutes")})
                   </span>
-                  <button type="button" onClick={() => dispatch(deleteServiceThunk(service.id))}>
-                    {commonT("delete")}
-                  </button>
+                  <div className="service-card__actions">
+                    <button type="button" onClick={() => handleOpenEditServiceModal(service)}>
+                      {commonT("edit")}
+                    </button>
+                    <button type="button" onClick={() => dispatch(deleteServiceThunk(service.id))}>
+                      {commonT("delete")}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1552,7 +1625,7 @@ export default function ProfilePage() {
         {showAddService && (
           <div className="profile-modal-backdrop" role="presentation">
             <div className="profile-modal">
-              <h2>{t("addService")}</h2>
+              <h2>{editingServiceId ? t("editService") : t("addService")}</h2>
               <label>
                 <span>{t("category")}</span>
                 <select
@@ -1591,7 +1664,11 @@ export default function ProfilePage() {
                 <span>{t("serviceTitleEn")}</span>
                 <input
                   placeholder={t("serviceTitleEnPlaceholder")}
-                  value={newService.titleEn}
+                  value={
+                    editingServiceId
+                      ? getDistinctServiceField(newService.titleEn, newService.title)
+                      : newService.titleEn
+                  }
                   onChange={(event) => setNewService({ ...newService, titleEn: event.target.value })}
                 />
               </label>
@@ -1599,7 +1676,11 @@ export default function ProfilePage() {
                 <span>{t("serviceDescription")}</span>
                 <textarea
                   placeholder={t("serviceDescriptionPlaceholder")}
-                  value={newService.description}
+                  value={
+                    editingServiceId
+                      ? getDistinctServiceField(newService.description, newService.title)
+                      : newService.description
+                  }
                   onChange={(event) => setNewService({ ...newService, description: event.target.value })}
                 />
               </label>
@@ -1607,7 +1688,11 @@ export default function ProfilePage() {
                 <span>{t("serviceDescriptionEn")}</span>
                 <textarea
                   placeholder={t("serviceDescriptionEnPlaceholder")}
-                  value={newService.descriptionEn}
+                  value={
+                    editingServiceId
+                      ? getDistinctServiceField(newService.descriptionEn, newService.title)
+                      : newService.descriptionEn
+                  }
                   onChange={(event) =>
                     setNewService({ ...newService, descriptionEn: event.target.value })
                   }
@@ -1648,23 +1733,22 @@ export default function ProfilePage() {
                   type="button"
                   disabled={categories.length === 0}
                   onClick={async () => {
-                    await dispatch(addServiceThunk(newService));
+                    const servicePayload = editingServiceId
+                      ? sanitizeServiceDraft(newService)
+                      : newService;
+
+                    if (editingServiceId) {
+                      await dispatch(updateServiceThunk({ id: editingServiceId, ...servicePayload }));
+                    } else {
+                      await dispatch(addServiceThunk(servicePayload));
+                    }
                     dispatch(fetchMasterServicesThunk());
-                    setShowAddService(false);
-                    setNewService({
-                      title: "",
-                      titleEn: "",
-                      description: "",
-                      descriptionEn: "",
-                      price: 0,
-                      duration: 60,
-                      categoryId: categories[0]?.id || 1,
-                    });
+                    handleCloseServiceModal();
                   }}
                 >
                   {commonT("save")}
                 </button>
-                <button type="button" onClick={() => setShowAddService(false)}>
+                <button type="button" onClick={handleCloseServiceModal}>
                   {commonT("cancel")}
                 </button>
               </div>

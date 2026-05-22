@@ -1,5 +1,5 @@
 const { Op } = require("sequelize");
-const { Booking, Chat, Servizi, User, sequelize } = require("../db/models");
+const { Booking, Chat, Sale, Servizi, User, sequelize } = require("../db/models");
 
 function isCanceledStatus(status) {
   const normalizedStatus = String(status ?? "").toLowerCase();
@@ -8,6 +8,17 @@ function isCanceledStatus(status) {
     normalizedStatus.includes("отмен") ||
     normalizedStatus.includes("cancel") ||
     normalizedStatus.includes("РѕС‚РјРµРЅ")
+  );
+}
+
+function isDoneStatus(status) {
+  const normalizedStatus = String(status ?? "").toLowerCase();
+
+  return (
+    normalizedStatus.includes("заверш") ||
+    normalizedStatus.includes("done") ||
+    normalizedStatus.includes("completed") ||
+    normalizedStatus.includes("Р·Р°РІРµСЂС€")
   );
 }
 
@@ -35,8 +46,11 @@ class BookingService {
     const serviceIds = [
       ...new Set(plainBookings.map((booking) => booking.serviziId).filter(Boolean)),
     ];
+    const bookingIds = [
+      ...new Set(plainBookings.map((booking) => booking.id).filter(Boolean)),
+    ];
 
-    const [clients, services] = await Promise.all([
+    const [clients, services, sales] = await Promise.all([
       clientIds.length
         ? User.findAll({
             where: { id: { [Op.in]: clientIds } },
@@ -48,6 +62,11 @@ class BookingService {
             where: { id: { [Op.in]: serviceIds } },
           })
         : [],
+      bookingIds.length
+        ? Sale.findAll({
+            where: { bookingId: { [Op.in]: bookingIds } },
+          })
+        : [],
     ]);
 
     const clientsById = new Map(
@@ -56,10 +75,15 @@ class BookingService {
     const servicesById = new Map(
       services.map((service) => [service.id, service.get({ plain: true })]),
     );
+    const salesByBookingId = new Map(
+      sales.map((sale) => [sale.bookingId, sale.get({ plain: true })]),
+    );
 
     return plainBookings.map((booking) => {
       const client = clientsById.get(booking.clientId);
       const service = servicesById.get(booking.serviziId);
+      const sale = salesByBookingId.get(booking.id);
+      const totalPrice = Number(sale?.finalPrice ?? service?.price) || 0;
 
       return {
         ...booking,
@@ -68,7 +92,8 @@ class BookingService {
           phone: client?.phone ?? "",
         },
         service: service ?? null,
-        totalPrice: Number(service?.price) || 0,
+        sale: sale ?? null,
+        totalPrice,
       };
     });
   }
@@ -190,15 +215,39 @@ class BookingService {
   }
 
   static async update(id, bookingData) {
-    const [rows] = await Booking.update(bookingData, {
-      where: { id },
-    });
+    const { finalPrice, actualPrice, ...bookingPatch } = bookingData;
+    const [rows] = await Booking.update(bookingPatch, { where: { id } });
 
     if (rows === 0) {
       return null;
     }
 
     const booking = await Booking.findByPk(id);
+    const plainBooking = booking?.get({ plain: true });
+    const price = Number(finalPrice ?? actualPrice);
+
+    if (plainBooking) {
+      if (isDoneStatus(plainBooking.status) && Number.isFinite(price) && price >= 0) {
+        const existingSale = await Sale.findOne({ where: { bookingId: plainBooking.id } });
+        const saleData = {
+          masterId: plainBooking.masterId,
+          bookingId: plainBooking.id,
+          serviziId: plainBooking.serviziId,
+          finalPrice: price,
+          discount: 0,
+          date: plainBooking.date ?? plainBooking.startTime,
+        };
+
+        if (existingSale) {
+          await existingSale.update(saleData);
+        } else {
+          await Sale.create(saleData);
+        }
+      } else if (Object.hasOwn(bookingPatch, "status") && !isDoneStatus(plainBooking.status)) {
+        await Sale.destroy({ where: { bookingId: plainBooking.id } });
+      }
+    }
+
     return BookingService.enrichBooking(booking);
   }
 
