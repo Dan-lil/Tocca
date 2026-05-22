@@ -6,7 +6,12 @@ const {
   ProfileMaster,
   Servizi,
   User,
+  sequelize,
 } = require("../db/models");
+const {
+  decryptChatText,
+  encryptChatText,
+} = require("../utils/chatEncryption");
 
 const userPublicAttributes = ["id", "name", "avatar", "role"];
 
@@ -61,20 +66,64 @@ const messageInclude = [
 
 const toPlain = (item) => (item ? item.get({ plain: true }) : null);
 
+function decryptMessagePlain(message) {
+  if (!message) {
+    return message;
+  }
+
+  return {
+    ...message,
+    text: decryptChatText(message.text),
+  };
+}
+
+function decryptChatPlain(chat) {
+  if (!chat) {
+    return chat;
+  }
+
+  return {
+    ...chat,
+    ChatMessages: Array.isArray(chat.ChatMessages)
+      ? chat.ChatMessages.map(decryptMessagePlain)
+      : chat.ChatMessages,
+  };
+}
+
 class ChatService {
   static async create(ChatData) {
-    const bookingId = Number(ChatData.bookingId);
-    const hasBooking = Number.isInteger(bookingId) && bookingId > 0;
+    const chatData = {
+      clientId: Number(ChatData.clientId),
+      masterId: Number(ChatData.masterId),
+      bookingId: ChatData.bookingId ? Number(ChatData.bookingId) : null,
+    };
 
-    const where = hasBooking
-      ? { bookingId }
-      : {
-          bookingId: null,
-          clientId: ChatData.clientId,
-          masterId: ChatData.masterId,
+    const chat = await sequelize.transaction(async (transaction) => {
+      const existingChat = await Chat.findOne({
+        where: {
+          clientId: chatData.clientId,
+          masterId: chatData.masterId,
+        },
+        order: [["updatedAt", "DESC"]],
+        transaction,
+      });
+
+      if (existingChat) {
+        const nextPayload = {
+          updatedAt: new Date(),
         };
 
-    const [chat] = await Chat.findOrCreate({ where, defaults: ChatData });
+        if (chatData.bookingId) {
+          nextPayload.bookingId = chatData.bookingId;
+        }
+
+        await existingChat.update(nextPayload, { transaction });
+
+        return existingChat;
+      }
+
+      return Chat.create(chatData, { transaction });
+    });
 
     return this.findById(chat.id);
   }
@@ -82,7 +131,7 @@ class ChatService {
   static async findById(id) {
     const chat = await Chat.findByPk(id, { include: chatInclude });
 
-    return toPlain(chat);
+    return decryptChatPlain(toPlain(chat));
   }
 
   static async ensureParticipant(chatId, userId) {
@@ -107,7 +156,7 @@ class ChatService {
       include: chatInclude,
     });
 
-    return toPlain(chat);
+    return decryptChatPlain(toPlain(chat));
   }
 
   static async findAllByMasterId(masterId) {
@@ -117,7 +166,7 @@ class ChatService {
       order: [["updatedAt", "DESC"]],
     });
 
-    return chats.map(toPlain);
+    return chats.map((chat) => decryptChatPlain(toPlain(chat)));
   }
 
   static async findAllByClientId(clientId) {
@@ -127,7 +176,7 @@ class ChatService {
       order: [["updatedAt", "DESC"]],
     });
 
-    return chats.map(toPlain);
+    return chats.map((chat) => decryptChatPlain(toPlain(chat)));
   }
 
   static async findAllByUserId(userId) {
@@ -139,7 +188,7 @@ class ChatService {
       order: [["updatedAt", "DESC"]],
     });
 
-    return chats.map(toPlain);
+    return chats.map((chat) => decryptChatPlain(toPlain(chat)));
   }
 
   static async findMessages(chatId) {
@@ -149,18 +198,22 @@ class ChatService {
       order: [["createdAt", "ASC"]],
     });
 
-    return messages.map(toPlain);
+    return messages.map((message) => decryptMessagePlain(toPlain(message)));
   }
 
   static async createMessage(chatId, senderId, text) {
-    const message = await ChatMessage.create({ chatId, senderId, text });
+    const message = await ChatMessage.create({
+      chatId,
+      senderId,
+      text: encryptChatText(text),
+    });
     await Chat.update({ updatedAt: new Date() }, { where: { id: chatId } });
 
     const messageWithSender = await ChatMessage.findByPk(message.id, {
       include: messageInclude,
     });
 
-    return toPlain(messageWithSender);
+    return decryptMessagePlain(toPlain(messageWithSender));
   }
 
   static async deleteByBookingId(bookingId) {

@@ -9,6 +9,7 @@ authRouter
   .post('/telegram', AuthController.telegramLogin)
   .post('/logout', AuthController.logout)
   .put('/profile', verifyAccessToken, AuthController.updateProfile)
+  .delete('/profile', verifyAccessToken, AuthController.deleteAccount)
   .get('/refresh', verifyRefreshToken, AuthController.refreshTokens);
 
 module.exports = authRouter;

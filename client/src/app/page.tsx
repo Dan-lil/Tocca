@@ -119,7 +119,7 @@ export default function HomePage() {
                     src={getServiceImageSrc(service)}
                     alt={service.title}
                     fill
-                    unoptimized
+                    unoptimized 
                   />
                 </div>
                 <div className="service-overlay">

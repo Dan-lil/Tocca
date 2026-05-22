@@ -145,6 +145,63 @@ function getTopMastersByRating(candidateMasters, bookedMasterIds, limit) {
     .map((master) => master.id);
 }
 
+function getDistanceKm(pointA, pointB) {
+  const earthRadiusKm = 6371;
+  const toRadians = (degrees) => (degrees * Math.PI) / 180;
+  const latDelta = toRadians(pointB.lat - pointA.lat);
+  const lonDelta = toRadians(pointB.lon - pointA.lon);
+  const startLat = toRadians(pointA.lat);
+  const endLat = toRadians(pointB.lat);
+  const a =
+    Math.sin(latDelta / 2) ** 2 +
+    Math.cos(startLat) * Math.cos(endLat) * Math.sin(lonDelta / 2) ** 2;
+
+  return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function sortMastersByDistanceLocally(payload) {
+  const clientLat = Number(payload.clientLat);
+  const clientLon = Number(payload.clientLon);
+  const radiusKm = Number(payload.radiusKm) || 15;
+  const categoryId = Number(payload.categoryId);
+  const masters = Array.isArray(payload.masters) ? payload.masters : [];
+
+  if (!Number.isFinite(clientLat) || !Number.isFinite(clientLon)) {
+    return [];
+  }
+
+  return masters
+    .map((master) => {
+      const lat = Number(master.lat);
+      const lon = Number(master.lon);
+      const categoryIds = Array.isArray(master.categoryIds)
+        ? master.categoryIds.map(Number)
+        : [];
+
+      return {
+        id: Number(master.id),
+        categoryIds,
+        distanceKm: Number.isFinite(lat) && Number.isFinite(lon)
+          ? getDistanceKm({ lat: clientLat, lon: clientLon }, { lat, lon })
+          : null,
+      };
+    })
+    .filter((master) => {
+      if (!Number.isInteger(master.id) || master.distanceKm === null) return false;
+      if (master.distanceKm > radiusKm) return false;
+      if (Number.isInteger(categoryId) && categoryId > 0) {
+        return master.categoryIds.includes(categoryId);
+      }
+
+      return true;
+    })
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .map((master) => ({
+      id: master.id,
+      distanceKm: Number(master.distanceKm.toFixed(2)),
+    }));
+}
+
 function extractPromptPreferences(prompt) {
   const text = String(prompt ?? "").trim().toLowerCase();
 
@@ -600,9 +657,10 @@ ${JSON.stringify(modelCandidates)}`;
     const pythonServiceUrl =
       process.env.PYTHON_RECOMMENDATION_URL || "http://localhost:8001";
     const data = JSON.stringify(payload);
+    const serviceUrl = new URL(pythonServiceUrl);
     const options = {
-      hostname: new URL(pythonServiceUrl).hostname,
-      port: new URL(pythonServiceUrl).port || 8001,
+      hostname: serviceUrl.hostname,
+      port: serviceUrl.port || 8001,
       path: "/geo-sort",
       method: "POST",
       headers: {
@@ -610,7 +668,7 @@ ${JSON.stringify(modelCandidates)}`;
         "Content-Length": Buffer.byteLength(data),
       },
     };
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const req = http.request(options, (res) => {
         let body = "";
         res.on("data", (chunk) => (body += chunk));
@@ -624,9 +682,10 @@ ${JSON.stringify(modelCandidates)}`;
           }
         });
       });
-      req.on("error", (e) =>
-        reject(new Error(`Python service connection failed: ${e.message}`)),
-      );
+      req.on("error", (e) => {
+        console.warn(`Geo Python service fallback: ${e.message}`);
+        resolve(sortMastersByDistanceLocally(payload));
+      });
       req.write(data);
       req.end();
     });

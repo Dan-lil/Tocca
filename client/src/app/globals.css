@@ -97,6 +97,75 @@ select {
     line-height: 1;
 }
 
+/* Критичные стили кнопок профиля держим глобально, чтобы они были на месте
+   уже при первом переходе в кабинет после регистрации/логина. */
+.profile-page button {
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    color: #fffaf8;
+    background:
+        linear-gradient(135deg, rgba(179, 108, 99, 0.92), rgba(220, 151, 141, 0.84)),
+        rgba(255, 255, 255, 0.62);
+    box-shadow: 0 16px 34px rgba(177, 107, 97, 0.28);
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+.profile-link-button {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.72);
+    border-radius: 999px;
+    color: #fffaf8;
+    background:
+        linear-gradient(135deg, rgba(179, 108, 99, 0.92), rgba(220, 151, 141, 0.84)),
+        rgba(255, 255, 255, 0.62);
+    box-shadow: 0 16px 34px rgba(177, 107, 97, 0.28);
+    text-decoration: none;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease;
+}
+
+.profile-page button:hover,
+.profile-link-button:hover {
+    background:
+        linear-gradient(135deg, rgba(158, 91, 84, 0.96), rgba(220, 151, 141, 0.92)),
+        rgba(255, 255, 255, 0.66);
+    box-shadow: 0 20px 42px rgba(177, 107, 97, 0.34);
+    transform: translateY(-1px);
+}
+
+.profile-page .profile-danger-button {
+    color: #8f2d27;
+    background:
+        linear-gradient(135deg, rgba(255, 245, 244, 0.94), rgba(255, 222, 218, 0.86)),
+        rgba(255, 255, 255, 0.72);
+    border-color: rgba(143, 45, 39, 0.24);
+    box-shadow: 0 14px 30px rgba(143, 45, 39, 0.12);
+}
+
+.profile-page .profile-danger-button:hover {
+    color: #fff8f7;
+    background:
+        linear-gradient(135deg, rgba(143, 45, 39, 0.95), rgba(196, 76, 65, 0.88)),
+        rgba(255, 255, 255, 0.66);
+    box-shadow: 0 18px 38px rgba(143, 45, 39, 0.22);
+}
+
+.profile-page button:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
 html,
 body {
     min-height: 100%;
@@ -349,16 +418,14 @@ body {
 
 .site-header-offer {
     position: relative;
-    min-height: 310px;
+    min-height: 360px;
     width: 100%;
     max-width: 360px;
     border-radius: 28px;
     display: flex;
     overflow: hidden;
     color: rgba(255, 250, 249, 0.98);
-    background:
-        linear-gradient(180deg, rgba(123, 75, 68, 0.16), rgba(123, 75, 68, 0.34)),
-        url("/акция_дня.jpeg") center/cover no-repeat;
+    background: linear-gradient(180deg, rgba(123, 75, 68, 0.16), rgba(123, 75, 68, 0.34));
     backdrop-filter: blur(10px);
     box-shadow: 0 18px 44px rgba(93, 48, 38, 0.18);
 }
@@ -366,6 +433,12 @@ body {
 .site-header-offer-media {
     position: absolute;
     inset: 0;
+    background: rgba(116, 70, 64, 0.2);
+}
+
+.site-header-offer-image {
+    object-fit: cover;
+    object-position: center;
 }
 
 .site-header-offer-media::after {
@@ -1021,7 +1094,7 @@ body {
     }
 
     .site-header-offer {
-        min-height: 264px;
+        min-height: 300px;
         width: min(100%, 360px);
         max-width: 360px;
     }

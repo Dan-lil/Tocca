@@ -1,4 +1,4 @@
-const { MasterPortfolio, MasterSocial, ProfileMaster, User } = require("../db/models");
+const { Eco, MasterPortfolio, MasterSocial, ProfileMaster, User } = require("../db/models");
 const { withAutoProfileEnglish } = require("../utils/translate");
 
 function mapPortfolioItem(item) {
@@ -7,6 +7,16 @@ function mapPortfolioItem(item) {
     imageUrl: item.portfolioImages,
     title: item.text,
   };
+}
+
+function getAverageRating(reviews) {
+  if (!reviews.length) {
+    return 0;
+  }
+
+  const total = reviews.reduce((sum, review) => sum + (Number(review.rating) || 0), 0);
+
+  return Number((total / reviews.length).toFixed(1));
 }
 
 class ProfileMasterService {
@@ -26,7 +36,7 @@ class ProfileMasterService {
   }
 
   static async findPublicByUserId(id) {
-    const [user, profile, portfolio, socials] = await Promise.all([
+    const [user, profile, portfolio, socials, reviews] = await Promise.all([
       User.findOne({
         where: { id, role: "master" },
         attributes: ["id", "name", "email", "phone", "avatar"],
@@ -40,22 +50,35 @@ class ProfileMasterService {
         where: { userId: id },
         order: [["id", "ASC"]],
       }),
+      Eco.findAll({
+        where: { masterId: id },
+        attributes: ["rating"],
+      }),
     ]);
 
     if (!user) {
       return null;
     }
 
+    const plainProfile = profile ? profile.get() : null;
+
     return {
       user: user.get(),
-      profile: profile ? profile.get() : null,
+      profile: plainProfile
+        ? {
+            ...plainProfile,
+            rating: getAverageRating(reviews),
+          }
+        : null,
       portfolio: portfolio.map(mapPortfolioItem),
       socials: socials.map((social) => social.get()),
     };
   }
 
   static async update(id, ProfileData) {
-    const profileData = await withAutoProfileEnglish(ProfileData);
+    const editableProfileData = { ...ProfileData };
+    delete editableProfileData.rating;
+    const profileData = await withAutoProfileEnglish(editableProfileData);
 
     const [profile] = await ProfileMaster.findOrCreate({
       where: { userId: id },

@@ -2,41 +2,20 @@ const AuthService = require("../services/AuthService");
 const formatResponse = require("../utils/formatResponse");
 const { User } = require("../db/models");
 const bcrypt = require("bcrypt");
-const fs = require("fs/promises");
 const generateTokens = require("../utils/generateTokens");
 const path = require("path");
 const cookieConfig = require("../config/cookieConfig");
-const { createSafeImageFileName, getImageExtension } = require("../utils/uploadFileName");
+const { optimizeImageFile } = require("../utils/imageOptimizer");
 const verifyTelegramAuth = require("../utils/verifyTelegramAuth");
 
 async function saveProfileAvatar(imageFile) {
-  if (!imageFile?.data || !imageFile?.type) {
-    return null;
-  }
-
-  const match = imageFile.data.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-
-  if (!match) {
-    throw new Error("Invalid avatar file");
-  }
-
-  const mimeType = match[1];
-  const base64Data = match[2];
-  const extension = getImageExtension(mimeType);
-  const allowedExtensions = new Set(["jpg", "png", "webp", "gif"]);
-
-  if (!allowedExtensions.has(extension)) {
-    throw new Error("Unsupported avatar file type");
-  }
-
-  const uploadsDir = path.join(__dirname, "../public/uploads/profile");
-  const fileName = createSafeImageFileName(mimeType);
-  const filePath = path.join(uploadsDir, fileName);
-
-  await fs.mkdir(uploadsDir, { recursive: true });
-  await fs.writeFile(filePath, Buffer.from(base64Data, "base64"));
-
-  return `/uploads/profile/${fileName}`;
+  return optimizeImageFile({
+    imageFile,
+    label: "avatar",
+    outputDir: path.join(__dirname, "../public/uploads/profile"),
+    preset: "avatar",
+    publicDir: "/uploads/profile",
+  });
 }
 
 class AuthController {
@@ -239,6 +218,31 @@ class AuthController {
       return res
         .status(500)
         .json(formatResponse(500, "Ошибка сервера при выходе из приложения"));
+    }
+  }
+
+  static async deleteAccount(req, res) {
+    const { user } = res.locals;
+
+    try {
+      const deleted = await AuthService.deleteAccount(user.id);
+
+      if (!deleted) {
+        return res
+          .status(404)
+          .json(formatResponse(404, "Пользователь не найден"));
+      }
+
+      return res
+        .status(200)
+        .clearCookie("refreshToken")
+        .json(formatResponse(200, "Аккаунт удален"));
+    } catch (error) {
+      console.log("======== AuthController.deleteAccount =========");
+      console.log(error);
+      return res
+        .status(500)
+        .json(formatResponse(500, "Ошибка сервера при удалении аккаунта"));
     }
   }
 

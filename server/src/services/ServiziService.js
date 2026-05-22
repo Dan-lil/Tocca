@@ -1,29 +1,71 @@
-const { ProfileMaster, Servizi, User } = require("../db/models");
+const { Eco, Servizi, User } = require("../db/models");
 const { withAutoServiceEnglish } = require("../utils/translate");
 
-// Подтягиваем автора услуги и его профиль, чтобы сразу отдавать имя и рейтинг мастера
+// Подтягиваем автора услуги, чтобы сразу отдавать имя мастера
 const SERVICE_INCLUDE = [
   {
     model: User,
     attributes: ["id", "name"],
-    include: [
-      {
-        model: ProfileMaster,
-        attributes: ["rating"],
-      },
-    ],
   },
 ];
 
-function mapServizi(servizi) {
+function getAverageRating(ratings) {
+  if (!ratings.length) {
+    return 0;
+  }
+
+  const total = ratings.reduce((sum, rating) => sum + rating, 0);
+
+  return Number((total / ratings.length).toFixed(1));
+}
+
+async function getRatingsByMasterId(masterIds) {
+  const uniqueMasterIds = [...new Set(masterIds.filter(Boolean))];
+
+  if (!uniqueMasterIds.length) {
+    return new Map();
+  }
+
+  const reviews = await Eco.findAll({
+    where: { masterId: uniqueMasterIds },
+    attributes: ["masterId", "rating"],
+  });
+  const ratings = new Map();
+
+  reviews.forEach((review) => {
+    const plainReview = review.get({ plain: true });
+    const rating = Number(plainReview.rating) || 0;
+    const currentRatings = ratings.get(plainReview.masterId) ?? [];
+
+    ratings.set(plainReview.masterId, [...currentRatings, rating]);
+  });
+
+  return new Map(
+    [...ratings.entries()].map(([masterId, masterRatings]) => [
+      masterId,
+      getAverageRating(masterRatings),
+    ]),
+  );
+}
+
+function mapServizi(servizi, ratingsByMasterId = new Map()) {
   const plainServizi = servizi.get({ plain: true });
+  const calculatedRating = ratingsByMasterId.get(plainServizi.masterId);
 
   return {
     ...plainServizi,
     // Нормализуем вложенные данные Sequelize, удобную для клиента
     masterName: plainServizi.User?.name ?? null,
-    masterRating: plainServizi.User?.ProfileMaster?.rating ?? 0,
+    masterRating: calculatedRating ?? 0,
   };
+}
+
+async function mapServiziList(serviziList) {
+  const ratingsByMasterId = await getRatingsByMasterId(
+    serviziList.map((servizi) => servizi.masterId),
+  );
+
+  return serviziList.map((servizi) => mapServizi(servizi, ratingsByMasterId));
 }
 
 class ServiziService {
@@ -58,7 +100,7 @@ class ServiziService {
       include: SERVICE_INCLUDE,
     });
 
-    return serviziList.map(mapServizi);
+    return mapServiziList(serviziList);
   }
 
   static async findAllByCategoryId(categoryId) {
@@ -67,7 +109,7 @@ class ServiziService {
       include: SERVICE_INCLUDE,
     });
 
-    return serviziList.map(mapServizi);
+    return mapServiziList(serviziList);
   }
 
   static async findAll() {
@@ -75,7 +117,7 @@ class ServiziService {
       include: SERVICE_INCLUDE,
     });
 
-    return serviziList.map(mapServizi);
+    return mapServiziList(serviziList);
   }
 
   static async findById(id) {
@@ -87,7 +129,9 @@ class ServiziService {
       return null;
     }
 
-    return mapServizi(servizi);
+    const ratingsByMasterId = await getRatingsByMasterId([servizi.masterId]);
+
+    return mapServizi(servizi, ratingsByMasterId);
   }
 
   static async findByActive(isActive) {
@@ -96,7 +140,7 @@ class ServiziService {
       include: SERVICE_INCLUDE,
     });
 
-    return serviziList.map(mapServizi);
+    return mapServiziList(serviziList);
   }
 
   static async delete(id) {

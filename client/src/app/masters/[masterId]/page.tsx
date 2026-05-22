@@ -10,7 +10,12 @@ import { getReviewsByMaster } from "@/shared/api/ecoApi";
 import { getPublicMasterProfile } from "@/shared/api/profileMasterApi";
 import { getServicesByMaster } from "@/shared/api/serviziApi";
 import { useAppSelector } from "@/shared/hooks/useReduxHooks";
-import { getLocalizedDescription, getLocalizedTitle } from "@/shared/lib/localized";
+import { dispatchBookingModalOpen } from "@/shared/lib/bookingEvents";
+import {
+  getLocalizedCategory,
+  getLocalizedDescription,
+  getLocalizedTitle,
+} from "@/shared/lib/localized";
 import { openDirectChat } from "@/shared/lib/openDirectChat";
 import { expandPortfolioItems, getMasterAvatarUrl, getMediaUrl } from "@/shared/lib/media";
 import type { EcoReviewType, PublicMasterProfileType, ServiziType } from "@/shared/types";
@@ -40,15 +45,15 @@ export default function PublicMasterPage() {
         setIsLoading(true);
         setError(null);
 
-        const [masterData, servicesData, reviewsData] = await Promise.all([
+        const [masterData, servicesResult, reviewsResult] = await Promise.all([
           getPublicMasterProfile(masterId),
-          getServicesByMaster(masterId),
-          getReviewsByMaster(masterId),
+          getServicesByMaster(masterId).catch(() => []),
+          getReviewsByMaster(masterId).catch(() => []),
         ]);
 
         setMaster(masterData);
-        setServices(servicesData.filter((service) => service.isActive));
-        setReviews(reviewsData);
+        setServices(servicesResult.filter((service) => service.isActive));
+        setReviews(reviewsResult);
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : t("loadError"));
       } finally {
@@ -84,6 +89,31 @@ export default function PublicMasterPage() {
     } finally {
       setIsOpeningChat(false);
     }
+  };
+
+  const handleOpenBooking = () => {
+    const numericMasterId = Number(masterId);
+
+    if (!user) {
+      router.push("/auth");
+      return;
+    }
+
+    if (!Number.isInteger(numericMasterId) || !master) return;
+
+    const categoryTitle =
+      getLocalizedCategory(master.profile ?? {}, locale) ||
+      getLocalizedTitle(services[0] ?? {}, locale) ||
+      t("services");
+
+    dispatchBookingModalOpen({
+      categoryId: services[0]?.categoryId,
+      categoryTitle,
+      categoryTitleEn: master.profile?.categoryEn ?? null,
+      masterId: numericMasterId,
+      masterName,
+      services,
+    });
   };
 
   // На публичной странице мастера сначала пробуем локальный аватар из public/avatar
@@ -149,6 +179,15 @@ export default function PublicMasterPage() {
           </div>
 
           <div className="public-master-actions">
+            {user?.role !== "master" ? (
+              <button
+                className="glass-button public-master-back"
+                type="button"
+                onClick={handleOpenBooking}
+              >
+                {t("book")}
+              </button>
+            ) : null}
             <button
               className="glass-button public-master-back"
               disabled={isOpeningChat}
