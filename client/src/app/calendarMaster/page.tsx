@@ -13,6 +13,7 @@ import {
   createShadule,
   deleteShadule,
   getShadulesByMaster,
+  updateShadule,
 } from "@/shared/api/shaduleApi";
 import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { getAccessToken } from "@/shared/lib/axiosInstance";
@@ -767,14 +768,35 @@ export default function CalendarMasterPage() {
       const desiredKeys = new Set(desiredSlots.map((slot) => slot.key));
 
       for (const slot of desiredSlots) {
-        if (existingByKey.has(slot.key)) continue;
+        const existingSlot = existingByKey.get(slot.key);
+        const startTime = getScheduleDate(slot.dayOdWeek, slot.time);
+        const endTime = getScheduleEndDate(slot.dayOdWeek, slot.time);
+
+        if (existingSlot) {
+          const expectedEndTime = getTimeValue(endTime);
+          const shouldNormalizeSlot =
+            getTimeValue(existingSlot.endTime) !== expectedEndTime ||
+            !existingSlot.isWorkingDay;
+
+          if (shouldNormalizeSlot) {
+            await updateShadule(existingSlot.id, {
+              masterId,
+              dayOdWeek: slot.dayOdWeek,
+              startTime,
+              endTime,
+              isWorkingDay: true,
+            });
+          }
+
+          continue;
+        }
 
         try {
           await createShadule({
             masterId,
             dayOdWeek: slot.dayOdWeek,
-            startTime: getScheduleDate(slot.dayOdWeek, slot.time),
-            endTime: getScheduleEndDate(slot.dayOdWeek, slot.time),
+            startTime,
+            endTime,
             isWorkingDay: true,
           });
         } catch (error) {
