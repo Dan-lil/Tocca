@@ -569,16 +569,12 @@ ${JSON.stringify(modelCandidates)}`;
         }
       });
 
-      const rest = topCandidates.filter((candidate) => !usedIds.has(candidate.id));
-      const unseen = candidates.slice(getAIBookingCandidatesLimit());
-
       if (!selected.length) {
         return null;
       }
 
-      const merged = [...selected, ...rest, ...unseen];
-      setCachedValue(aiRerankCache, cacheKey, merged);
-      return merged;
+      setCachedValue(aiRerankCache, cacheKey, selected);
+      return selected;
     } catch (error) {
       console.log("==== AiService.rerankBookingOptions fallback ==== ");
       console.log(error.message);
@@ -676,9 +672,15 @@ ${JSON.stringify(modelCandidates)}`;
           try {
             const parsed = JSON.parse(body);
             if (res.statusCode === 200 && parsed.data) resolve(parsed.data);
-            else reject(new Error(parsed.message || `HTTP ${res.statusCode}`));
+            else {
+              console.warn(
+                `Geo Python service HTTP fallback: ${parsed.message || `HTTP ${res.statusCode}`}`,
+              );
+              resolve(sortMastersByDistanceLocally(payload));
+            }
           } catch {
-            reject(new Error("Invalid JSON from Python service"));
+            console.warn("Geo Python service JSON fallback");
+            resolve(sortMastersByDistanceLocally(payload));
           }
         });
       });
@@ -869,7 +871,9 @@ ${JSON.stringify(modelCandidates)}`;
   }
 
   static async searchBookingOptions(prompt, clientId, options = {}) {
-    const limit = Number.parseInt(options.limit, 10) || 6;
+    const parsedLimit = Number.parseInt(options.limit, 10);
+    const hasExplicitLimit = Number.isFinite(parsedLimit) && parsedLimit > 0;
+    const limit = hasExplicitLimit ? parsedLimit : null;
     const isLlmEnabledForRequest = options.useAI !== false;
     const heuristicPreferences = extractPromptPreferences(prompt);
     const aiPromptDetails = isLlmEnabledForRequest
@@ -1117,13 +1121,12 @@ ${JSON.stringify(modelCandidates)}`;
       ? await this.rerankBookingOptions(
           prompt,
           deterministicRankedOptions,
-          limit,
+          limit ?? deterministicRankedOptions.length,
         )
       : null;
     const rankedOptions = aiRankedOptions ?? deterministicRankedOptions;
 
-    return rankedOptions
-      .slice(0, limit)
+    return (limit ? rankedOptions.slice(0, limit) : rankedOptions)
       .map((option) => {
         const cleanOption = { ...option };
         delete cleanOption.score;
