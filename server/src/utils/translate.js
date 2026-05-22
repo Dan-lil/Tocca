@@ -82,6 +82,9 @@ async function fillEnglishField(data, sourceKey, targetKey) {
   const translatedText = await translateRuToEn(data[sourceKey]);
 
   if (!translatedText) return data;
+  if (translatedText.toLowerCase() === data[sourceKey].trim().toLowerCase()) {
+    return data;
+  }
 
   return {
     ...data,

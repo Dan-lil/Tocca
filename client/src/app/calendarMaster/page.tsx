@@ -18,7 +18,7 @@ import { useAppDispatch, useAppSelector } from "@/shared/hooks/useReduxHooks";
 import { getAccessToken } from "@/shared/lib/axiosInstance";
 import { getLocalizedTitle } from "@/shared/lib/localized";
 import { openBookingChat } from "@/shared/lib/openBookingChat";
-import type { BookingType, ServiziType, ShaduleType } from "@/shared/types";
+import type { BookingType, CreateBookingPayload, ServiziType, ShaduleType } from "@/shared/types";
 
 type AppointmentStatus = "confirmed" | "pending" | "done" | "canceled";
 
@@ -222,8 +222,14 @@ function getDurationLabel(booking: BookingType, service: ServiziType | undefined
   return diffMinutes > 0 ? `${diffMinutes} ${minutesLabel}` : "—";
 }
 
-function getPriceLabel(service: ServiziType | undefined, locale: string) {
-  return service ? `${service.price.toLocaleString(locale)} ₽` : "—";
+function getAppointmentPriceLabel(
+  booking: BookingType,
+  service: ServiziType | undefined,
+  locale: string,
+) {
+  const price = Number(booking.totalPrice ?? booking.sale?.finalPrice ?? service?.price);
+
+  return Number.isFinite(price) && price > 0 ? `${price.toLocaleString(locale)} руб.` : "—";
 }
 
 function isBookingCanceled(booking: BookingType) {
@@ -298,7 +304,7 @@ function buildAppointmentsByDate(
         minute: "2-digit",
       }),
       duration: getDurationLabel(booking, service, labels.minutes),
-      price: getPriceLabel(service, locale),
+      price: getAppointmentPriceLabel(booking, service, locale),
       status: getAppointmentStatus(booking.status),
     };
 
@@ -568,12 +574,33 @@ export default function CalendarMasterPage() {
 
   async function handleChangeAppointmentStatus(appointment: Appointment) {
     const nextUiStatus = nextStatus[appointment.status];
+    const payload: Partial<
+      CreateBookingPayload & Pick<BookingType, "cancelReason" | "finalPrice">
+    > = {
+      status: backendStatusByUiStatus[nextUiStatus],
+    };
+
+    if (nextUiStatus === "done") {
+      const defaultPrice = String(
+        Number(appointment.booking.totalPrice ?? appointment.booking.service?.price) || "",
+      );
+      const value = window.prompt(t("finalPricePrompt"), defaultPrice);
+
+      if (value === null) return;
+
+      const finalPrice = Number(value.replace(",", "."));
+
+      if (!Number.isFinite(finalPrice) || finalPrice < 0) {
+        setPageError(t("finalPriceError"));
+        return;
+      }
+
+      payload.finalPrice = finalPrice;
+    }
 
     try {
       setIsStatusSaving(appointment.id);
-      const updatedBooking = await updateBooking(appointment.id, {
-        status: backendStatusByUiStatus[nextUiStatus],
-      });
+      const updatedBooking = await updateBooking(appointment.id, payload);
       setBookings((currentBookings) =>
         currentBookings.map((booking) =>
           booking.id === appointment.id ? { ...booking, ...updatedBooking } : booking,

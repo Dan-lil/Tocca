@@ -1,6 +1,6 @@
 const path = require("path");
 const { Op } = require("sequelize");
-const { Booking, Eco, MasterPortfolio, ProfileMaster, Servizi, User } = require("../db/models");
+const { Booking, Eco, MasterPortfolio, ProfileMaster, Sale, Servizi, User } = require("../db/models");
 const formatResponse = require("../utils/formatResponse");
 const { withAutoServiceEnglish } = require("../utils/translate");
 const { optimizeImageFile } = require("../utils/imageOptimizer");
@@ -75,19 +75,14 @@ class MasterController {
     const masterId = getMasterId(res);
 
     try {
-      const bookings = await Booking.findAll({
-        where: { masterId },
-        attributes: ["serviziId"],
+      const sales = await Sale.findAll({
+        where: {
+          masterId,
+          bookingId: { [Op.ne]: null },
+        },
+        attributes: ["finalPrice"],
       });
-      const serviziIds = [...new Set(bookings.map((booking) => booking.serviziId).filter(Boolean))];
-      const services = serviziIds.length
-        ? await Servizi.findAll({
-            where: { id: { [Op.in]: serviziIds } },
-            attributes: ["id", "price"],
-          })
-        : [];
-      const priceById = new Map(services.map((service) => [service.id, Number(service.price) || 0]));
-      const total = bookings.reduce((sum, booking) => sum + (priceById.get(booking.serviziId) ?? 0), 0);
+      const total = sales.reduce((sum, sale) => sum + (Number(sale.finalPrice) || 0), 0);
 
       return res.status(200).json(formatResponse(200, "Master earnings loaded", { total }));
     } catch (error) {
