@@ -25,7 +25,7 @@ import {
 import { deleteAccountThunk, updateUserProfileThunk } from "@/entities/user/api/UserApiThunk";
 import { Servizi } from "@/entities/servizi/model/index";
 import type { BookingToMaster } from "@/entities/master/model/index";
-import { getBookingsByClient, updateBooking } from "@/shared/api/bookingApi";
+import { getBookingsByClient, getBookingsByMaster, updateBooking } from "@/shared/api/bookingApi";
 import { getCategories } from "@/shared/api/categoryApi";
 import { getMyMasterRecommendations } from "@/shared/api/aiApi";
 import { createReview, getReviewsByClient, getReviewsByMaster } from "@/shared/api/ecoApi";
@@ -196,6 +196,10 @@ function sortBookingsDesc(bookings: BookingType[]) {
   );
 }
 
+function getCompletedMasterBookings(bookings: BookingType[]) {
+  return sortBookingsDesc(bookings.filter(isClientBookingDone));
+}
+
 function getRecommendedMasterReason(master: RecommendedMasterType, locale: string) {
   if (locale !== "en") return master.reason;
   if (master.reasonEn?.trim()) return master.reasonEn;
@@ -290,6 +294,8 @@ export default function ProfilePage() {
   const [clientHistoryError, setClientHistoryError] = useState<string | null>(null);
   const [masterReviews, setMasterReviews] = useState<EcoReviewType[]>([]);
   const [masterReviewsError, setMasterReviewsError] = useState<string | null>(null);
+  const [masterCompletedBookings, setMasterCompletedBookings] = useState<BookingType[]>([]);
+  const [masterHistoryError, setMasterHistoryError] = useState<string | null>(null);
   const [masterSocials, setMasterSocials] = useState<MasterSocialType[]>([]);
   const [masterSocialForm, setMasterSocialForm] =
     useState<MasterSocialForm>(emptyMasterSocials);
@@ -376,6 +382,25 @@ export default function ProfilePage() {
   }, [dispatch, isMaster, user]);
 
   useEffect(() => {
+    if (!user || !isMaster) return;
+
+    const loadMasterHistory = async () => {
+      try {
+        setMasterHistoryError(null);
+        const bookings = await getBookingsByMaster(user.id);
+
+        setMasterCompletedBookings(getCompletedMasterBookings(bookings));
+      } catch (error) {
+        setMasterHistoryError(
+          error instanceof Error ? error.message : t("errorMasterHistory"),
+        );
+      }
+    };
+
+    void loadMasterHistory();
+  }, [isMaster, t, user]);
+
+  useEffect(() => {
     if (!user || isMaster) return;
 
     const loadClientBookings = async () => {
@@ -446,6 +471,15 @@ export default function ProfilePage() {
     socket.on("booking:updated", (updatedBooking: BookingType) => {
       if (isMaster) {
         void dispatch(fetchUpcomingBookingsForMasterThunk());
+        setMasterCompletedBookings((currentBookings) => {
+          const nextBookings = currentBookings.filter(
+            (booking) => booking.id !== updatedBooking.id,
+          );
+
+          return isClientBookingDone(updatedBooking)
+            ? sortBookingsDesc([updatedBooking, ...nextBookings])
+            : nextBookings;
+        });
         return;
       }
 
@@ -781,6 +815,26 @@ export default function ProfilePage() {
     } finally {
       setOpeningChatBookingId(null);
     }
+  }
+
+  async function handleOpenMasterHistoryChat(booking: BookingType) {
+    try {
+      setOpeningChatBookingId(booking.id);
+      setProfileError(null);
+      await openBookingChat(router, booking);
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : t("chatError"));
+    } finally {
+      setOpeningChatBookingId(null);
+    }
+  }
+
+  function getMasterBookingPrice(booking: BookingType) {
+    const price = Number(booking.totalPrice ?? booking.sale?.finalPrice ?? booking.service?.price);
+
+    return Number.isFinite(price) && price > 0
+      ? `${price.toLocaleString(locale)} ${commonT("currencyRub")}`
+      : commonT("notSpecifiedFemale");
   }
 
   async function handleCancelClientBooking(booking: BookingType) {
@@ -1299,6 +1353,44 @@ export default function ProfilePage() {
                       type="button"
                       disabled={openingChatBookingId === booking.id}
                       onClick={() => void handleOpenMasterBookingChat(booking)}
+                    >
+                      {openingChatBookingId === booking.id ? commonT("opening") : commonT("chat")}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="profile-section">
+          <h2>{t("masterCompletedBookings")}</h2>
+          {masterHistoryError ? <p className="profile-error">{masterHistoryError}</p> : null}
+          {masterCompletedBookings.length === 0 ? (
+            <p>{t("noMasterCompletedBookings")}</p>
+          ) : (
+            <div className="client-history-list">
+              {masterCompletedBookings.map((booking) => (
+                <article key={booking.id} className="booking-card booking-card--detailed">
+                  <div className="booking-card__info">
+                    <strong>{getLocalizedTitle(booking.service ?? {}, locale) ?? t("serviceFallback")}</strong>
+                    <span>
+                      {booking.client?.name || t("clientNumber", { id: booking.clientId })}
+                    </span>
+                    <time>{formatDateTime(booking.startTime)}</time>
+                    <small>
+                      {booking.client?.phone
+                        ? `${t("phone")}: ${booking.client.phone}`
+                        : commonT("notSpecifiedMale")}
+                    </small>
+                    <small>{t("actualPrice")}: {getMasterBookingPrice(booking)}</small>
+                    <small>{booking.status}</small>
+                  </div>
+                  <div className="booking-card__actions">
+                    <button
+                      type="button"
+                      disabled={openingChatBookingId === booking.id}
+                      onClick={() => void handleOpenMasterHistoryChat(booking)}
                     >
                       {openingChatBookingId === booking.id ? commonT("opening") : commonT("chat")}
                     </button>

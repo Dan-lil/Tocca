@@ -3,14 +3,14 @@
   --line: rgba(51, 65, 85, 0.12);
   --card: rgba(255, 255, 255, 0.82);
   width: min(1240px, calc(100% - 24px));
-  min-height: 100vh;
+  min-height: auto;
   margin: 0 auto;
-  padding: 28px 0 40px;
+  padding: 18px 0 28px;
   color: var(--ink);
 }
 
 .gratitude-stage {
-  padding: 28px 24px 32px;
+  padding: 22px 24px 24px;
   border-radius: 36px;
   background: linear-gradient(160deg, #f8f0de 0%, #ece4dc 46%, #e6edf5 100%);
   border: 1px solid rgba(255, 255, 255, 0.9);
@@ -26,8 +26,8 @@
 
 .stage-kicker {
   display: inline-block;
-  margin: 0 0 14px;
-  padding: 10px 20px;
+  margin: 0 0 10px;
+  padding: 8px 18px;
   border-radius: 999px;
   background: linear-gradient(135deg, #fff7d6 0%, #ffe6ee 100%);
   border: 1px solid rgba(51, 65, 85, 0.1);
@@ -39,7 +39,7 @@
 
 .stage-header h1 {
   margin: 0;
-  font-size: clamp(34px, 4.6vw, 56px);
+  font-size: clamp(30px, 4vw, 48px);
   line-height: 1;
   letter-spacing: -0.04em;
   white-space: nowrap;
@@ -47,17 +47,17 @@
 
 .stage-lead {
   max-width: 680px;
-  margin: 18px auto 0;
-  font-size: clamp(17px, 1.8vw, 20px);
-  line-height: 1.55;
+  margin: 12px auto 0;
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.45;
   color: rgba(51, 65, 85, 0.82);
 }
 
 .stage-scene {
   position: relative;
-  min-height: 1120px;
+  min-height: 760px;
   margin-top: 0;
-  transform: translateY(-32px);
+  transform: translateY(-22px);
 }
 
 .mini-stickers {
@@ -72,16 +72,16 @@
   grid-template-columns: repeat(2, minmax(220px, 280px));
   justify-content: center;
   align-items: start;
-  gap: 560px;
-  padding-top: 430px;
+  gap: 420px;
+  padding-top: 292px;
 }
 
 .center-sticker {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(580px, 84vw);
-  height: min(580px, 84vw);
+  width: min(430px, 72vw);
+  height: min(430px, 72vw);
   transform: translate(-50%, -50%);
   animation: sticker-bob 5.5s ease-in-out infinite;
   z-index: 2;
@@ -150,8 +150,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 440px;
-  height: 440px;
+  width: 340px;
+  height: 340px;
   border-radius: 42px;
   overflow: hidden;
   border: 14px solid rgba(255, 255, 255, 0.96);
@@ -313,7 +313,7 @@
 }
 
 .stage-actions {
-  margin-top: 8px;
+  margin-top: -8px;
   display: flex;
   gap: 16px;
   justify-content: center;
