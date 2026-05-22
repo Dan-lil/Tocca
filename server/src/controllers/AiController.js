@@ -248,7 +248,7 @@ class AiController {
 
   static async searchBookingOptions(req, res) {
     const { user } = res.locals;
-    const { prompt, limit = 6 } = req.body;
+    const { prompt, limit = 6, useAI = true } = req.body;
 
     if (!user?.id) {
       return res
@@ -265,6 +265,7 @@ class AiController {
     try {
       const options = await AiService.searchBookingOptions(prompt, user.id, {
         limit,
+        useAI,
       });
 
       return res

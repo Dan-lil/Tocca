@@ -17,6 +17,7 @@ import { getMasterAvatarUrl } from "@/shared/lib/media";
 import { getLocalizedTitle } from "@/shared/lib/localized";
 import { BookingModalPayload, BookingType, ServiziType, ShaduleType } from "@/shared/types";
 import { quickPrompts, type MasterItem } from "./booking.data";
+import type { AIBookingOption } from "@/shared/api/aiApi";
 
 type BookingFlowStep = "idle" | "searching" | "options" | "confirmed";
 type DirectBookingStep = "service" | "calendar";
@@ -28,6 +29,12 @@ type ChatMessage = {
 };
 type DirectBookingFormState = {
   comment: string;
+};
+type AISearchSuggestion = {
+  id: string;
+  title: string;
+  prompt: string;
+  meta: string;
 };
 
 const initialDirectBookingForm: DirectBookingFormState = { comment: "" };
@@ -143,6 +150,58 @@ function getCategoryServices(services: ServiziType[], categoryId?: number) {
   );
 }
 
+function buildSearchSuggestions(options: AIBookingOption[]) {
+  const uniqueByTitle = new Map<
+    string,
+    AISearchSuggestion & { masterId: number; order: number }
+  >();
+
+  options.forEach((option, index) => {
+    const title = option.serviceTitle?.trim() || option.service?.trim();
+    if (!title) return;
+
+    const key = title.toLowerCase();
+    if (uniqueByTitle.has(key)) return;
+
+    uniqueByTitle.set(key, {
+      id: `${option.masterId}-${option.serviziId}-${index}`,
+      title,
+      prompt: title,
+      meta: `${option.price} · ${option.slot}`,
+      masterId: option.masterId,
+      order: index,
+    });
+  });
+
+  const uniqueSuggestions = Array.from(uniqueByTitle.values()).sort(
+    (a, b) => a.order - b.order,
+  );
+  const seenMasters = new Set<number>();
+  const diverseSuggestions: Array<AISearchSuggestion & { masterId: number }> = [];
+
+  uniqueSuggestions.forEach((suggestion) => {
+    if (diverseSuggestions.length >= 4) return;
+    if (seenMasters.has(suggestion.masterId)) return;
+    seenMasters.add(suggestion.masterId);
+    diverseSuggestions.push(suggestion);
+  });
+
+  if (diverseSuggestions.length < 4) {
+    uniqueSuggestions.forEach((suggestion) => {
+      if (diverseSuggestions.length >= 4) return;
+      if (diverseSuggestions.some((item) => item.id === suggestion.id)) return;
+      diverseSuggestions.push(suggestion);
+    });
+  }
+
+  return diverseSuggestions.map(({ id, title, prompt, meta }) => ({
+    id,
+    title,
+    prompt,
+    meta,
+  }));
+}
+
 export default function GlobalBookingModal() {
   const t = useTranslations("bookingModal");
   const commonT = useTranslations("common");
@@ -153,6 +212,8 @@ export default function GlobalBookingModal() {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [draft, setDraft] = useState(() => t("defaultDraft"));
+  const [suggestions, setSuggestions] = useState<AISearchSuggestion[]>([]);
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [presetBooking, setPresetBooking] = useState<BookingModalPayload | null>(null);
   const [step, setStep] = useState<BookingFlowStep>("idle");
@@ -183,6 +244,7 @@ export default function GlobalBookingModal() {
   // Ref нужен, чтобы возвращать фокус в поле ввода после выбора подсказки
   const inputRef = useRef<HTMLInputElement | null>(null);
   const nextMessageIdRef = useRef(2);
+  const suggestionRequestIdRef = useRef(0);
 
   useEffect(() => {
     dispatch(refreshTokenThunk());
@@ -216,8 +278,10 @@ export default function GlobalBookingModal() {
     // Возвращаем модалку в исходное состояние после закрытия
     setStep("idle");
     setIsLoading(false);
+    setIsSuggestionsLoading(false);
     setError(null);
     setOptions([]);
+    setSuggestions([]);
     setSelectedOptionId(null);
     setDraft(t("defaultDraft"));
     setChatMessages([{ id: 1, text: t("defaultAiMessage"), role: "ai", placement: "top" }]);
@@ -238,6 +302,7 @@ export default function GlobalBookingModal() {
     setSelectedServiceId(null);
     setSelectedDate(new Date());
     setSelectedSlot("");
+    suggestionRequestIdRef.current += 1;
     nextMessageIdRef.current = 2;
   }, [t]);
 
@@ -307,6 +372,16 @@ export default function GlobalBookingModal() {
     if (bookingConfirmed) return;
 
     setDraft(prompt);
+    setSuggestions([]);
+    inputRef.current?.focus();
+  };
+
+  const handleSuggestionClick = (prompt: string) => {
+    if (bookingConfirmed) return;
+
+    setDraft(prompt);
+    setSuggestions([]);
+    setError(null);
     inputRef.current?.focus();
   };
 
@@ -322,6 +397,7 @@ export default function GlobalBookingModal() {
 
     setIsLoading(true);
     setError(null);
+    setSuggestions([]);
     setStep("searching");
     setOptions([]);
     setSelectedOptionId(null);
@@ -571,6 +647,40 @@ export default function GlobalBookingModal() {
       void handleSubmitDraft();
     }
   };
+
+  useEffect(() => {
+    if (!isChatOpen || presetBooking || bookingConfirmed) return;
+
+    const query = draft.trim();
+    if (query.length < 3) return;
+
+    const debounceTimer = window.setTimeout(() => {
+      const currentRequestId = suggestionRequestIdRef.current + 1;
+      suggestionRequestIdRef.current = currentRequestId;
+      setIsSuggestionsLoading(true);
+
+      const runSuggestionsSearch = async () => {
+        try {
+          const found = await searchAIBookingOptions(query, 4, { useAI: false });
+          if (suggestionRequestIdRef.current !== currentRequestId) return;
+          setSuggestions(buildSearchSuggestions(found));
+        } catch {
+          if (suggestionRequestIdRef.current !== currentRequestId) return;
+          setSuggestions([]);
+        } finally {
+          if (suggestionRequestIdRef.current === currentRequestId) {
+            setIsSuggestionsLoading(false);
+          }
+        }
+      };
+
+      void runSuggestionsSearch();
+    }, 350);
+
+    return () => {
+      window.clearTimeout(debounceTimer);
+    };
+  }, [bookingConfirmed, draft, isChatOpen, presetBooking]);
 
   const shouldShowOptions = step === "options" || step === "confirmed";
   const shouldShowReview = step === "options" && !!selectedOption;
@@ -906,7 +1016,13 @@ export default function GlobalBookingModal() {
                   value={draft}
                   onChange={(event) => {
                     if (bookingConfirmed) return;
-                    setDraft(event.target.value);
+                    const nextDraft = event.target.value;
+                    setDraft(nextDraft);
+
+                    if (nextDraft.trim().length < 3) {
+                      setSuggestions([]);
+                      setIsSuggestionsLoading(false);
+                    }
                   }}
                   onKeyDown={handleInputKeyDown}
                   placeholder={t("defaultDraft")}
@@ -923,6 +1039,32 @@ export default function GlobalBookingModal() {
               </div>
 
               {error ? <p className="master-meta">{error}</p> : null}
+
+              {!bookingConfirmed && draft.trim().length >= 3 ? (
+                <div className="booking-ai-suggestions">
+                  <div className="booking-ai-suggestions-head">
+                    <strong>{t("suggestionsTitle")}</strong>
+                    {isSuggestionsLoading ? <span>{t("suggestionsLoading")}</span> : null}
+                  </div>
+
+                  {suggestions.length > 0 ? (
+                    <div className="booking-ai-suggestions-list">
+                      {suggestions.map((suggestion) => (
+                        <button
+                          className="booking-ai-suggestion"
+                          key={suggestion.id}
+                          type="button"
+                          onClick={() => handleSuggestionClick(suggestion.prompt)}
+                          disabled={isSuggestionsLoading}
+                        >
+                          <strong>{suggestion.title}</strong>
+                          <span>{suggestion.meta}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               <div className="booking-ai-chips">
                 {quickPrompts.map((prompt) => (

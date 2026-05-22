@@ -370,6 +370,8 @@
     "confirmedTitle": "Подтвержденная запись",
     "aiTitle": "AI - помощник",
     "aiSubtitle": "Опишите, что вы хотите, а я подберу варианты",
+    "suggestionsTitle": "Подсказки по запросу",
+    "suggestionsLoading": "Подбираю...",
     "searchButton": "Подобрать",
     "searchingButton": "Ищу"
   }
