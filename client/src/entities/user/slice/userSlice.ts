@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { initialUserState } from "../model";
 import {
+    deleteAccountThunk,
     loginThunk,
     logoutThunk,
     refreshTokenThunk,
@@ -84,6 +85,23 @@ const userSlice = createSlice({
             state.isLoading = false;
             state.isInitialized = true;
             state.error = action.payload ?? 'Ошибка при выходе из приложения'
+        })
+
+        // Delete account
+        builder.addCase(deleteAccountThunk.pending, (state) => {
+            state.error = null;
+            state.isLoading = true
+        })
+        builder.addCase(deleteAccountThunk.fulfilled, (state) => {
+            state.isLoading = false;
+            state.isInitialized = true;
+            state.user = null
+            state.error = null;
+        })
+        builder.addCase(deleteAccountThunk.rejected, (state, action) => {
+            state.isLoading = false;
+            state.isInitialized = true;
+            state.error = action.payload ?? 'Не удалось удалить аккаунт'
         })
 
         // Telegram login

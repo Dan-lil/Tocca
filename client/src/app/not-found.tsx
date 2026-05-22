@@ -213,7 +213,7 @@ const getRandomPosition = () => {
               <div className="sticker-shadow"></div>
               <div className="photo-sticker">
                 <Image
-                  src="/not-found/teacher-sticker.jpeg"
+                  src="/not-found/teacher-sticker1.jpeg"
                   alt="Фото Тараса"
                   fill
                   sizes="(max-width: 768px) 320px, 480px"

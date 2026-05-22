@@ -2,9 +2,13 @@ const { Op } = require("sequelize");
 const { Booking, Chat, Servizi, User, sequelize } = require("../db/models");
 
 function isCanceledStatus(status) {
-  return String(status ?? "")
-    .toLowerCase()
-    .includes("отмен");
+  const normalizedStatus = String(status ?? "").toLowerCase();
+
+  return (
+    normalizedStatus.includes("отмен") ||
+    normalizedStatus.includes("cancel") ||
+    normalizedStatus.includes("РѕС‚РјРµРЅ")
+  );
 }
 
 function toDate(value, fieldName) {
@@ -18,6 +22,62 @@ function toDate(value, fieldName) {
 }
 
 class BookingService {
+  static async enrichBookings(bookings) {
+    const plainBookings = bookings
+      .filter(Boolean)
+      .map((booking) =>
+        typeof booking.get === "function" ? booking.get({ plain: true }) : booking,
+      );
+
+    const clientIds = [
+      ...new Set(plainBookings.map((booking) => booking.clientId).filter(Boolean)),
+    ];
+    const serviceIds = [
+      ...new Set(plainBookings.map((booking) => booking.serviziId).filter(Boolean)),
+    ];
+
+    const [clients, services] = await Promise.all([
+      clientIds.length
+        ? User.findAll({
+            where: { id: { [Op.in]: clientIds } },
+            attributes: ["id", "name", "phone"],
+          })
+        : [],
+      serviceIds.length
+        ? Servizi.findAll({
+            where: { id: { [Op.in]: serviceIds } },
+          })
+        : [],
+    ]);
+
+    const clientsById = new Map(
+      clients.map((client) => [client.id, client.get({ plain: true })]),
+    );
+    const servicesById = new Map(
+      services.map((service) => [service.id, service.get({ plain: true })]),
+    );
+
+    return plainBookings.map((booking) => {
+      const client = clientsById.get(booking.clientId);
+      const service = servicesById.get(booking.serviziId);
+
+      return {
+        ...booking,
+        client: {
+          name: client?.name ?? "",
+          phone: client?.phone ?? "",
+        },
+        service: service ?? null,
+        totalPrice: Number(service?.price) || 0,
+      };
+    });
+  }
+
+  static async enrichBooking(booking) {
+    const [enrichedBooking] = await BookingService.enrichBookings([booking]);
+    return enrichedBooking ?? null;
+  }
+
   static async create(bookingData, currentUser = null) {
     const clientId =
       currentUser?.role === "client" ? currentUser.id : bookingData.clientId;
@@ -68,12 +128,9 @@ class BookingService {
       throw new Error("Услуга сейчас недоступна для записи");
     }
 
-    const conflictingBooking = await Booking.findOne({
+    const overlappingBookings = await Booking.findAll({
       where: {
         masterId,
-        status: {
-          [Op.notILike]: "%отмен%",
-        },
         startTime: {
           [Op.lt]: endTime,
         },
@@ -82,6 +139,10 @@ class BookingService {
         },
       },
     });
+
+    const conflictingBooking = overlappingBookings.find(
+      (booking) => !isCanceledStatus(booking.status),
+    );
 
     if (conflictingBooking) {
       throw new Error("Это время уже занято, выберите другой слот");
@@ -116,10 +177,10 @@ class BookingService {
 
       await transaction.commit();
 
-      const plainBooking = newBooking.get();
+      const enrichedBooking = await BookingService.enrichBooking(newBooking);
 
       return {
-        ...plainBooking,
+        ...enrichedBooking,
         chatId: chat.id,
       };
     } catch (error) {
@@ -128,50 +189,85 @@ class BookingService {
     }
   }
 
-  static async update(id, BookingData) {
-    const [rows] = await Booking.update(BookingData, {
-      where: { id: id },
+  static async update(id, bookingData) {
+    const [rows] = await Booking.update(bookingData, {
+      where: { id },
     });
+
     if (rows === 0) {
       return null;
     }
-    const booking = await Booking.findByPk(id);
 
-    return booking.get();
+    const booking = await Booking.findByPk(id);
+    return BookingService.enrichBooking(booking);
   }
 
   static async findAllByMasterId(masterId) {
     const bookings = await Booking.findAll({
-      where: { masterId: masterId },
+      where: { masterId },
+      order: [["startTime", "ASC"]],
     });
-    return bookings;
+
+    return BookingService.enrichBookings(bookings);
   }
 
   static async findAllByClientId(clientId) {
     const bookings = await Booking.findAll({
-      where: { clientId: clientId },
+      where: { clientId },
+      order: [["startTime", "ASC"]],
     });
-    return bookings;
+
+    return BookingService.enrichBookings(bookings);
+  }
+
+  static async findUpcomingByClientId(clientId) {
+    const bookings = await Booking.findAll({
+      where: {
+        clientId,
+        endTime: {
+          [Op.gte]: new Date(),
+        },
+      },
+      order: [["startTime", "ASC"]],
+    });
+
+    return BookingService.enrichBookings(bookings);
+  }
+
+  static async findPastByClientId(clientId) {
+    const bookings = await Booking.findAll({
+      where: {
+        clientId,
+        endTime: {
+          [Op.lt]: new Date(),
+        },
+      },
+      order: [["startTime", "DESC"]],
+    });
+
+    return BookingService.enrichBookings(bookings);
   }
 
   static async findById(id) {
     const booking = await Booking.findByPk(id);
+
     if (!booking) {
       return null;
     }
-    return booking.get();
+
+    return BookingService.enrichBooking(booking);
   }
 
   static async delete(id) {
-    await Booking.destroy({ where: { id: id } });
+    await Booking.destroy({ where: { id } });
   }
 
   static async deleteByMasterId(masterId) {
-    await Booking.destroy({ where: { masterId: masterId } });
+    await Booking.destroy({ where: { masterId } });
   }
 
   static async deleteByClientId(clientId) {
-    await Booking.destroy({ where: { clientId: clientId } });
+    await Booking.destroy({ where: { clientId } });
   }
 }
 

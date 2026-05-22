@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node ./src/app.js",
     "dev": "node --env-file=.env ./src/app.js",
+    "optimize:images": "node ./scripts/optimize-existing-images.js",
     "db:reset": "npx sequelize db:drop && npx sequelize db:create && npx sequelize db:migrate && npx sequelize db:seed:all"
   },
   "keywords": [],
@@ -30,6 +31,7 @@
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
+    "sharp": "^0.34.5",
     "socket.io": "^4.8.3"
   }
 }

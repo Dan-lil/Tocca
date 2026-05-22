@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
-import { Map as YandexMap, Placemark, YMaps } from "@pbe/react-yandex-maps";
 
 import "../../page.css";
 import "./page.css";
@@ -26,6 +26,14 @@ import type {
   PublicMasterProfileType,
   ServiziType,
 } from "@/shared/types";
+
+const YandexMastersMap = dynamic(
+  () => import("@/shared/ui/YandexMastersMap/YandexMastersMap"),
+  {
+    ssr: false,
+    loading: () => <div className="services-directory-map-state">Карта загружается...</div>,
+  },
+);
 
 type ServiceDirectoryCard = {
   id: number;
@@ -434,34 +442,12 @@ export default function CategoryPage() {
 
         {!isLoading && !error && mapMasterPoints.length > 0 ? (
           <section className="services-directory-map glass-surface">
-            <YMaps query={{ apikey: process.env.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}>
-              <YandexMap
-                defaultState={{ center: mapCenter, zoom: isNearbyMode ? 12 : 10 }}
-                state={{ center: mapCenter, zoom: isNearbyMode ? 12 : 10 }}
-                width="100%"
-                height="100%"
-              >
-                {clientLocation ? (
-                  <Placemark
-                    geometry={[clientLocation.lat, clientLocation.lon]}
-                    options={{ preset: "islands#blueCircleDotIcon" }}
-                    properties={{ balloonContent: "Вы здесь" }}
-                  />
-                ) : null}
-                {mapMasterPoints.map((master) => (
-                  <Placemark
-                    geometry={master.coords}
-                    key={master.id}
-                    options={{ preset: "islands#redIcon" }}
-                    properties={{
-                      balloonContent: master.distanceKm
-                        ? `${master.name}: ${master.distanceKm.toFixed(1)} км`
-                        : master.name,
-                    }}
-                  />
-                ))}
-              </YandexMap>
-            </YMaps>
+            <YandexMastersMap
+              center={mapCenter}
+              clientLocation={clientLocation}
+              isNearbyMode={isNearbyMode}
+              points={mapMasterPoints}
+            />
           </section>
         ) : null}
 
@@ -474,7 +460,10 @@ export default function CategoryPage() {
               const reviewsError = reviewsErrorByMaster[card.masterId] ?? null;
               const masterProfile = masterProfilesById[card.masterId];
               // Аватар и мини-портфолио берутся из публичного профиля мастера, а не из самой услуги
-              const avatarUrl = getMasterAvatarUrl(card.masterId, masterProfile?.user.avatar);
+              const avatarUrls = [
+                getMasterAvatarUrl(card.masterId, masterProfile?.user.avatar),
+                getMediaUrl(masterProfile?.user.avatar),
+              ].filter(Boolean);
               const portfolioItems = expandPortfolioItems(masterProfile?.portfolio ?? []).slice(0, 4);
               const masterDisplayName =
                 getLocalizedTitle(masterProfile?.profile ?? {}, locale) || card.masterName;
@@ -485,18 +474,26 @@ export default function CategoryPage() {
                   <div className="services-directory-card-head">
                     <div className="services-directory-card-master">
                       <div className="services-directory-card-avatar">
-                        {avatarUrl ? (
-                          <Image
+                        <span>{masterInitial}</span>
+                        {avatarUrls.length > 0 ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
                             className="services-directory-card-avatar-image"
-                            src={avatarUrl}
+                            src={avatarUrls[0]}
                             alt={t("avatarAlt", { name: masterDisplayName })}
-                            width={58}
-                            height={58}
-                            unoptimized
+                            onError={(event) => {
+                              const image = event.currentTarget;
+                              const nextAvatarUrl = avatarUrls.find((url) => url !== image.src);
+
+                              if (nextAvatarUrl) {
+                                image.src = nextAvatarUrl;
+                                return;
+                              }
+
+                              image.style.display = "none";
+                            }}
                           />
-                        ) : (
-                          <span>{masterInitial}</span>
-                        )}
+                        ) : null}
                       </div>
                       <div className="services-directory-card-head-copy">
                         <strong>{masterDisplayName}</strong>

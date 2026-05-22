@@ -1,9 +1,20 @@
+const path = require("path");
 const SaleService = require("../services/SaleService");
 const formatResponse = require("../utils/formatResponse");
+const { optimizeImageFile } = require("../utils/imageOptimizer");
+
+async function saveSaleImage(imageFile) {
+  return optimizeImageFile({
+    imageFile,
+    label: "sale image",
+    outputDir: path.join(__dirname, "../public/uploads/sales"),
+    preset: "promotion",
+    publicDir: "/uploads/sales",
+  });
+}
 
 class SaleController {
   static async create(req, res) {
-    const saleData = req.body;
     const { user } = res.locals;
 
     if (user.role === "client") {
@@ -18,6 +29,14 @@ class SaleController {
     }
 
     try {
+      const { imageFile, ...salePayload } = req.body;
+      const uploadedImageUrl = await saveSaleImage(imageFile);
+      const saleData = { ...salePayload };
+
+      if (uploadedImageUrl) {
+        saleData.image = uploadedImageUrl;
+      }
+
       const newSale = await SaleService.create(saleData);
       return res
         .status(201)
@@ -185,7 +204,6 @@ class SaleController {
 
   static async update(req, res) {
     const { id } = req.params;
-    const saleData = req.body;
     const { user } = res.locals;
 
     if (user.role === "client") {
@@ -200,6 +218,14 @@ class SaleController {
     }
 
     try {
+      const { imageFile, ...salePayload } = req.body;
+      const uploadedImageUrl = await saveSaleImage(imageFile);
+      const saleData = { ...salePayload };
+
+      if (uploadedImageUrl) {
+        saleData.image = uploadedImageUrl;
+      }
+
       const updatedSale = await SaleService.update(id, saleData);
       if (!updatedSale) {
         return res

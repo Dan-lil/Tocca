@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
   MasterPortfolio.init(
     {
       userId: DataTypes.INTEGER,
-      portfolioImages: DataTypes.STRING,
+      portfolioImages: DataTypes.TEXT,
       text: DataTypes.STRING,
     },
     {

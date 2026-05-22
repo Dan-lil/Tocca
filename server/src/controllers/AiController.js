@@ -190,6 +190,62 @@ class AiController {
     }
   }
 
+  static async getGeoSortedMasters(req, res) {
+    const {
+      clientLat,
+      clientLon,
+      radiusKm = 15,
+      categoryId,
+      masters = [],
+    } = req.body;
+
+    if (!Number.isFinite(Number(clientLat)) || !Number.isFinite(Number(clientLon))) {
+      return res
+        .status(400)
+        .json(formatResponse(400, "Координаты клиента обязательны"));
+    }
+
+    if (!Array.isArray(masters)) {
+      return res
+        .status(400)
+        .json(formatResponse(400, "masters должен быть массивом"));
+    }
+
+    try {
+      const sortedMasters = await AiService.getGeoSortedMasters({
+        clientLat: Number(clientLat),
+        clientLon: Number(clientLon),
+        radiusKm: Number(radiusKm) || 15,
+        categoryId: categoryId ? Number(categoryId) : null,
+        masters,
+      });
+
+      return res
+        .status(200)
+        .json(
+          formatResponse(
+            200,
+            "Мастера рядом успешно отсортированы",
+            sortedMasters,
+            null,
+          ),
+        );
+    } catch (error) {
+      console.log("==== AiController.getGeoSortedMasters ==== ");
+      console.log(error);
+      return res
+        .status(500)
+        .json(
+          formatResponse(
+            500,
+            "Ошибка при поиске мастеров рядом",
+            null,
+            error.message,
+          ),
+        );
+    }
+  }
+
   static async searchBookingOptions(req, res) {
     const { user } = res.locals;
     const { prompt, limit = 6, useAI = true } = req.body;
@@ -198,17 +254,6 @@ class AiController {
       return res
         .status(401)
         .json(formatResponse(401, "Пользователь не авторизован"));
-    }
-
-    if (user.role !== "client") {
-      return res
-        .status(403)
-        .json(
-          formatResponse(
-            403,
-            "AI-помощник по записи доступен только клиенту",
-          ),
-        );
     }
 
     if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
